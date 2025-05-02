@@ -104,7 +104,9 @@ MPM; \code{3}, ahistorical MPM (default); \code{4}, age-by-stage MPM; and
 \item{entry_time}{An optional integer vector giving the entry time for each
 variant into each simulation. Defaults to a zero vector with length equal to
 the number of variants to run concurrently in each simulation, as given by
-argument \code{var_per_run}.}
+argument \code{var_per_run}. Note that if two variants are to be run at a
+time, as in a pairwise invasion analysis, then the length of the vector
+should be equal to 2.}
 
 \item{sp_density}{An optional argument for use with argument \code{vrm} that
 specifies the spatial density to be used in each time step. If used, then

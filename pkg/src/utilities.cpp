@@ -918,13 +918,13 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
     }
   }
   
-  LefkoUtils::numeric_vectorizer(givenrate_, givenrate, "givenrate", stage2_length, age2_length, false, 0);
-  LefkoUtils::numeric_vectorizer(offset_, offset, "offset", stage2_length, age2_length, false, 0);
-  LefkoUtils::numeric_vectorizer(multiplier_, multiplier, "multiplier", stage2_length, age2_length, false, 0);
+  LefkoInputs::numeric_vectorizer(givenrate_, givenrate, "givenrate", stage2_length, age2_length, false, 0);
+  LefkoInputs::numeric_vectorizer(offset_, offset, "offset", stage2_length, age2_length, false, 0);
+  LefkoInputs::numeric_vectorizer(multiplier_, multiplier, "multiplier", stage2_length, age2_length, false, 0);
   
-  integer_vectorizer (type_, type, "type", stage2_length, age2_length, 1, 3,
+  LefkoInputs::integer_vectorizer (type_, type, "type", stage2_length, age2_length, 1, 3,
     true, false, 0);
-  integer_vectorizer (type_t12_, type_t12, "type_t12", stage2_length,
+  LefkoInputs::integer_vectorizer (type_t12_, type_t12, "type_t12", stage2_length,
     age2_length, 1, 2, true, false, 0);
   
   if (wtf < 3 && type_length != 0  && type_length != stage2_length) { 
@@ -1024,21 +1024,21 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
     eststage1_length = stage2_length;
   }
   
-  LefkoUtils::numeric_vectorizer(surv_dev_, surv_dev, "surv_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(obs_dev_, obs_dev, "obs_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(size_dev_, size_dev, "size_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(sizeb_dev_, sizeb_dev, "sizeb_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(sizec_dev_, sizec_dev, "sizec_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(repst_dev_, repst_dev, "repst_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(fec_dev_, fec_dev, "fec_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(surv_dev_, surv_dev, "surv_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(obs_dev_, obs_dev, "obs_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(size_dev_, size_dev, "size_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(sizeb_dev_, sizeb_dev, "sizeb_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(sizec_dev_, sizec_dev, "sizec_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(repst_dev_, repst_dev, "repst_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(fec_dev_, fec_dev, "fec_dev", stage2_length, age2_length, false);
   
-  LefkoUtils::numeric_vectorizer(jsurv_dev_, jsurv_dev, "jsurv_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(jobs_dev_, jobs_dev, "jobs_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(jsize_dev_, jsize_dev, "jsize_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(jsizeb_dev_, jsizeb_dev, "jsizeb_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(jsizec_dev_, jsizec_dev, "jsizec_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(jrepst_dev_, jrepst_dev, "jrepst_dev", stage2_length, age2_length, false);
-  LefkoUtils::numeric_vectorizer(jmatst_dev_, jmatst_dev, "jmatst_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jsurv_dev_, jsurv_dev, "jsurv_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jobs_dev_, jobs_dev, "jobs_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jsize_dev_, jsize_dev, "jsize_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jsizeb_dev_, jsizeb_dev, "jsizeb_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jsizec_dev_, jsizec_dev, "jsizec_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jrepst_dev_, jrepst_dev, "jrepst_dev", stage2_length, age2_length, false);
+  LefkoInputs::numeric_vectorizer(jmatst_dev_, jmatst_dev, "jmatst_dev", stage2_length, age2_length, false);
   
   IntegerVector new_variants = seq(1, stage2_length);
   

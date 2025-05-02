@@ -4,6 +4,8 @@
 
 * Function plot.adaptProj() created to plot community projections.
 
+* New invasibility analysis vignette added.
+
 # adapt 0.9.6 (2025-04-12)
 
 ## NEW FEATURES

@@ -647,8 +647,8 @@ NULL
 #' stochastic projection.
 #' @param dens_yn_bool A Boolean value stating whether density dependence is
 #' used in the MPM, given through a \code{lefkoDens} object.
-#' @param entry_time_vec_use A Boolean value indicating whether entry
-#' times differ among MPMs.
+#' @param entry_time_vec_use A Boolean value indicating whether entry times
+#' differ among MPMs.
 #' @param sparse_bool A Boolean value stating whether the MPM is in sparse
 #' matrix format.
 #' @param historical A Boolean value indicating whether the MPM is historical.
@@ -1155,7 +1155,9 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' @param entry_time An optional integer vector giving the entry time for each
 #' variant into each simulation. Defaults to a zero vector with length equal to
 #' the number of variants to run concurrently in each simulation, as given by
-#' argument \code{var_per_run}.
+#' argument \code{var_per_run}. Note that if two variants are to be run at a
+#' time, as in a pairwise invasion analysis, then the length of the vector
+#' should be equal to 2.
 #' @param sp_density An optional argument for use with argument \code{vrm} that
 #' specifies the spatial density to be used in each time step. If used, then
 #' may either be a numeric vector giving a single spatial density for each

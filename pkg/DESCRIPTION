@@ -1,8 +1,8 @@
 Package: adapt3
 Type: Package
 Title: Adaptive Dynamics and Community Matrix Model Projections
-Version: 0.9.6.9000
-Date: 2025-04-13
+Version: 0.9.6.9003
+Date: 2025-05-02
 Authors@R: c(person(given = "Richard P.", family = "Shefferson",
              email = "cdorm@g.ecc.u-tokyo.ac.jp", role = c("aut", "cre"),
              comment=c(ORCID="0000-0002-5234-3131")))
@@ -14,10 +14,11 @@ Description: Runs projections of groups of matrix projection models (MPMs),
              MPMs are allowed, including integral projection models (IPMs).
 Encoding: UTF-8
 License: GPL (>= 2)
-URL: http://revolutionarydemography.com/projects.html
+URL: https://github.com/dormancy1/adapt3
 Imports: Rcpp (>= 1.0.12), lefko3, methods
 LinkingTo: Rcpp, RcppArmadillo, BH, lefko3
 LazyData: true
+BugReports: https://github.com/dormancy1/adapt3/issues
 VignetteBuilder: knitr
 NeedsCompilation: yes
 RoxygenNote: 7.3.2

@@ -9485,8 +9485,8 @@ Rcpp::List cleanup3_inv (Nullable<RObject> mpm = R_NilValue,
 //' stochastic projection.
 //' @param dens_yn_bool A Boolean value stating whether density dependence is
 //' used in the MPM, given through a \code{lefkoDens} object.
-//' @param entry_time_vec_use A Boolean value indicating whether entry
-//' times differ among MPMs.
+//' @param entry_time_vec_use A Boolean value indicating whether entry times
+//' differ among MPMs.
 //' @param sparse_bool A Boolean value stating whether the MPM is in sparse
 //' matrix format.
 //' @param historical A Boolean value indicating whether the MPM is historical.
@@ -9992,15 +9992,21 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
       arma::cube current_N_out_cube = as<arma::cube>(N_out(i));
       
       for (int l = 0; l < var_mat_length; l++) {
+        int used_fitness_times = fitness_times;
+        if (times - (entry_time_vec(m)) < fitness_times) {
+          used_fitness_times = times - (entry_time_vec(m));
+          Rf_warningcall(R_NilValue, "Truncating fitness_times due to late entry time.");
+        }
+        
         arma::mat current_N_out = current_N_out_cube.slice(l);
         int time_length = static_cast<int>(current_N_out.n_cols);
-        int start_time = time_length - fitness_times;
+        int start_time = time_length - used_fitness_times;
         
-        arma::vec running_fitness(fitness_times, fill::zeros);
-        arma::vec generations(fitness_times, fill::zeros);
-        arma::vec intercept_ones(fitness_times, fill::ones);
+        arma::vec running_fitness(used_fitness_times, fill::zeros);
+        arma::vec generations(used_fitness_times, fill::zeros);
+        arma::vec intercept_ones(used_fitness_times, fill::ones);
         
-        for (int k = 0; k < fitness_times; k++) {
+        for (int k = 0; k < used_fitness_times; k++) {
           running_fitness(k) = current_N_out(m, k+start_time);
           generations(k) = static_cast<double>(k);
         }
@@ -11019,15 +11025,21 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
       arma::cube current_N_out_cube = as<arma::cube>(N_out(i));
       
       for (int j = 0; j < var_mat_length; j++) {
+        int used_fitness_times = fitness_times;
+        if (times - (entry_time_vec(m)) < fitness_times) {
+          used_fitness_times = times - (entry_time_vec(m));
+          Rf_warningcall(R_NilValue, "Truncating fitness_times due to late entry time.");
+        }
+        
         arma::mat current_N_out = current_N_out_cube.slice(j);
         int time_length = static_cast<int>(current_N_out.n_cols);
-        int start_time = time_length - fitness_times;
+        int start_time = time_length - used_fitness_times;
         
-        arma::vec running_fitness(fitness_times, fill::zeros);
-        arma::vec generations(fitness_times, fill::zeros);
-        arma::vec intercept_ones(fitness_times, fill::ones);
+        arma::vec running_fitness(used_fitness_times, fill::zeros);
+        arma::vec generations(used_fitness_times, fill::zeros);
+        arma::vec intercept_ones(used_fitness_times, fill::ones);
         
-        for (int k = 0; k < fitness_times; k++) {
+        for (int k = 0; k < used_fitness_times; k++) {
           running_fitness(k) = current_N_out(m, k+start_time);
           generations(k) = static_cast<double>(k);
         }
@@ -11129,7 +11141,9 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' @param entry_time An optional integer vector giving the entry time for each
 //' variant into each simulation. Defaults to a zero vector with length equal to
 //' the number of variants to run concurrently in each simulation, as given by
-//' argument \code{var_per_run}.
+//' argument \code{var_per_run}. Note that if two variants are to be run at a
+//' time, as in a pairwise invasion analysis, then the length of the vector
+//' should be equal to 2.
 //' @param sp_density An optional argument for use with argument \code{vrm} that
 //' specifies the spatial density to be used in each time step. If used, then
 //' may either be a numeric vector giving a single spatial density for each

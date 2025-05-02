@@ -30,7 +30,8 @@ Pending
 \seealso{
 Useful links:
 \itemize{
-  \item \url{http://revolutionarydemography.com/projects.html}
+  \item \url{https://github.com/dormancy1/adapt3}
+  \item Report bugs at \url{https://github.com/dormancy1/adapt3/issues}
 }
 
 }
