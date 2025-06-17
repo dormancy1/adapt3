@@ -27,7 +27,10 @@ using namespace LefkoUtils;
 // 8. void proj3dens_inv  Project Forward By One Time Step in Invastion Run
 // 9. void Lyapunov_df_maker  Create Data Frame to Hold Fitness Output from Function invade3()
 // 10. DataFrame ta_reassess  Expand Trait Axis Table Given User Input
-// 11. void pop_error2
+// 11. void pop_error2  Standardized Error Messages
+// 12. void ta_trianator  Develop Core Reassessed Trait Axis for ESS Optimization
+// 13. DataFrame df_rbind  Bind Two Data Frames By Row
+// 14. List df_indices  Subset A Data Frame By Row Index
 
 
 namespace AdaptUtils {
@@ -2042,6 +2045,301 @@ namespace AdaptUtils {
     
     return;
   }
+  
+  //' Develop Core Reassessed Trait Axis for ESS Optimization
+  //' 
+  //' This function creates two core vectors for development of the ESS
+  //' optimization trait axis data frames.
+  //' 
+  //' @name ta_trianator
+  //' 
+  //' @param inp_out Reference to the output main vector.
+  //' @param inp_out_995 Rerence to the output 0.995 variant vector.
+  //' @param inp_inp_vec The input vector
+  //' @param inp_min The minimum value in the input vector.
+  //' @param inp_max The maximum value in the input vector.
+  //' @param found_variables The number of variable traits.
+  //' @param opt_res The number of variants to make in the gradient.
+  //' @param var1_length The total length of the input vector.
+  //' @param inp_NA A Boolean value indicating whether the input vector is
+  //' entirely composed of NA values.
+  //' @param first_var_found A Boolean variables ndicating if the first variable
+  //' trait has been found.
+  //' 
+  //' @return Two vectors are modified by reference, without any real output.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline void ta_trianator (NumericVector& inp_out, NumericVector& inp_out_995,
+    NumericVector inp_inp_vec, double inp_min, double inp_max, int found_variables,
+    int opt_res, int var1_length, bool inp_NA, bool& first_var_found) {
+    if (inp_min != inp_max) {
+      double current_diff = inp_max - inp_min;
+      double current_inc = current_diff / opt_res;
+      
+      if (found_variables == 1) {
+        NumericVector chopping_block (opt_res * var1_length);
+        for (int i = 0; i < opt_res; i++) {
+          for (int j = 0; j < var1_length; j++) {
+            chopping_block((i * var1_length) + j) =
+              inp_min + (static_cast<double>(i) * current_inc);
+          }
+        }
+        
+        inp_out = chopping_block;
+      } else if (found_variables == 2) {
+        NumericVector chopping_block_2 (opt_res * opt_res * var1_length);
+        
+        for (int i = 0; i < opt_res; i++) {
+          for (int j = 0; j < opt_res; j++) {
+            for (int k = 0; k < var1_length; k++) {
+              if (!first_var_found) {
+                chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) =
+                  inp_min + (static_cast<double>(i) * current_inc);
+              } else {
+                chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) =
+                  inp_min + (static_cast<double>(j) * current_inc);
+              }
+            }
+          }
+        }
+        inp_out = chopping_block_2;
+        first_var_found = true;
+      }
+      
+      inp_out_995 = clone(inp_out);
+      inp_out_995 = inp_out_995 * 0.995;
+    } else if (inp_NA) {
+      if (found_variables == 1) {
+        NumericVector chopping_block (opt_res * var1_length);
+        for (int i = 0; i < (opt_res * var1_length); i++) {
+          chopping_block(i) = NA_REAL;
+        }
+        inp_out = chopping_block;
+      } else {
+        NumericVector chopping_block (opt_res * opt_res * var1_length);
+        for (int i = 0; i < (opt_res * opt_res * var1_length); i++) {
+          chopping_block(i) = NA_REAL;
+        }
+        inp_out = chopping_block;
+      }
+      inp_out_995 = clone(inp_out);
+    } else {
+      NumericVector inp_out_noNA = na_omit(inp_inp_vec);
+      if (found_variables == 1) {
+        NumericVector chopping_block (opt_res * var1_length);
+        for (int i = 0; i < (opt_res * var1_length); i++) {
+          chopping_block(i) = inp_out_noNA(0);
+        }
+        inp_out = chopping_block;
+      } else {
+        NumericVector chopping_block (opt_res * opt_res * var1_length);
+        for (int i = 0; i < (opt_res * opt_res * var1_length); i++) {
+          chopping_block(i) = inp_out_noNA(0);
+        }
+        inp_out = chopping_block;
+      }
+      inp_out_995 = clone(inp_out);
+    }
+  }
+  
+  //' Bind Two Data Frames By Row
+  //' 
+  //' This function takes two data frames, which must be composed of the same
+  //' variables in the same order. Although the variables may have different
+  //' names, the variables must be of the same type. The names of the variables in
+  //' the new merged data frame will match those of the first data frame.
+  //' Developed with the help of Microsoft Gemini AI.
+  //' 
+  //' @name df_rbind
+  //' 
+  //' @param df1 The first data frame, which will form the top of the new data
+  //' frame and will be used as a reference for variable names.
+  //' @param df2 The second data frame, which will be attached below data frame
+  //' \code{df1}.
+  //' 
+  //' @return A new data frame composed of the merged data frames.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline DataFrame df_rbind(DataFrame df1, DataFrame df2) {
+    
+    int nrows1 = df1.nrows();
+    int nrows2 = df2.nrows();
+    int ncols = df1.size();
+  
+    if (ncols != df2.size()) {
+      stop("Data frames must have the same number of columns.");
+    }
+    
+    CharacterVector df_names = df1.names();
+  
+    List out_df (ncols);
+  
+    for (int i = 0; i < ncols; ++i) {
+      SEXP col1 = df1[i];
+      SEXP col2 = df2[i];
+  
+      if (TYPEOF(col1) != TYPEOF(col2)) {
+        stop("Columns must have the same type");
+      }
+  
+      switch(TYPEOF(col1)){
+        case INTSXP: {
+          IntegerVector combinedCol(nrows1 + nrows2);
+          IntegerVector col1Vector = as<IntegerVector>(col1);
+          IntegerVector col2Vector = as<IntegerVector>(col2);
+          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
+          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
+          
+          bool current_int_class1 = col1Vector.hasAttribute("levels");
+          if (current_int_class1) {
+            CharacterVector col1lvls = col1Vector.attr("levels");
+            CharacterVector col2lvls = col2Vector.attr("levels");
+            
+            CharacterVector col_mergedLevels = LefkoUtils::concat_str(col1lvls, col2lvls);
+            CharacterVector unique_levels = unique(col_mergedLevels);
+            
+            combinedCol.attr("levels") = unique_levels;
+          }
+          out_df(i) = combinedCol;
+          break;
+        }
+  
+        case REALSXP: {
+          NumericVector combinedCol(nrows1 + nrows2);
+          NumericVector col1Vector = as<NumericVector>(col1);
+          NumericVector col2Vector = as<NumericVector>(col2);
+          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
+          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
+          
+          out_df(i) = combinedCol;
+          break;
+        }
+  
+        case STRSXP: {
+          CharacterVector combinedCol(nrows1 + nrows2);
+          CharacterVector col1Vector = as<CharacterVector>(col1);
+          CharacterVector col2Vector = as<CharacterVector>(col2);
+          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
+          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
+          
+          out_df(i) = combinedCol;
+          break;
+        }
+        default:
+          stop("Unsupported column type.");
+      }
+    }
+    
+    out_df.attr("names") = df_names;
+    out_df.attr("class") = "data.frame";
+    StringVector row_names(nrows1 + nrows2);
+    for (int i = 0; i < (nrows1 + nrows2); i++) {
+      row_names(i) = std::to_string(i+1);
+    }
+    out_df.attr("row.names") = row_names;
+    
+    return out_df;
+  }
+  
+  //' Subset A Data Frame By Row Index
+  //' 
+  //' This function takes a data frame and subsets it according to row indices.
+  //' The default is to use C++ indexing.
+  //' 
+  //' @name df_indices
+  //' 
+  //' @param x The data frame to subset.
+  //' @param indices Integer vector giving the rows to keep.
+  //' 
+  //' @return A new data frame subset from the old.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline List df_indices(const DataFrame& x, IntegerVector indices) {
+    
+    StringVector var_names = x.attr("names");
+    StringVector df_class = x.attr("class");
+    int no_vars = x.length();
+    int no_rows = x.nrows();
+    
+    arma::uvec useable_indices;
+    double chosen_level_d {0.0};
+    String chosen_level_s;
+    bool string_used {false};
+    
+    int max_asked_for = max(indices);
+    if (max_asked_for >= no_rows) {
+      throw Rcpp::exception("Row index too high for subsetting data frame chosen.", false);
+    }
+    
+    int new_rows = static_cast<int>(indices.length());
+    List new_df (no_vars);
+    
+    for (int i = 0; i < no_vars; i++) {
+      if (is<NumericVector>(x[i])) {
+        NumericVector old_var_i = as<NumericVector>(x[i]);
+        NumericVector new_var_i (new_rows);
+        
+        for (int j = 0; j < new_rows; j++) {
+          new_var_i(j) = old_var_i(indices(j));
+        }
+        new_df(i) = new_var_i;
+        
+      } else if (is<IntegerVector>(x[i])) {
+        IntegerVector old_var_i = as<IntegerVector>(x[i]);
+        IntegerVector new_var_i (new_rows);
+        
+        for (int j = 0; j < new_rows; j++) {
+          new_var_i(j) = old_var_i(indices(j));
+        }
+        
+        if (old_var_i.hasAttribute("levels")) {
+          StringVector int_class = old_var_i.attr("class");
+          if (stringcompare_simple(String(int_class(0)), "fact", false)) {
+            new_var_i.attr("levels") = old_var_i.attr("levels");
+            new_var_i.attr("class") = "factor";
+          }
+        }
+        
+        new_df(i) = new_var_i;
+        
+      } else if (is<LogicalVector>(x[i])) {
+        LogicalVector old_var_i = as<LogicalVector>(x[i]);
+        LogicalVector new_var_i (new_rows);
+        
+        for (int j = 0; j < new_rows; j++) {
+          new_var_i(j) = old_var_i(indices(j));
+        }
+        new_df(i) = new_var_i;
+        
+      } else if (is<StringVector>(x[i])) {
+        StringVector old_var_i = as<StringVector>(x[i]);
+        StringVector new_var_i (new_rows);
+        
+        for (int j = 0; j < new_rows; j++) {
+          new_var_i(j) = old_var_i(indices(j));
+        }
+        new_df(i) = new_var_i;
+        
+      } else {
+        throw Rcpp::exception("Variable found of unrecognized type.", false);
+      }
+    }
+    
+    new_df.attr("names") = var_names;
+    new_df.attr("class") = df_class;
+    
+    StringVector row_names(new_rows);
+    for (int i = 0; i < new_rows; i++) {
+      row_names(i) = std::to_string(i+1);
+    }
+    new_df.attr("row.names") = row_names;
+    
+    return new_df;
+  }
+
 }
 
 #endif

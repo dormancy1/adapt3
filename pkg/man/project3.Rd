@@ -308,7 +308,6 @@ matrices prior to projection.
 }
 
 \examples{
-
 library(lefko3)
 data(cypdata)
 
@@ -337,12 +336,11 @@ cycaraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
   NRasRep = TRUE)
   
-cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 6, firstyear = 2004,
-  patchidcol = "patch", individcol = "plantid", blocksize = 4,
-  sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-  repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
-  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
-  NRasRep = TRUE)
+cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+  repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
+  stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
 
 cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
     "XSm", "Sm", "SD", "P1"),
@@ -362,8 +360,8 @@ cycamatrix2r <- rlefko2(data = cycaraw_v1, stageframe = cypframe_raw,
   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 
 cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
-  year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
-  size = c("size3added", "size2added"), supplement = cypsupp2r_alt,
+  year = "all", stages = c("stage3", "stage2", "stage1"),
+  size = c("size3added", "size2added"), supplement = cypsupp2r,
   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 
 cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)
@@ -381,5 +379,7 @@ cyp_dv_list <- list(cyp2_dv, cyp2_dv)
 
 cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
   density = cyp_dv_list, times = 10)
+  
+summary(cyp_comm_proj)
 
 }

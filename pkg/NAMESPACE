@@ -2,6 +2,7 @@
 
 S3method(plot,adaptInv)
 S3method(plot,adaptProj)
+S3method(summary,adaptProj)
 export(equiv_input)
 export(invade3)
 export(project3)

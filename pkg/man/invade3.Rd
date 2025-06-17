@@ -38,9 +38,13 @@ invade3(
   nreps = 1L,
   times = 10000L,
   fitness_times = 100L,
+  opt_res = 100L,
   exp_tol = 700,
   theta_tol = 1e+08,
-  A_only = TRUE
+  threshold = 1e-08,
+  A_only = TRUE,
+  fitness_table = TRUE,
+  optima = TRUE
 )
 }
 \arguments{
@@ -218,6 +222,10 @@ of each run to use to estimate the fitness of the respective genotype.
 Defaults to \code{100}, but if \code{times < 100}, then is set equal to
 \code{times}.}
 
+\item{opt_res}{If evaluating optima, then this integer gives the number
+of variants to create between each minimum and maximum for each trait found
+to be variable in the input trait axis. Defaults to \code{100}.}
+
 \item{exp_tol}{A numeric value used to indicate a maximum value to set
 exponents to in the core kernel to prevent numerical overflow. Defaults to
 \code{700}.}
@@ -226,11 +234,23 @@ exponents to in the core kernel to prevent numerical overflow. Defaults to
 used in the negative binomial probability density kernel. Defaults to
 \code{100000000}, but can be reset to other values during error checking.}
 
+\item{threshold}{The lower limit for the absolute value of fitness, below
+which fitness is rounded to 0. Defaults to 0.00000001.}
+
 \item{A_only}{A logical value indicating whether to alter survival and
 fecundity matrix elements separately prior to creating the overall \code{A}
 matrix, or whether to alter elements directly on \code{A} matrices. Defaults
 to \code{TRUE}, and should be kept to that setting unless some matrix
 elements to be altered are sums of survival and fecundity transitions.}
+
+\item{fitness_table}{A logical value dictating whether to include a data
+frame giving Lyapunov coefficients for all combinations of variants tested.
+Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+to \code{TRUE}.}
+
+\item{optima}{A logical value indicating whether to assess the values of ESS
+optima for traits that vary among variants in the given \code{adaptAxis}
+table. Defaults to \code{TRUE}.}
 }
 \value{
 A list of class \code{adaptInv}, with the following elements:
@@ -273,7 +293,6 @@ Function \code{invade3} runs pairwise and multiple invasion analyses.
 }
 \section{Notes}{
 
-
 The argument \code{var_per_run} establishes the style of simulation to run.
 Entering \code{var_per_run = 1} runs each variant singly. Entering
 \code{var_per_run = 2} runs pairwise invason analysis, trying each pair
@@ -281,6 +300,19 @@ permutation of variants. Greater values will lead to multiple invasion
 analysis with different permutations of groups. For example,
 \code{var_per_run = 3} runs each permutation of groups of three. The integer
 set must be positive, and must not be larger than the number of variants.
+
+When \code{optima = TRUE}, ESS values for traits that vary in the input
+\code{adaptAxis} data frame are evaluated. The methodology is that
+originally developed in Benton and Grant (1999, Evolution 53:677-688), as
+communicated in Roff (2010, Modeling evolution: an introduction to numerical
+methods, Oxford University Press). In essence, function \code{invade3}
+determines which traits vary among all traits noted in the input trait axis.
+A new trait axis is then created with \code{opt_res} levels of the varying
+traits between the minioma and maxima noted. A separate trait axis is then
+created with values of variable traits multiplied by 0.995. These two
+trait axis frames are then used to conduct pairwise invasibility elasticity
+analyses, particularly noting where fitness values and trends invert. Note
+that this optimization approach only works with up to 2 variable traits.
 }
 
 \examples{

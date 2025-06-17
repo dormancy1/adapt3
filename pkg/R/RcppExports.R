@@ -554,7 +554,165 @@ NULL
 #' @noRd
 NULL
 
-#' Engine Running Invasion Analyses of Existing MPMs
+#' Create Trait Axis Reassessed for Trait Optimization
+#' 
+#' @name optim_ta_setup
+#' 
+#' @param ta_reassessed A data frame giving trait axis data post-processing
+#' with function \code{ta_reassess()}.
+#' @param optim_ta A data frame giving trait axis data processed for ESS
+#' optimization. This is one of two data frames, and gives the core info.
+#' @param optim_ta_995 A data frame giving trait axis data processed for ESS
+#' optimization. This is one of two data frames, and gives info for 99.5% the
+#' values of variable traits in \code{optim_ta}.
+#' @param opt_res If evaluating optima, then this integer gives the number
+#' of variants to create between each minimum and maximum for each trait found
+#' to be variable in the input trait axis. Defaults to \code{100}.
+#' 
+#' @return Creates a new data frame with all variants to be tested, in order,
+#' and places that at the \code{optim_ta} reference.
+#' 
+#' @keywords internal
+#' @noRd
+NULL
+
+#' Core Pre-Existing MPM Projection Engine
+#' 
+#' Function \code{invpre_project} runs the projections in function
+#' \code{invade3_pre_core}.
+#' 
+#' @name invpre_project
+#' 
+#' @param var_run_mat A matrix giving the the variants to be run in each
+#' projection, with rows giving the projections and columns giving the
+#' variants.
+#' @param N_out_pre The main list of final population sizes, supplied as a
+#' reference and altered by this function.
+#' @param comm_out_pre The main list of full projection results for the community,
+#' supplied as a pointer and altered by this function.
+#' @param new_stageexpansion_list A list with stage expansions for all trait
+#' axis data leading to matrix element changes with each list element
+#' corresponding to each respective variant.
+#' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+#' output if \code{err_check = "extreme"}.
+#' @param used_times A list of year numbers for each time per run.
+#' @param zero_stage_vec_list A list of population stage vectors full of zeros.
+#' @param start_list A list of starting information, supplied in \code{lefkoSV}
+#' format.
+#' @param equivalence_list A list giving the effect of each individual in each
+#' stage relative to a reference individual.
+#' @param A_list A list of allA matrices.
+#' @param U_list A list of all U matrices.
+#' @param F_list A list of all F matrices.
+#' @param density_df A data frame of class \code{lefkoDens}.
+#' @param dens_index_df A data frame giving indices for density dependent
+#' transitions.
+#' @param entry_time_vec An IntegerVector containing the entry time of each
+#' mutant, population, or species, as given by each MPM.
+#' @param var_per_run An integer giving the number of variants per run.
+#' @param times An integer giving the number of occasions to project.
+#' @param var_mat_length An integer giving the number of rows in the variant
+#' matrix.
+#' @param format_int An integer giving the MPM format.
+#' @param current_rep The integer giving the current replicate.
+#' @param firstage_int An integer giving the first age in a Leslie or
+#' age-by-stage MPM.
+#' @param finalage_int  An integer giving the final age in a Leslie or
+#' age-by-stage MPM.
+#' @param substoch An integer giving the level of sustochasticity to enforce.
+#' @param exp_tol The maximum tolerated exponent.
+#' @param theta_tol The maximum tolerated limit for theta, in non-linear
+#' @param err_check A logical value indicating whether to include an extra list
+#' of output objects for error checking.
+#' @param err_check_extreme A logical value indicating whether to include an
+#' extra list of all matrices projected in the \code{err_check} object.
+#' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+#' matrix format.
+#' @param A_only A Boolean value indicating whether to export U and F matrices
+#' for alteration, or only A matrices.
+#' @param stages_not_equal A Boolean value indicating whether equivalence
+#' info is supplied suggesting even stages within MPMs are not equal.
+#' @param integeronly A Boolean value indicating whether to allow only whole
+#' values of individuals or not.
+#' @param dens_yn_bool A Boolean value stating whether density dependence is
+#' used, given through \code{lefkoDens} objects.
+#' 
+#' @return Arguments 2 through 7 are directly manipulated without any values
+#' returned.
+#' 
+#' @keywords internal
+#' @noRd
+NULL
+
+#' Core Pre-Existing MPM Projection Engine for ESS Evaluation
+#' 
+#' Function \code{invpre_optim} runs the optimization projections in function
+#' \code{invade3_pre_core} used to estimate ESS values.
+#' 
+#' @name invpre_optim
+#' 
+#' @param N_out_pre The main list of final population sizes, supplied as a
+#' reference and altered by this function.
+#' @param comm_out_pre The main list of full projection results for the community,
+#' supplied as a pointer and altered by this function.
+#' @param new_stageexpansion_list A list with stage expansions for all
+#' variant data used in ESS evaluation. This list includes an extra layer of
+#' list elements, corresponding to the optim_ta and optim_ta_995 data.
+#' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+#' output if \code{err_check = "extreme"}.
+#' @param used_times A list of year numbers for each time per run.
+#' @param zero_stage_vec_list A list of population stage vectors full of zeros.
+#' @param start_list A list of starting information, supplied in \code{lefkoSV}
+#' format.
+#' @param equivalence_list A list giving the effect of each individual in each
+#' stage relative to a reference individual.
+#' @param A_list A list of allA matrices.
+#' @param U_list A list of all U matrices.
+#' @param F_list A list of all F matrices.
+#' @param density_df A data frame of class \code{lefkoDens}.
+#' @param dens_index_df A data frame giving indices for density dependent
+#' transitions.
+#' @param entry_time_vec An IntegerVector containing the entry time of each
+#' mutant, population, or species, as given by each MPM.
+#' @param var_per_run An integer giving the number of variants per run.
+#' @param times An integer giving the number of occasions to project.
+#' @param var_mat_length An integer giving the number of rows in the variant
+#' matrix.
+#' @param format_int An integer giving the MPM format.
+#' @param current_rep The integer giving the current replicate.
+#' @param firstage_int An integer giving the first age in a Leslie or
+#' age-by-stage MPM.
+#' @param finalage_int  An integer giving the final age in a Leslie or
+#' age-by-stage MPM.
+#' @param substoch An integer giving the level of sustochasticity to enforce.
+#' @param opt_res If evaluating optima, then this integer gives the number
+#' of variants to create between each minimum and maximum for each trait found
+#' to be variable in the input trait axis. Defaults to \code{100}.
+#' @param exp_tol The maximum tolerated exponent.
+#' @param theta_tol The maximum tolerated limit for theta, in non-linear
+#' @param err_check A logical value indicating whether to include an extra list
+#' of output objects for error checking.
+#' @param err_check_extreme A logical value indicating whether to include an
+#' extra list of all matrices projected in the \code{err_check} object.
+#' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+#' matrix format.
+#' @param A_only A Boolean value indicating whether to export U and F matrices
+#' for alteration, or only A matrices.
+#' @param stages_not_equal A Boolean value indicating whether equivalence
+#' info is supplied suggesting even stages within MPMs are not equal.
+#' @param integeronly A Boolean value indicating whether to allow only whole
+#' values of individuals or not.
+#' @param dens_yn_bool A Boolean value stating whether density dependence is
+#' used, given through \code{lefkoDens} objects.
+#' 
+#' @return Arguments 2 through 7 are directly manipulated without any values
+#' returned.
+#' 
+#' @keywords internal
+#' @noRd
+NULL
+
+#' Set-Up Running Invasion Analyses of Existing MPMs
 #' 
 #' Function \code{invade3_pre_core} is the main function running invasion
 #' analyses with existing MPMs supplied by the user.
@@ -570,15 +728,26 @@ NULL
 #' reference and altered by this function.
 #' @param comm_out The main list of full projection results for the community,
 #' supplied as a pointer and altered by this function.
+#' @param N_out_optim The main list of final population sizes from ESS
+#' optimization, supplied as a reference and altered by this function.
+#' @param comm_out_optim The main list of full projection results for the
+#' community resulting from ESS optimization, supplied as a pointer and altered
+#' by this function.
 #' @param zero_stage_vec_list A list of vectors giving zero stage vectors for
 #' each MPM, if entry times are staggered.
 #' @param trait_axis A data frame of class \code{adaptAxis} holding the trait
 #' data to test.
 #' @param new_trait_axis A data frame giving trait axis data post-processing
 #' with function \code{ta_reassess()}.
+#' @param optim_trait_axis A data frame giving trait axis data processed for
+#' ESS optimization.
+#' @param optim_trait_axis_995 A data frame giving trait axis data processed
+#' for ESS optimization for variants 99.5% the values of the core frame.
 #' @param new_stageexpansion_list A list with stage expansions for all trait
 #' axis data leading to matrix element changes with each list element
 #' corresponding to each respective variant.
+#' @param new_stageexpansion_list_optima A list with stage expansions for all
+#' variant data used in ESS evaluation.
 #' @param errcheck_mpms An optional list of all MPMs post-processing. Only
 #' output if \code{err_check = TRUE}.
 #' @param chosen_mpm An MPM in \code{lefkoMat} format.
@@ -636,6 +805,9 @@ NULL
 #' age-by-stage MPM.
 #' @param finalage_int  An integer giving the final age in a Leslie or
 #' age-by-stage MPM.
+#' @param opt_res If evaluating optima, then this integer gives the number
+#' of variants to create between each minimum and maximum for each trait found
+#' to be variable in the input trait axis. Defaults to \code{100}.
 #' @param exp_tol The maximum tolerated exponent.
 #' @param theta_tol The maximum tolerated limit for theta, in non-linear
 #' models such as those using the negative binomial.
@@ -659,6 +831,15 @@ NULL
 #' of output objects for error checking.
 #' @param err_check_extreme A logical value indicating whether to include an
 #' extra list of all matrices projected in the \code{err_check} object.
+#' @param threshold The lower limit for the absolute value of fitness, below
+#' which fitness is rounded to 0. Defaults to 0.00000001.
+#' @param fitness_table A Boolean value dictating whether to include a data
+#' frame giving Lyapunov coefficients for all combinations of variants tested.
+#' Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+#' to \code{TRUE}.
+#' @param optima A Boolean value indicating whether to assess the values of ESS
+#' optima for traits that vary among variants in the given \code{adaptAxis}
+#' table. Defaults to \code{TRUE}.
 #' 
 #' @return The first four arguments are directly manipulated without any
 #' values returned.
@@ -667,7 +848,351 @@ NULL
 #' @noRd
 NULL
 
-#' Engine Running Invasion Analyses of Function-based MPMs
+#' Core Function-Based Projection Engine
+#' 
+#' Function \code{invfb_project} runs the projections in function
+#' \code{invade3_fb_core}.
+#' 
+#' @name invfb_project
+#' 
+#' @param var_run_mat A matrix giving the the variants to be run in each
+#' projection, with rows giving the projections and columns giving the
+#' variants.
+#' @param surv_dev_nta The survival column in the reassessed trait axis.
+#' @param obs_dev_nta The observation status column in the reassessed trait
+#' axis.
+#' @param size_dev_nta The primary size column in the reassessed trait axis.
+#' @param sizeb_dev_nta The secondary size column in the reassessed trait axis.
+#' @param sizec_dev_nta The tertiary size column in the reassessed trait axis.
+#' @param repst_dev_nta The reproductive status column in the reassessed trait
+#' axis.
+#' @param fec_dev_nta The fecundity column in the reassessed trait axis.
+#' @param jsurv_dev_nta The juvenile survival column in the reassessed trait
+#' axis.
+#' @param jobs_dev_nta The juvenile observation status column in the reassessed
+#' trait axis.
+#' @param jsize_dev_nta The juvenile primary size column in the reassessed
+#' trait axis.
+#' @param jsizeb_dev_nta The juvenile secondary size column in the reassessed
+#' trait axis.
+#' @param jsizec_dev_nta The juvenile tertiary size column in the reassessed
+#' trait axis.
+#' @param jrepst_dev_nta The juvenile reproductive status column in the
+#' reassessed trait axis.
+#' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
+#' trait axis.
+#' @param variant_nta The variant column in the reassessed trait axis.
+#' @param N_out_pre The main list of final population sizes, supplied as a
+#' reference and altered by this function.
+#' @param comm_out_pre The main list of full projection results for the community,
+#' supplied as a pointer and altered by this function.
+#' @param new_stageexpansion_list A list with stage expansions for all trait
+#' axis data leading to matrix element changes with each list element
+#' corresponding to each respective variant.
+#' @param new_stageexpansion_list_optima A list with stage expansions for all
+#' variant data used in ESS evaluation.
+#' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+#' output if \code{err_check = "extreme"}.
+#' @param errcheck_mpmout_reps An optional list of all mpm_out matrices from MPM
+#' processing. Only output if \code{err_check = "extreme"}.
+#' @param mdtl The modified dev terms list.
+#' @param used_times A list of year numbers for each time per run.
+#' @param allmodels_all A list of extracted vrm inputs for all MPMs.
+#' @param vrm_list A list of \code{vrm_input} objects.
+#' @param allstages_all The allstages indexing data frame used to produce MPMs.
+#' @param dev_terms_list List of deviations for vital rate models.
+#' @param ind_terms_num_list List of data frames giving values of numeric
+#' individual covariates.
+#' @param ind_terms_cat_list List of data frames giving values of factor
+#' individual covariates.
+#' @param stageexpansion_ta_devterms_by_variant A list giving trait axis info
+#' by variant, with each variant given a list element.
+#' @param sp_density_list A list of values of spatial density for all MPMs.
+#' @param start_list A list of starting information, supplied in \code{lefkoSV}
+#' format.
+#' @param equivalence_list A list giving the effect of each individual in each
+#' stage relative to a reference individual.
+#' @param density_vr_list Data frame of \code{lefkoDensVR} objects holding
+#' density relationships for all 14 vital rate models.
+#' @param current_stageframe The main stageframe, including extra stages.
+#' @param current_supplement A supplement in \code{lefkoSD} format.
+#' @param density_df A data frame of class \code{lefkoDens}.
+#' @param dens_index_df A data frame giving indices for density dependent
+#' transitions.
+#' @param entry_time_vec An IntegerVector containing the entry time of each
+#' mutant, population, or species, as given by each MPM.
+#' @param sp_density_num_vec A vector giving the number of spatial density
+#' terms.
+#' @param inda_terms_num_vec A vector giving the number of numeric terms given
+#' in individual covariate a.
+#' @param indb_terms_num_vec A vector giving the number of numeric terms given
+#' in individual covariate b.
+#' @param indc_terms_num_vec A vector giving the number of numeric terms given
+#' in individual covariate c.
+#' @param inda_terms_cat_vec A vector giving the number of factor terms given
+#' in individual covariate a.
+#' @param indb_terms_cat_vec A vector giving the number of factor terms given
+#' in individual covariate b.
+#' @param indc_terms_cat_vec A vector giving the number of factor terms given
+#' in individual covariate c.
+#' @param dens_vr_yn_vec A vector stating whether density dependence is used,
+#' given through \code{lefkoDensVR} objects.
+#' @param sp_density_counter A vector giving the number of spatial density
+#' estimates used.
+#' @param inda_num_terms_previous A vector with numeric individual covariate a
+#' terms for time t-1.
+#' @param indb_num_terms_previous A vector with numeric individual covariate b
+#' terms for time t-1.
+#' @param indc_num_terms_previous A vector with numeric individual covariate c
+#' terms for time t-1.
+#' @param inda_cat_terms_previous A vector with categorical individual
+#' covariate a terms for time t-1.
+#' @param indb_cat_terms_previous A vector with categorical individual
+#' covariate b terms for time t-1.
+#' @param indc_cat_terms_previous A vector with categorical individual
+#' covariate c terms for time t-1.
+#' @param inda_num_terms_counter A vector with numeric individual covariate a
+#' terms for time t.
+#' @param indb_num_terms_counter A vector with numeric individual covariate b
+#' terms for time t.
+#' @param indc_num_terms_counter A vector with numeric individual covariate c
+#' terms for time t.
+#' @param inda_cat_terms_counter A vector with categorical individual covariate
+#' a terms for time t.
+#' @param indb_cat_terms_counter A vector with categorical individual covariate
+#' b terms for time t.
+#' @param indc_cat_terms_counter A vector with categorical individual covariate
+#' c terms for time t.
+#' @param dev_num_counter A vector giving the number of vital rate deviations
+#' in each MPM.
+#' @param fecmod_vec A numeric vector giving the fecmod values.
+#' @param year_vec A vector giving the main years used.
+#' @param patch_vec A vector giving the name of each patch used in projection.
+#' @param var_per_run An integer giving the number of variants per run.
+#' @param times An integer giving the number of occasions to project.
+#' @param var_mat_length An integer giving the number of rows in the variant
+#' matrix.
+#' @param format_int An integer giving the MPM format.
+#' @param current_rep The integer giving the current replicate.
+#' @param firstage_int An integer giving the first age in a Leslie or
+#' age-by-stage MPM.
+#' @param finalage_int  An integer giving the final age in a Leslie or
+#' age-by-stage MPM.
+#' @param dev_terms_times_int A vector giving ....
+#' @param substoch An integer giving the level of sustochasticity to enforce.
+#' @param year_counter An integer for year counts during projection.
+#' @param exp_tol The maximum tolerated exponent.
+#' @param theta_tol The maximum tolerated limit for theta, in non-linear
+#' models such as those using the negative binomial.
+#' @param err_check A logical value indicating whether to include an extra list
+#' of output objects for error checking.
+#' @param err_check_extreme A logical value indicating whether to include an
+#' extra list of all matrices projected in the \code{err_check} object.
+#' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+#' matrix format.
+#' @param A_only A Boolean value indicating whether to export U and F matrices
+#' for alteration, or only A matrices.
+#' @param stages_not_equal A Boolean value indicating whether equivalence
+#' info is supplied suggesting even stages within MPMs are not equal.
+#' @param integeronly A Boolean value indicating whether to allow only whole
+#' values of individuals or not.
+#' @param dens_yn_bool A Boolean value stating whether density dependence is
+#' used, given through \code{lefkoDens} objects.
+#' 
+#' @return The first four arguments are directly manipulated without any
+#' values returned.
+#' 
+#' @keywords internal
+#' @noRd
+NULL
+
+#' Core Function-Based Projection Engine for ESS Evaluation
+#' 
+#' Function \code{invfb_optim} runs the optimization projections in
+#' function \code{invade3_fb_core}. These are responsible for the estimation of
+#' ESS values.
+#' 
+#' @name invfb_optim
+#' 
+#' @param surv_dev_nta The survival column in the reassessed trait axis.
+#' @param obs_dev_nta The observation status column in the reassessed trait
+#' axis.
+#' @param size_dev_nta The primary size column in the reassessed trait axis.
+#' @param sizeb_dev_nta The secondary size column in the reassessed trait axis.
+#' @param sizec_dev_nta The tertiary size column in the reassessed trait axis.
+#' @param repst_dev_nta The reproductive status column in the reassessed trait
+#' axis.
+#' @param fec_dev_nta The fecundity column in the reassessed trait axis.
+#' @param jsurv_dev_nta The juvenile survival column in the reassessed trait
+#' axis.
+#' @param jobs_dev_nta The juvenile observation status column in the reassessed
+#' trait axis.
+#' @param jsize_dev_nta The juvenile primary size column in the reassessed
+#' trait axis.
+#' @param jsizeb_dev_nta The juvenile secondary size column in the reassessed
+#' trait axis.
+#' @param jsizec_dev_nta The juvenile tertiary size column in the reassessed
+#' trait axis.
+#' @param jrepst_dev_nta The juvenile reproductive status column in the
+#' reassessed trait axis.
+#' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
+#' trait axis.
+#' @param variant_nta The variant column in the reassessed 995 trait axis.
+#' @param surv_dev_nta_995 The survival column in the reassessed 995 trait
+#' axis.
+#' @param obs_dev_nta_995 The observation status column in the reassessed 995
+#' trait axis.
+#' @param size_dev_nta_995 The primary size column in the reassessed 995 trait
+#' axis.
+#' @param sizeb_dev_nta_995 The secondary size column in the reassessed 995
+#' trait axis.
+#' @param sizec_dev_nta_995 The tertiary size column in the reassessed 995
+#' trait axis.
+#' @param repst_dev_nta_995 The reproductive status column in the reassessed
+#' 995 trait axis.
+#' @param fec_dev_nta_995 The fecundity column in the reassessed 995 trait
+#' axis.
+#' @param jsurv_dev_nta_995 The juvenile survival column in the reassessed 995
+#' trait axis.
+#' @param jobs_dev_nta_995 The juvenile observation status column in the
+#' reassessed 995 trait axis.
+#' @param jsize_dev_nta_995 The juvenile primary size column in the reassessed
+#' 995 trait axis.
+#' @param jsizeb_dev_nta_995 The juvenile secondary size column in the
+#' reassessed 995 trait axis.
+#' @param jsizec_dev_nta_995 The juvenile tertiary size column in the
+#' reassessed 995 trait axis.
+#' @param jrepst_dev_nta_995 The juvenile reproductive status column in the
+#' reassessed 995 trait axis.
+#' @param jmatst_dev_nta_995 The juvenile maturity status column in the
+#' reassessed 995 trait axis.
+#' @param variant_nta_995 The variant column in the reassessed 995 trait axis.
+#' @param N_out_pre The main list of final population sizes, supplied as a
+#' reference and altered by this function.
+#' @param comm_out_pre The main list of full projection results for the community,
+#' supplied as a pointer and altered by this function.
+#' @param new_stageexpansion_list A list with stage expansions for all
+#' variant data used in ESS evaluation. This list includes an extra layer of
+#' list elements, corresponding to the optim_ta and optim_ta_995 data.
+#' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+#' output if \code{err_check = "extreme"}.
+#' @param errcheck_mpmout_reps An optional list of all mpm_out matrices from MPM
+#' processing. Only output if \code{err_check = "extreme"}.
+#' @param mdtl The modified dev terms list.
+#' @param used_times A list of year numbers for each time per run.
+#' @param allmodels_all A list of extracted vrm inputs for all MPMs.
+#' @param vrm_list A list of \code{vrm_input} objects.
+#' @param allstages_all The allstages indexing data frame used to produce MPMs.
+#' @param dev_terms_list List of deviations for vital rate models.
+#' @param ind_terms_num_list List of data frames giving values of numeric
+#' individual covariates.
+#' @param ind_terms_cat_list List of data frames giving values of factor
+#' individual covariates.
+#' @param stageexpansion_ta_devterms_by_variant A list giving trait axis info
+#' by variant, with each variant given a list element.
+#' @param sp_density_list A list of values of spatial density for all MPMs.
+#' @param start_list A list of starting information, supplied in \code{lefkoSV}
+#' format.
+#' @param equivalence_list A list giving the effect of each individual in each
+#' stage relative to a reference individual.
+#' @param density_vr_list Data frame of \code{lefkoDensVR} objects holding
+#' density relationships for all 14 vital rate models.
+#' @param current_stageframe The main stageframe, including extra stages.
+#' @param current_supplement A supplement in \code{lefkoSD} format.
+#' @param density_df A data frame of class \code{lefkoDens}.
+#' @param dens_index_df A data frame giving indices for density dependent
+#' transitions.
+#' @param entry_time_vec An IntegerVector containing the entry time of each
+#' mutant, population, or species, as given by each MPM.
+#' @param sp_density_num_vec A vector giving the number of spatial density
+#' terms.
+#' @param inda_terms_num_vec A vector giving the number of numeric terms given
+#' in individual covariate a.
+#' @param indb_terms_num_vec A vector giving the number of numeric terms given
+#' in individual covariate b.
+#' @param indc_terms_num_vec A vector giving the number of numeric terms given
+#' in individual covariate c.
+#' @param inda_terms_cat_vec A vector giving the number of factor terms given
+#' in individual covariate a.
+#' @param indb_terms_cat_vec A vector giving the number of factor terms given
+#' in individual covariate b.
+#' @param indc_terms_cat_vec A vector giving the number of factor terms given
+#' in individual covariate c.
+#' @param dens_vr_yn_vec A vector stating whether density dependence is used,
+#' given through \code{lefkoDensVR} objects.
+#' @param sp_density_counter A vector giving the number of spatial density
+#' estimates used.
+#' @param inda_num_terms_previous A vector with numeric individual covariate a
+#' terms for time t-1.
+#' @param indb_num_terms_previous A vector with numeric individual covariate b
+#' terms for time t-1.
+#' @param indc_num_terms_previous A vector with numeric individual covariate c
+#' terms for time t-1.
+#' @param inda_cat_terms_previous A vector with categorical individual
+#' covariate a terms for time t-1.
+#' @param indb_cat_terms_previous A vector with categorical individual
+#' covariate b terms for time t-1.
+#' @param indc_cat_terms_previous A vector with categorical individual
+#' covariate c terms for time t-1.
+#' @param inda_num_terms_counter A vector with numeric individual covariate a
+#' terms for time t.
+#' @param indb_num_terms_counter A vector with numeric individual covariate b
+#' terms for time t.
+#' @param indc_num_terms_counter A vector with numeric individual covariate c
+#' terms for time t.
+#' @param inda_cat_terms_counter A vector with categorical individual covariate
+#' a terms for time t.
+#' @param indb_cat_terms_counter A vector with categorical individual covariate
+#' b terms for time t.
+#' @param indc_cat_terms_counter A vector with categorical individual covariate
+#' c terms for time t.
+#' @param dev_num_counter A vector giving the number of vital rate deviations
+#' in each MPM.
+#' @param fecmod_vec A numeric vector giving the fecmod values.
+#' @param year_vec A vector giving the main years used.
+#' @param patch_vec A vector giving the name of each patch used in projection.
+#' @param var_per_run An integer giving the number of variants per run.
+#' @param times An integer giving the number of occasions to project.
+#' @param var_mat_length An integer giving the number of rows in the variant
+#' matrix.
+#' @param format_int An integer giving the MPM format.
+#' @param current_rep The integer giving the current replicate.
+#' @param firstage_int An integer giving the first age in a Leslie or
+#' age-by-stage MPM.
+#' @param finalage_int  An integer giving the final age in a Leslie or
+#' age-by-stage MPM.
+#' @param dev_terms_times_int A vector giving ....
+#' @param substoch An integer giving the level of sustochasticity to enforce.
+#' @param opt_res If evaluating optima, then this integer gives the number
+#' of variants to create between each minimum and maximum for each trait found
+#' to be variable in the input trait axis. Defaults to \code{100}.
+#' @param year_counter An integer for year counts during projection.
+#' @param exp_tol The maximum tolerated exponent.
+#' @param theta_tol The maximum tolerated limit for theta, in non-linear
+#' models such as those using the negative binomial.
+#' @param err_check A logical value indicating whether to include an extra list
+#' of output objects for error checking.
+#' @param err_check_extreme A logical value indicating whether to include an
+#' extra list of all matrices projected in the \code{err_check} object.
+#' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+#' matrix format.
+#' @param A_only A Boolean value indicating whether to export U and F matrices
+#' for alteration, or only A matrices.
+#' @param stages_not_equal A Boolean value indicating whether equivalence
+#' info is supplied suggesting even stages within MPMs are not equal.
+#' @param integeronly A Boolean value indicating whether to allow only whole
+#' values of individuals or not.
+#' @param dens_yn_bool A Boolean value stating whether density dependence is
+#' used, given through \code{lefkoDens} objects.
+#' 
+#' @return The first four arguments are directly manipulated without any
+#' values returned.
+#' 
+#' @keywords internal
+#' @noRd
+NULL
+
+#' Set-Up Function Running Invasion Analyses of Function-based MPMs
 #' 
 #' Function \code{invade3_fb_core} is the main function running invasion
 #' analyses in which matrices must be created at each time step.
@@ -681,15 +1206,26 @@ NULL
 #' reference and altered by this function.
 #' @param comm_out The main list of full projection results for the community,
 #' supplied as a pointer and altered by this function.
+#' @param N_out_optim The main list of final population sizes from ESS
+#' optimization, supplied as a reference and altered by this function.
+#' @param comm_out_optim The main list of full projection results for the
+#' community resulting from ESS optimization, supplied as a pointer and altered
+#' by this function.
 #' @param zero_stage_vec_list A list of vectors giving zero stage vectors for
 #' each MPM, if entry times are staggered.
 #' @param trait_axis A data frame of class \code{adaptAxis} holding the trait
 #' data to test.
 #' @param new_trait_axis A data frame giving trait axis data post-processing
 #' with function \code{ta_reassess()}.
+#' @param optim_trait_axis A data frame giving trait axis data processed for
+#' ESS optimization.
+#' @param optim_trait_axis_995 A data frame giving trait axis data processed
+#' for ESS optimization for variants 99.5% the values of the core frame.
 #' @param new_stageexpansion_list A list with stage expansions for all trait
 #' axis data leading to matrix element changes with each list element
 #' corresponding to each respective variant.
+#' @param new_stageexpansion_list_optima A list with stage expansions for all
+#' variant data used in ESS evaluation.
 #' @param modified_dev_terms_list An optional list giving the vital rate
 #' y-intercept deviations by variant once data from the \code{trait_axis} data
 #' frame has been allocated.
@@ -757,6 +1293,9 @@ NULL
 #' @param finalage_int  An integer giving the final age in a Leslie or
 #' age-by-stage MPM.
 #' @param dev_terms_times_int An integer giving ??? /////.
+#' @param opt_res If evaluating optima, then this integer gives the number
+#' of variants to create between each minimum and maximum for each trait found
+#' to be variable in the input trait axis. Defaults to \code{100}.
 #' @param exp_tol The maximum tolerated exponent.
 #' @param theta_tol The maximum tolerated limit for theta, in non-linear
 #' models such as those using the negative binomial.
@@ -778,6 +1317,15 @@ NULL
 #' of output objects for error checking.
 #' @param err_check_extreme A logical value indicating whether to include an
 #' extra list of all matrices projected in the \code{err_check} object.
+#' @param threshold The lower limit for the absolute value of fitness, below
+#' which fitness is rounded to 0. Defaults to 0.00000001.
+#' @param fitness_table A Boolean value dictating whether to include a data
+#' frame giving Lyapunov coefficients for all combinations of variants tested.
+#' Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+#' to \code{TRUE}.
+#' @param optima A Boolean value indicating whether to assess the values of ESS
+#' optima for traits that vary among variants in the given \code{adaptAxis}
+#' table. Defaults to \code{TRUE}.
 #' 
 #' @return The first four arguments are directly manipulated without any
 #' values returned.
@@ -1021,7 +1569,6 @@ NULL
 #' matrices prior to projection.
 #' 
 #' @examples
-#' 
 #' library(lefko3)
 #' data(cypdata)
 #' 
@@ -1050,12 +1597,11 @@ NULL
 #'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 #'   NRasRep = TRUE)
 #'   
-#' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 6, firstyear = 2004,
-#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
-#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
-#'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
-#'   NRasRep = TRUE)
+#' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+#'   individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+#'   sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+#'   repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
+#'   stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
 #' 
 #' cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
 #'     "XSm", "Sm", "SD", "P1"),
@@ -1075,8 +1621,8 @@ NULL
 #'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 #' 
 #' cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
-#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
-#'   size = c("size3added", "size2added"), supplement = cypsupp2r_alt,
+#'   year = "all", stages = c("stage3", "stage2", "stage1"),
+#'   size = c("size3added", "size2added"), supplement = cypsupp2r,
 #'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 #' 
 #' cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)
@@ -1094,6 +1640,8 @@ NULL
 #' 
 #' cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
 #'   density = cyp_dv_list, times = 10)
+#'   
+#' summary(cyp_comm_proj)
 #' 
 #' @export project3
 project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
@@ -1247,17 +1795,29 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' of each run to use to estimate the fitness of the respective genotype.
 #' Defaults to \code{100}, but if \code{times < 100}, then is set equal to
 #' \code{times}.
+#' @param opt_res If evaluating optima, then this integer gives the number
+#' of variants to create between each minimum and maximum for each trait found
+#' to be variable in the input trait axis. Defaults to \code{100}.
 #' @param exp_tol A numeric value used to indicate a maximum value to set
 #' exponents to in the core kernel to prevent numerical overflow. Defaults to
 #' \code{700}.
 #' @param theta_tol A numeric value used to indicate a maximum value to theta as
 #' used in the negative binomial probability density kernel. Defaults to
 #' \code{100000000}, but can be reset to other values during error checking.
+#' @param threshold The lower limit for the absolute value of fitness, below
+#' which fitness is rounded to 0. Defaults to 0.00000001.
 #' @param A_only A logical value indicating whether to alter survival and
 #' fecundity matrix elements separately prior to creating the overall \code{A}
 #' matrix, or whether to alter elements directly on \code{A} matrices. Defaults
 #' to \code{TRUE}, and should be kept to that setting unless some matrix
 #' elements to be altered are sums of survival and fecundity transitions.
+#' @param fitness_table A logical value dictating whether to include a data
+#' frame giving Lyapunov coefficients for all combinations of variants tested.
+#' Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+#' to \code{TRUE}.
+#' @param optima A logical value indicating whether to assess the values of ESS
+#' optima for traits that vary among variants in the given \code{adaptAxis}
+#' table. Defaults to \code{TRUE}.
 #' 
 #' @return A list of class \code{adaptInv}, with the following elements:
 #' \item{fitness}{A data frame giving the Lyapunov coefficients estimated for
@@ -1295,7 +1855,6 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' \code{density_vr_list}, which gives the \code{density_vr} inputs utilized.}
 #' 
 #' @section Notes:
-#' 
 #' The argument \code{var_per_run} establishes the style of simulation to run.
 #' Entering \code{var_per_run = 1} runs each variant singly. Entering
 #' \code{var_per_run = 2} runs pairwise invason analysis, trying each pair
@@ -1303,6 +1862,19 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' analysis with different permutations of groups. For example,
 #' \code{var_per_run = 3} runs each permutation of groups of three. The integer
 #' set must be positive, and must not be larger than the number of variants.
+#' 
+#' When \code{optima = TRUE}, ESS values for traits that vary in the input
+#' \code{adaptAxis} data frame are evaluated. The methodology is that
+#' originally developed in Benton and Grant (1999, Evolution 53:677-688), as
+#' communicated in Roff (2010, Modeling evolution: an introduction to numerical
+#' methods, Oxford University Press). In essence, function \code{invade3}
+#' determines which traits vary among all traits noted in the input trait axis.
+#' A new trait axis is then created with \code{opt_res} levels of the varying
+#' traits between the minioma and maxima noted. A separate trait axis is then
+#' created with values of variable traits multiplied by 0.995. These two
+#' trait axis frames are then used to conduct pairwise invasibility elasticity
+#' analyses, particularly noting where fitness values and trends invert. Note
+#' that this optimization approach only works with up to 2 variable traits.
 #' 
 #' @examples
 #' library(lefko3)
@@ -1371,8 +1943,8 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' plot(cyp_inv)
 #' 
 #' @export invade3
-invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supplement = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, prebreeding = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, var_per_run = 2L, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, fitness_times = 100L, exp_tol = 700.0, theta_tol = 100000000.0, A_only = TRUE) {
-    .Call('_adapt3_invade3', PACKAGE = 'adapt3', axis, mpm, vrm, stageframe, supplement, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, prebreeding, fecmod, density, density_vr, err_check, var_per_run, stochastic, integeronly, substoch, nreps, times, fitness_times, exp_tol, theta_tol, A_only)
+invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supplement = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, prebreeding = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, var_per_run = 2L, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, fitness_times = 100L, opt_res = 100L, exp_tol = 700.0, theta_tol = 100000000.0, threshold = 0.00000001, A_only = TRUE, fitness_table = TRUE, optima = TRUE) {
+    .Call('_adapt3_invade3', PACKAGE = 'adapt3', axis, mpm, vrm, stageframe, supplement, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, prebreeding, fecmod, density, density_vr, err_check, var_per_run, stochastic, integeronly, substoch, nreps, times, fitness_times, opt_res, exp_tol, theta_tol, threshold, A_only, fitness_table, optima)
 }
 
 #' Create Skeleton Data Frame for Trait Variation for Invasion Analysis

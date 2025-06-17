@@ -12,19 +12,19 @@ vignette: >
 
 
   <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset to illustrate pairwise invasibility analysis using package `adapt3`. We will conduct two such analyses, the first focused on testing variants created by altering matrix elements, and the second focused on testing variants created through alterations to vital rate models used in function-based MPM development.</p>
-  
+
   <p style="text-indent: 20px">To reduce vignette size, we have prevented some statements from running if they produce long stretches of output. Examples include most `summary()` calls. In these cases, we include hashtagged versions of these calls, and we encourage the user to run these statements without hashtags.</p>
-  
+
   <p style="text-indent: 20px">This vignette is only a sample analysis. Detailed information and instructions on using `adapt3` will be made available over time. Please check available resources on <a href = "http://www.revolutionarydemography.com/projects.html">the projects page</a> of the `{r}evolutionary demography` website.</p>
-  
-### Organism and population 
-  
+
+### Organism and population
+
   <p style="text-indent: 20px">*Cypripedium parviflorum* (family Orchidaceae) is a long-lived herbaceous perennial, native to North America and particularly common near the Great Lakes. It typically lives in wet, calcareous wetlands on the edges of woodlands [@shefferson_estimating_2001]. Individuals begin life as dust seeds, which may or may not germinate the year following production. Germination leads to the protocorm stage, a life history stage in which the individual grows underground in a non-photosynthetic, mycoheterotrophic state [@rasmussen_orchids_1995]. They may live in this state for several years prior to becoming a seedling, at which point they may or may not sprout. Maturity involves the production of flowering sprouts, each with several leaves and typically only a single flower, although an individual may produce mostly non-flowering sprouts. Most individuals produce only a single sprout, and vegetative dormancy is common and can occur for overa decade in a single individual [@shefferson_drivers_2018].</p>
-  
+
   <p style="text-indent: 20px">Data for this study were collected from a population in northeastern Illinois, from 2004 to 2009 [@shefferson_predicting_2017]. Each year at the start of the flowering season, all individuals at the site were located, with previously identified individuals identified based on their previous locations, and new individuals recorded via an exhaustive survey. Plant characteristics including the number of sprouts, which sprouts were flowering vs. non-flowering, and the number of flowers per sprout, were recorded for every individual in every year.</p>
-  
-### DATASET PREPARATION
-  
+
+### Dataset preparation
+
   <p style="text-indent: 20px">Package `adapt3` is built to take advantage of package `lefko3`, which offers a general language and architecture to build and analyze most kinds of matrix projection models, including even discretized integral projection models [@shefferson_lefko3_2021]. To start, we will load both `lefko3` and `adapt3`, and also load the dataset that we will use for our two examples.</p>
 
 ``` r
@@ -32,10 +32,78 @@ library(lefko3)
 library(adapt3)
 
 data(cypa_data)
-#summary(cypa_data)
+summary(cypa_data)
+#>       plant_id       Inf2.94             Inf.94            Veg.94           Inf2.95              Inf.95           Veg.95      
+#>  K NA     :  28   Min.   :0.000000   Min.   :0.00000   Min.   :0.00000   Min.   :0.0000000   Min.   :0.0000   Min.   :0.0000  
+#>  A NA     :  18   1st Qu.:0.000000   1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.0000000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  T NA     :  11   Median :0.000000   Median :0.00000   Median :0.00000   Median :0.0000000   Median :0.0000   Median :0.0000  
+#>  Willow NA:  11   Mean   :0.001787   Mean   :0.06971   Mean   :0.02234   Mean   :0.0008937   Mean   :0.1698   Mean   :0.1528  
+#>  Aspen NA :  10   3rd Qu.:0.000000   3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.0000000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  X NA     :   7   Max.   :1.000000   Max.   :4.00000   Max.   :4.00000   Max.   :1.0000000   Max.   :4.0000   Max.   :7.0000  
+#>  (Other)  :1034                                                                                                               
+#>     Inf2.96             Inf.96           Veg.96          Inf2.97      Inf.97           Veg.97          Inf2.98        
+#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000  
+#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000  
+#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :0   Median :0.0000   Median :0.0000   Median :0.000000  
+#>  Mean   :0.001787   Mean   :0.2502   Mean   :0.2779   Mean   :0   Mean   :0.1314   Mean   :0.2967   Mean   :0.003575  
+#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.000000  
+#>  Max.   :1.000000   Max.   :6.0000   Max.   :6.0000   Max.   :0   Max.   :4.0000   Max.   :7.0000   Max.   :1.000000  
+#>                                                                                                                       
+#>      Inf.98          Veg.98          Inf2.99             Inf.99           Veg.99          Inf2.00             Inf.00      
+#>  Min.   :0.000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000  
+#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000  
+#>  Median :0.000   Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.000000   Median :0.0000  
+#>  Mean   :0.252   Mean   :0.2887   Mean   :0.005362   Mean   :0.3119   Mean   :0.2797   Mean   :0.003575   Mean   :0.2038  
+#>  3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000  
+#>  Max.   :5.000   Max.   :5.0000   Max.   :1.000000   Max.   :7.0000   Max.   :4.0000   Max.   :1.000000   Max.   :6.0000  
+#>                                                                                                                           
+#>      Veg.00          Inf2.01             Inf.01           Veg.01          Inf2.02              Inf.02           Veg.02      
+#>  Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.3503   Mean   :0.003575   Mean   :0.2011   Mean   :0.3718   Mean   :0.0008937   Mean   :0.2225   Mean   :0.2895  
+#>  3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :6.0000   Max.   :1.000000   Max.   :5.0000   Max.   :5.0000   Max.   :1.0000000   Max.   :6.0000   Max.   :4.0000  
+#>                                                                                                                             
+#>     Inf2.03              Inf.03           Veg.03          Inf2.04              Inf.04            Veg.04          Inf2.05        
+#>  Min.   :0.0000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000000  
+#>  1st Qu.:0.0000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000000  
+#>  Median :0.0000000   Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.00000   Median :0.0000   Median :0.000000  
+#>  Mean   :0.0008937   Mean   :0.1921   Mean   :0.3646   Mean   :0.0008937   Mean   :0.09562   Mean   :0.2645   Mean   :0.002681  
+#>  3rd Qu.:0.0000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000000  
+#>  Max.   :1.0000000   Max.   :6.0000   Max.   :6.0000   Max.   :1.0000000   Max.   :4.00000   Max.   :4.0000   Max.   :1.000000  
+#>                                                                                                                                 
+#>      Inf.05           Veg.05          Inf2.06              Inf.06            Veg.06          Inf2.07      Inf.07       
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.00000   Min.   :0.0000   Min.   :0   Min.   :0.00000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0   1st Qu.:0.00000  
+#>  Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.00000   Median :0.0000   Median :0   Median :0.00000  
+#>  Mean   :0.1189   Mean   :0.3029   Mean   :0.0008937   Mean   :0.03485   Mean   :0.1984   Mean   :0   Mean   :0.03217  
+#>  3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0   3rd Qu.:0.00000  
+#>  Max.   :6.0000   Max.   :4.0000   Max.   :1.0000000   Max.   :3.00000   Max.   :4.0000   Max.   :0   Max.   :3.00000  
+#>                                                                                                                        
+#>      Veg.07          Inf2.08      Inf.08           Veg.08          Inf2.09              Inf.09            Veg.09      
+#>  Min.   :0.0000   Min.   :0   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.00000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.00000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0   Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.00000   Median :0.0000  
+#>  Mean   :0.1555   Mean   :0   Mean   :0.0563   Mean   :0.1224   Mean   :0.0008937   Mean   :0.08668   Mean   :0.1841  
+#>  3rd Qu.:0.0000   3rd Qu.:0   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000000   3rd Qu.:0.00000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :0   Max.   :3.0000   Max.   :4.0000   Max.   :1.0000000   Max.   :5.00000   Max.   :6.0000  
+#>                                                                                                                       
+#>     Inf2.10             Inf.10            Veg.10          Inf2.11             Inf.11          Veg.11      
+#>  Min.   :0.000000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000000   Min.   :0.000   Min.   :0.0000  
+#>  1st Qu.:0.000000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000   1st Qu.:0.0000  
+#>  Median :0.000000   Median :0.00000   Median :0.0000   Median :0.000000   Median :0.000   Median :0.0000  
+#>  Mean   :0.001787   Mean   :0.08311   Mean   :0.1644   Mean   :0.002681   Mean   :0.134   Mean   :0.1975  
+#>  3rd Qu.:0.000000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000   3rd Qu.:0.0000  
+#>  Max.   :1.000000   Max.   :4.00000   Max.   :4.0000   Max.   :2.000000   Max.   :4.000   Max.   :4.0000  
+#> 
 ```
 
   <p style="text-indent: 20px">This dataset includes information on 114 individuals arranged horizontally, by row. There are 26 variables, by column. The first two columns are variables giving identifying information about each individual, including the individual identity and the patch the individual is located in. This is followed by six sets of four columns, each named `Inf2XX`, `InfXX`, `VegXX`, and `PodXX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 3-6 refer to year 2004, columns 7-10 refer to year 2005, etc. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3`.</p>
+
+### Pairwise invasibility analysis focused on matrix element manipulation
+
+  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process is generally quite quick, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
   
   <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below.</p>
 
@@ -55,67 +123,126 @@ cypframe_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
   propstatus = propvector, immstatus = immvector, indataset = indataset,
   binhalfwidth = binvec)
 cypframe_raw
-#>   stage size size_b size_c min_age max_age repstatus obsstatus propstatus immstatus matstatus indataset binhalfwidth_raw sizebin_min
-#> 1    SD  0.0     NA     NA      NA      NA         0         0          1         0         0         0              0.0         0.0
-#> 2    P1  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0         0.0
-#> 3    SL  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0         0.0
-#> 4     D  0.0     NA     NA      NA      NA         0         0          0         0         1         1              0.5        -0.5
-#> 5   XSm  1.0     NA     NA      NA      NA         1         1          0         0         1         1              0.5         0.5
-#> 6    Sm  2.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0         1.5
-#> 7    Md  4.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0         3.5
-#> 8    Lg  8.0     NA     NA      NA      NA         1         1          0         0         1         1              2.5         5.5
-#> 9   XLg 17.5     NA     NA      NA      NA         1         1          0         0         1         1              7.0        10.5
-#>   sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center sizebinb_width binhalfwidthc_raw
-#> 1         0.0            0.0             0                NA           NA           NA              NA             NA                NA
-#> 2         0.0            0.0             0                NA           NA           NA              NA             NA                NA
-#> 3         0.0            0.0             0                NA           NA           NA              NA             NA                NA
-#> 4         0.5            0.0             1                NA           NA           NA              NA             NA                NA
-#> 5         1.5            1.0             1                NA           NA           NA              NA             NA                NA
-#> 6         3.5            2.5             2                NA           NA           NA              NA             NA                NA
-#> 7         5.5            4.5             2                NA           NA           NA              NA             NA                NA
-#> 8        10.5            8.0             5                NA           NA           NA              NA             NA                NA
-#> 9        24.5           17.5            14                NA           NA           NA              NA             NA                NA
-#>   sizebinc_min sizebinc_max sizebinc_center sizebinc_width group       comments
-#> 1           NA           NA              NA             NA     0 No description
-#> 2           NA           NA              NA             NA     0 No description
-#> 3           NA           NA              NA             NA     0 No description
-#> 4           NA           NA              NA             NA     0 No description
-#> 5           NA           NA              NA             NA     0 No description
-#> 6           NA           NA              NA             NA     0 No description
-#> 7           NA           NA              NA             NA     0 No description
-#> 8           NA           NA              NA             NA     0 No description
-#> 9           NA           NA              NA             NA     0 No description
+#>   stage size size_b size_c min_age max_age repstatus obsstatus propstatus immstatus matstatus indataset binhalfwidth_raw
+#> 1    SD  0.0     NA     NA      NA      NA         0         0          1         0         0         0              0.0
+#> 2    P1  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0
+#> 3    SL  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0
+#> 4     D  0.0     NA     NA      NA      NA         0         0          0         0         1         1              0.5
+#> 5   XSm  1.0     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 6    Sm  2.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0
+#> 7    Md  4.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0
+#> 8    Lg  8.0     NA     NA      NA      NA         1         1          0         0         1         1              2.5
+#> 9   XLg 17.5     NA     NA      NA      NA         1         1          0         0         1         1              7.0
+#>   sizebin_min sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center sizebinb_width
+#> 1         0.0         0.0            0.0             0                NA           NA           NA              NA             NA
+#> 2         0.0         0.0            0.0             0                NA           NA           NA              NA             NA
+#> 3         0.0         0.0            0.0             0                NA           NA           NA              NA             NA
+#> 4        -0.5         0.5            0.0             1                NA           NA           NA              NA             NA
+#> 5         0.5         1.5            1.0             1                NA           NA           NA              NA             NA
+#> 6         1.5         3.5            2.5             2                NA           NA           NA              NA             NA
+#> 7         3.5         5.5            4.5             2                NA           NA           NA              NA             NA
+#> 8         5.5        10.5            8.0             5                NA           NA           NA              NA             NA
+#> 9        10.5        24.5           17.5            14                NA           NA           NA              NA             NA
+#>   binhalfwidthc_raw sizebinc_min sizebinc_max sizebinc_center sizebinc_width group       comments
+#> 1                NA           NA           NA              NA             NA     0 No description
+#> 2                NA           NA           NA              NA             NA     0 No description
+#> 3                NA           NA           NA              NA             NA     0 No description
+#> 4                NA           NA           NA              NA             NA     0 No description
+#> 5                NA           NA           NA              NA             NA     0 No description
+#> 6                NA           NA           NA              NA             NA     0 No description
+#> 7                NA           NA           NA              NA             NA     0 No description
+#> 8                NA           NA           NA              NA             NA     0 No description
+#> 9                NA           NA           NA              NA             NA     0 No description
 ```
-
+  
   <p style="text-indent: 20px">Next we will create our verticalized dataset, in which our horizontal dataset is restructured to have all data for each individual split into blocks of 3 consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame.</p>
 
 ``` r
-cypraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
-  patchidcol = "patch", individcol = "plantid", blocksize = 4,
-  sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-  repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
-  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
-  NRasRep = TRUE)
-#summary_hfv(cypraw_v1)
+cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 2004,
+  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+  repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
+  stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
+summary_hfv(cypraw_v1)
+#> 
+#> This hfv dataset contains 6871 rows, 57 variables, 1 population, 
+#> 1 patch, 1025 individuals, and 17 time steps.
+#>      rowid           popid             patchid               individ         year2        firstseen       lastseen   
+#>  Min.   :   1.0   Length:6871        Length:6871        K NA     :  62   Min.   :2004   Min.   :2004   Min.   :2004  
+#>  1st Qu.: 291.0   Class :character   Class :character   A NA     :  27   1st Qu.:2009   1st Qu.:2005   1st Qu.:2014  
+#>  Median : 563.0   Mode  :character   Mode  :character   X NA     :  24   Median :2012   Median :2007   Median :2019  
+#>  Mean   : 557.5                                         T NA     :  23   Mean   :2012   Mean   :2007   Mean   :2017  
+#>  3rd Qu.: 820.0                                         Willow NA:  17   3rd Qu.:2015   3rd Qu.:2009   3rd Qu.:2021  
+#>  Max.   :1119.0                                         X 3      :  17   Max.   :2020   Max.   :2020   Max.   :2021  
+#>                                                         (Other)  :6701                                               
+#>      obsage        obslifespan         sizea1             sizeb1           sizec1         size1added        repstra1     
+#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median : 5.000   Median :10.000   Median :0.000000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000  
+#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.003638   Mean   :0.3448   Mean   :0.5244   Mean   :0.8728   Mean   :0.3448  
+#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000  
+#>  Max.   :17.000   Max.   :17.000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                          
+#>     repstrb1         repstr1added        feca1          fec1added        obsstatus1       repstatus1      fecstatus1    
+#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000  
+#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000  
+#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.0000  
+#>  Mean   :0.003638   Mean   :0.3484   Mean   :0.3448   Mean   :0.3448   Mean   :0.5472   Mean   :0.247   Mean   :0.2463  
+#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.0000  
+#>  Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000   Max.   :1.0000  
+#>                                                                                                                         
+#>    matstatus1         alive1          stage1           stage1index        sizea2             sizeb2           sizec2      
+#>  Min.   :0.0000   Min.   :0.0000   Length:6871        Min.   :0.000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:1.0000   1st Qu.:1.0000   Class :character   1st Qu.:4.000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :1.0000   Median :1.0000   Mode  :character   Median :5.000   Median :0.000000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.8395   Mean   :0.8395                      Mean   :4.145   Mean   :0.004803   Mean   :0.4091   Mean   :0.6656  
+#>  3rd Qu.:1.0000   3rd Qu.:1.0000                      3rd Qu.:5.000   3rd Qu.:0.000000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>  Max.   :1.0000   Max.   :1.0000                      Max.   :8.000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                           
+#>    size2added       repstra2         repstrb2         repstr2added        feca2          fec2added        obsstatus2   
+#>  Min.   :0.000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000  
+#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000  
+#>  Median :1.000   Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.0000   Median :1.000  
+#>  Mean   :1.079   Mean   :0.4091   Mean   :0.004803   Mean   :0.4139   Mean   :0.4091   Mean   :0.4091   Mean   :0.697  
+#>  3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:0.000000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000  
+#>  Max.   :7.000   Max.   :7.0000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :1.000  
+#>                                                                                                                        
+#>    repstatus2       fecstatus2       matstatus2     alive2     stage2           stage2index        sizea3             sizeb3      
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871        Min.   :4.000   Min.   :0.000000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character   1st Qu.:4.000   1st Qu.:0.000000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character   Median :5.000   Median :0.000000   Median :0.0000  
+#>  Mean   :0.2969   Mean   :0.2959   Mean   :1    Mean   :1                      Mean   :4.982   Mean   :0.004221   Mean   :0.3308  
+#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                      3rd Qu.:5.000   3rd Qu.:0.000000   3rd Qu.:0.0000  
+#>  Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                      Max.   :8.000   Max.   :2.000000   Max.   :7.0000  
+#>                                                                                                                                   
+#>      sizec3         size3added        repstra3         repstrb3         repstr3added       feca3          fec3added     
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :1.0000   Median :0.0000   Median :0.000000   Median :0.000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.5523   Mean   :0.8874   Mean   :0.3308   Mean   :0.004221   Mean   :0.335   Mean   :0.3308   Mean   :0.3308  
+#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :2.000000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                         
+#>    obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3           stage3index   
+#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871        Min.   :0.000  
+#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character   1st Qu.:4.000  
+#>  Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character   Median :5.000  
+#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2384   Mean   :1    Mean   :0.874                      Mean   :4.301  
+#>  3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                      3rd Qu.:5.000  
+#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                      Max.   :8.000  
+#> 
 ```
-
-### Pairwise invasibility analysis focused on matrix element manipulation
   
-  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
-  
-### Part 1. MPM preparation
-  
-
+  <p style="text-indent: 20px">Now we will create our MPM. Later on, this will be projected through our invasibility analyses, so we need to be sure that it is constructed correctly. See our online book, <a href = "https://bookdown.org/cdorm/lefko3gentle/">lefko3: a gentle introduction</a>, for further material on how to construct MPMs properly.</p>
 
 ``` r
-cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", 
-    "XSm", "Sm", "SD", "P1"),
-  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep",
-    "rep"),
+cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", "XSm", "Sm", "SD",
+  "P1"),
+  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep", "rep"),
   eststage3 = c(NA, NA, NA, "D", "XSm", "Sm", NA, NA),
   eststage2 = c(NA, NA, NA, "XSm", "XSm", "XSm", NA, NA),
-  givenrate = c(0.10, 0.40, 0.25, NA, NA, NA, NA, NA),
-  multiplier = c(NA, NA, NA, NA, NA, NA, 1000, 1000),
+  givenrate = c(0.10, 0.20, 0.25, NA, NA, NA, NA, NA),
+  multiplier = c(NA, NA, NA, NA, NA, NA, 5000, 5000),
   type =c(1, 1, 1, 1, 1, 1, 3, 3),
   stageframe = cypframe_raw, historical = FALSE)
 #> Warning: NA values in argument multiplier will be treated as 1 values.
@@ -128,42 +255,38 @@ cypmean <- lmean(cypmatrix2r)
 
 summary(cypmean)
 #> 
-#> This ahistorical lefkoMat object contains 4 matrices.
+#> This ahistorical lefkoMat object contains 1 matrix.
 #> 
 #> Each matrix is square with 9 rows and columns, and a total of 81 elements.
-#> A total of 117 survival transitions were estimated, with 29.25 per matrix.
-#> A total of 36 fecundity transitions were estimated, with 9 per matrix.
-#> This lefkoMat object covers 1 population, 4 patches, and 0 time steps.
+#> A total of 31 survival transitions were estimated, with 31 per matrix.
+#> A total of 8 fecundity transitions were estimated, with 8 per matrix.
+#> This lefkoMat object covers 1 population, 1 patch, and 0 time steps.
 #> 
-#> The dataset contains a total of 74 unique individuals and 320 unique transitions.
+#> The dataset contains a total of 1025 unique individuals and 6871 unique transitions.
 #> 
 #> Survival probability sum check (each matrix represented by column in order):
-#>          [,1]  [,2]  [,3]  [,4]
-#> Min.    0.000 0.250 0.200 0.250
-#> 1st Qu. 0.400 0.800 0.500 0.500
-#> Median  0.868 0.824 0.900 0.842
-#> Mean    0.643 0.776 0.743 0.720
-#> 3rd Qu. 0.900 0.917 1.000 0.939
-#> Max.    1.000 1.000 1.000 1.000
-#> Warning: Some matrices include stages with survival probability greater than 1.0.
+#>          [,1]
+#> Min.    0.000
+#> 1st Qu. 0.300
+#> Median  0.783
+#> Mean    0.594
+#> 3rd Qu. 0.858
+#> Max.    0.941
 #> 
 #> 
 #> Stages without connections leading to the rest of the life cycle found in matrices: 1
 ```
-
-
+  
+  <p style="text-indent: 20px">Now that we have our core MPM, we will need to clarify some of the assumptions of the projection. First, let's set up a starting vector residents and mutants. We will use the typical setting in this case, assuming that both variants will start with a single individual. We will make that individual a protocorm, since that is the youngest post-germination individual possible.</p>
 
 ``` r
-cyp_start <- start_input(cypmean, stage2 = c("SD", "P1", "D"),
-  value = c(1000, 200, 4))
+cyp_start <- start_input(cypmean, stage2 = "P1", value = 1)
 cyp_start
 #>   stage2 stage_id_2 stage1 stage_id_1 age2 row_num value
-#> 1     SD          1     NA         NA   NA       1  1000
-#> 2     P1          2     NA         NA   NA       2   200
-#> 3      D          4     NA         NA   NA       4     4
+#> 1     P1          2     NA         NA   NA       2     1
 ```
-
-
+  
+  <p style="text-indent: 20px">Next we need to define the desntiy dependence that we will use. In herbaceous perennial plants, the germination stage is most commonly negatively density dependent. In orchids, germination may be from a fresh seed, or from a previously dormant seed, and we will assume density dependence in both. Clarifying the exact nature and proper parameterization of density dependence is too great a topic for this vignette, and so we utilize the following two-parameter Ricker function-based approach, which we know works in this case.</p>
 
 ``` r
 c2d_4 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
@@ -177,84 +300,87 @@ c2d_4
 #> 5     P1     Lg     NA   NA     2 0.005 5e-06          1    2        1
 #> 6     P1    XLg     NA   NA     2 0.005 5e-06          1    2        1
 ```
-
-A simple projection allows us to find a combination of density dependence and running time that produces a stable quasi-equilibrium
-
-``` r
-cyp_proj <- projection3(cypmean, times = 1000, start_frame = cyp_start,
-  density = c2d_4, integeronly = TRUE)
-#> Warning: This lefkoMat object appears to be a set of mean matrices. Will project only the mean.
-plot(cyp_proj)
-```
-
-![plot of chunk ch1.6](ch1.6-1.png)
-
-
+  
+  <p style="text-indent: 20px">Next, we need to propose the variants to test. In the following data frame, which we call a trait axis, we define 15 genetic variants, each of which differs in fecundity multipliers. In a pairwise invasibility analysis, each possible pair permutation will be projected, with one serving as the resident population and the other as the mutant invader.</p>
 
 ``` r
 cyp_ta <- trait_axis(stageframe = cypframe_raw, stage3 = rep("P1", 15),
-  stage2 = rep("rep", 15), multiplier = seq(from=0.1, to=10.0, length.out = 15),
+  stage2 = rep("rep", 15), multiplier = seq(from=1, to=3, length.out = 15),
   type = rep(2, 15))
 cyp_ta
-#>    variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype convtype_t12
-#> 1        1     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  0.1000000        2           NA
-#> 2        2     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  0.8071429        2           NA
-#> 3        3     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  1.5142857        2           NA
-#> 4        4     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  2.2214286        2           NA
-#> 5        5     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  2.9285714        2           NA
-#> 6        6     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  3.6357143        2           NA
-#> 7        7     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  4.3428571        2           NA
-#> 8        8     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  5.0500000        2           NA
-#> 9        9     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  5.7571429        2           NA
-#> 10      10     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  6.4642857        2           NA
-#> 11      11     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  7.1714286        2           NA
-#> 12      12     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  7.8785714        2           NA
-#> 13      13     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  8.5857143        2           NA
-#> 14      14     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA  9.2928571        2           NA
-#> 15      15     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA 10.0000000        2           NA
-#>    surv_dev obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev jrepst_dev
-#> 1        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 2        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 3        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 4        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 5        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 6        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 7        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 8        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 9        NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 10       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 11       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 12       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 13       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 14       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 15       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#>    jmatst_dev
-#> 1          NA
-#> 2          NA
-#> 3          NA
-#> 4          NA
-#> 5          NA
-#> 6          NA
-#> 7          NA
-#> 8          NA
-#> 9          NA
-#> 10         NA
-#> 11         NA
-#> 12         NA
-#> 13         NA
-#> 14         NA
-#> 15         NA
+#>    variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype
+#> 1        1     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.000000        2
+#> 2        2     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.142857        2
+#> 3        3     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.285714        2
+#> 4        4     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.428571        2
+#> 5        5     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.571429        2
+#> 6        6     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.714286        2
+#> 7        7     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   1.857143        2
+#> 8        8     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.000000        2
+#> 9        9     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.142857        2
+#> 10      10     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.285714        2
+#> 11      11     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.428571        2
+#> 12      12     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.571429        2
+#> 13      13     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.714286        2
+#> 14      14     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.857143        2
+#> 15      15     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   3.000000        2
+#>    convtype_t12 surv_dev obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev
+#> 1            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 2            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 3            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 4            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 5            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 6            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 7            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 8            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 9            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 10           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 11           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 12           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 13           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 14           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 15           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#>    jrepst_dev jmatst_dev
+#> 1          NA         NA
+#> 2          NA         NA
+#> 3          NA         NA
+#> 4          NA         NA
+#> 5          NA         NA
+#> 6          NA         NA
+#> 7          NA         NA
+#> 8          NA         NA
+#> 9          NA         NA
+#> 10         NA         NA
+#> 11         NA         NA
+#> 12         NA         NA
+#> 13         NA         NA
+#> 14         NA         NA
+#> 15         NA         NA
 ```
-
-
+  
+  <p style="text-indent: 20px">Finally, we will run our invasibility analysis.</p>
 
 ``` r
 cyp_inv <- invade3(axis = cyp_ta, mpm = cypmean, density = c2d_4, times = 350,
   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
   var_per_run = 2)
 ```
+  
+  <p style="text-indent: 20px">Let's see some diagnostics, in particular by plotting the sizes of the resident and invader subpopulations in each time step. We will look at two separate runs.</p>
 
+``` r
+par(mfrow = c(2, 1))
+plot(cyp_inv, pip = FALSE, run = 25)
+plot(cyp_inv, pip = FALSE, run = 50)
+```
 
+![plot of chunk ch1.8](ch1.8-1.png)
+  
+  <p style="text-indent: 20px">It appears that our mutant never gained a footing in the population, likely going extinct while the resident grew to a stable population size.</p>
+  
+  *****Need a summary statement here*****
+  
+  <p style="text-indent: 20px">Next, we can view the pairwise invasibility plot (PIP). This will give us a sense of whether we have any evolutionarily stable equilibria, or whether natural selection appears to completely directional.</p>
 
 ``` r
 plot(cyp_inv)
@@ -262,19 +388,188 @@ plot(cyp_inv)
 
 ![plot of chunk ch1.9](ch1.9-1.png)
   
+  <p style="text-indent: 20px">It appears that natural selection is completely directional here, favoring increasingly large multipliers.</p>
   
+### Pairwise invasibility analysis focused on vital rate model manipulation
+
+  <p style="text-indent: 20px">Let's now move on to looking at analyzing function-based MPMs. This approach works best when vital rates are given as linear or non-linear functions of size, reproductive status, and other variables. Here, the linear or non-linear models can be manipulated by altering their y-intercepts.</p>
   
-  
-  
-## Pairwise invasibility analysis focused on vital rate model manipulation  
-  
-  
+  <p style="text-indent: 20px">Our example will once again focus on *Cypripedium parviflorum*. However, this time we will attempt to replicate the pairwise invasibility analysis results from the ahistorical, deterministic analysis of the same population published in Shefferson et al. @shefferson_life_2014. That analysis was used to explore the adaptive context of vegetative dormancy, and hence imperfect sprouting, and found an evolutionarily stable strategy at an intermediate level of sprouting. The dataset that we will use is not exactly the same as in the paper, nor is the methodology exactly the same, but our results should be similar. Because we will use a function-based approach, which is very similar to building an integral projection model (IPM), we will use a larger resolution life history model allowing for all observed sizes of both vegetative and flowering adults, where size is defined by the number of sprouts.</p>
 
 ``` r
-cypmodels2 <- modelsearch(cypraw_v1, historical = FALSE, approach = "mixed", 
+stagevector <- c("SD", "P1", "SL", "D", "V1", "V2", "V3", "V4", "V5", "V6",
+  "V7", "F1", "F2", "F3", "F4", "F5", "F6", "F7")
+indataset <- c(0, 0, 0, 1, rep(1, 7), rep(1, 7))
+sizevector <- c(0, 0, 0, 0, c(1:7), c(1:7))
+repvector <- c(0, 0, 0, 0, rep(0, 7), rep(1, 7))
+obsvector <- c(0, 0, 0, 0, rep(1, 7), rep(1, 7))
+matvector <- c(0, 0, 0, 1, rep(1, 7), rep(1, 7))
+immvector <- c(0, 1, 1, 0, rep(0, 7), rep(0, 7))
+propvector <- c(1, 0, 0, 0, rep(0, 7), rep(0, 7))
+comments <- c("Dormant seed", "Protocorm", "Seedling", "Veg dorm",
+  "Veg adult 1 stem", "Veg adult 2 stems", "Veg adult 3 stems",
+  "Veg adult 4 stems", "Veg adult 5 stems", "Veg adult 6 stems",
+  "Veg adult 7 stems", "Flo adult 1 stem", "Flo adult 2 stems",
+  "Flo adult 3 stems", "Flo adult 4 stems", "Flo adult 5 stems",
+  "Flo adult 6 stems", "Flo adult 7 stems")
+
+cypframe_fb <- sf_create(sizes = sizevector, stagenames = stagevector, 
+  repstatus = repvector, obsstatus = obsvector, matstatus = matvector, 
+  propstatus = propvector, immstatus = immvector, indataset = indataset,
+  comments = comments)
+cypframe_fb
+#>    stage size size_b size_c min_age max_age repstatus obsstatus propstatus immstatus matstatus indataset binhalfwidth_raw
+#> 1     SD    0     NA     NA      NA      NA         0         0          1         0         0         0              0.5
+#> 2     P1    0     NA     NA      NA      NA         0         0          0         1         0         0              0.5
+#> 3     SL    0     NA     NA      NA      NA         0         0          0         1         0         0              0.5
+#> 4      D    0     NA     NA      NA      NA         0         0          0         0         1         1              0.5
+#> 5     V1    1     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 6     V2    2     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 7     V3    3     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 8     V4    4     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 9     V5    5     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 10    V6    6     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 11    V7    7     NA     NA      NA      NA         0         1          0         0         1         1              0.5
+#> 12    F1    1     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 13    F2    2     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 14    F3    3     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 15    F4    4     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 16    F5    5     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 17    F6    6     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 18    F7    7     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#>    sizebin_min sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center sizebinb_width
+#> 1         -0.5         0.5              0             1                NA           NA           NA              NA             NA
+#> 2         -0.5         0.5              0             1                NA           NA           NA              NA             NA
+#> 3         -0.5         0.5              0             1                NA           NA           NA              NA             NA
+#> 4         -0.5         0.5              0             1                NA           NA           NA              NA             NA
+#> 5          0.5         1.5              1             1                NA           NA           NA              NA             NA
+#> 6          1.5         2.5              2             1                NA           NA           NA              NA             NA
+#> 7          2.5         3.5              3             1                NA           NA           NA              NA             NA
+#> 8          3.5         4.5              4             1                NA           NA           NA              NA             NA
+#> 9          4.5         5.5              5             1                NA           NA           NA              NA             NA
+#> 10         5.5         6.5              6             1                NA           NA           NA              NA             NA
+#> 11         6.5         7.5              7             1                NA           NA           NA              NA             NA
+#> 12         0.5         1.5              1             1                NA           NA           NA              NA             NA
+#> 13         1.5         2.5              2             1                NA           NA           NA              NA             NA
+#> 14         2.5         3.5              3             1                NA           NA           NA              NA             NA
+#> 15         3.5         4.5              4             1                NA           NA           NA              NA             NA
+#> 16         4.5         5.5              5             1                NA           NA           NA              NA             NA
+#> 17         5.5         6.5              6             1                NA           NA           NA              NA             NA
+#> 18         6.5         7.5              7             1                NA           NA           NA              NA             NA
+#>    binhalfwidthc_raw sizebinc_min sizebinc_max sizebinc_center sizebinc_width group          comments
+#> 1                 NA           NA           NA              NA             NA     0      Dormant seed
+#> 2                 NA           NA           NA              NA             NA     0         Protocorm
+#> 3                 NA           NA           NA              NA             NA     0          Seedling
+#> 4                 NA           NA           NA              NA             NA     0          Veg dorm
+#> 5                 NA           NA           NA              NA             NA     0  Veg adult 1 stem
+#> 6                 NA           NA           NA              NA             NA     0 Veg adult 2 stems
+#> 7                 NA           NA           NA              NA             NA     0 Veg adult 3 stems
+#> 8                 NA           NA           NA              NA             NA     0 Veg adult 4 stems
+#> 9                 NA           NA           NA              NA             NA     0 Veg adult 5 stems
+#> 10                NA           NA           NA              NA             NA     0 Veg adult 6 stems
+#> 11                NA           NA           NA              NA             NA     0 Veg adult 7 stems
+#> 12                NA           NA           NA              NA             NA     0  Flo adult 1 stem
+#> 13                NA           NA           NA              NA             NA     0 Flo adult 2 stems
+#> 14                NA           NA           NA              NA             NA     0 Flo adult 3 stems
+#> 15                NA           NA           NA              NA             NA     0 Flo adult 4 stems
+#> 16                NA           NA           NA              NA             NA     0 Flo adult 5 stems
+#> 17                NA           NA           NA              NA             NA     0 Flo adult 6 stems
+#> 18                NA           NA           NA              NA             NA     0 Flo adult 7 stems
+```
+  
+  <p style="text-indent: 20px">Now we will standardize our dataset using the new life history model, allowing lefko3 to develop new stage calls in all cases.</p>
+
+``` r
+cypraw_v2 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+  repstrbcol = "Inf2.94", fecacol = "Inf.94", fecbcol = "Inf2.94",
+  stageassign = cypframe_fb, stagesize = "sizeadded", NAas0 = TRUE)
+summary_hfv(cypraw_v2)
+#> 
+#> This hfv dataset contains 6871 rows, 60 variables, 1 population, 
+#> 1 patch, 1025 individuals, and 17 time steps.
+#>      rowid           popid             patchid               individ         year2        firstseen       lastseen   
+#>  Min.   :   1.0   Length:6871        Length:6871        K NA     :  62   Min.   :1994   Min.   :1994   Min.   :1994  
+#>  1st Qu.: 291.0   Class :character   Class :character   A NA     :  27   1st Qu.:1999   1st Qu.:1995   1st Qu.:2004  
+#>  Median : 563.0   Mode  :character   Mode  :character   X NA     :  24   Median :2002   Median :1997   Median :2009  
+#>  Mean   : 557.5                                         T NA     :  23   Mean   :2002   Mean   :1997   Mean   :2007  
+#>  3rd Qu.: 820.0                                         Willow NA:  17   3rd Qu.:2005   3rd Qu.:1999   3rd Qu.:2011  
+#>  Max.   :1119.0                                         X 3      :  17   Max.   :2010   Max.   :2010   Max.   :2011  
+#>                                                         (Other)  :6701                                               
+#>      obsage        obslifespan         sizea1             sizeb1           sizec1         size1added        repstra1     
+#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median : 5.000   Median :10.000   Median :0.000000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000  
+#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.003638   Mean   :0.3448   Mean   :0.5244   Mean   :0.8728   Mean   :0.3448  
+#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000  
+#>  Max.   :17.000   Max.   :17.000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                          
+#>     repstrb1         repstr1added        feca1            fecb1            fec1added        obsstatus1       repstatus1   
+#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000  
+#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000  
+#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :0.000000   Median :0.0000   Median :1.0000   Median :0.000  
+#>  Mean   :0.003638   Mean   :0.3484   Mean   :0.3448   Mean   :0.003638   Mean   :0.3484   Mean   :0.5472   Mean   :0.247  
+#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000  
+#>  Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :1.000000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000  
+#>                                                                                                                           
+#>    fecstatus1      matstatus1         alive1          stage1           stage1index        sizea2             sizeb2      
+#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Length:6871        Min.   : 0.00   Min.   :0.000000   Min.   :0.0000  
+#>  1st Qu.:0.000   1st Qu.:1.0000   1st Qu.:1.0000   Class :character   1st Qu.: 4.00   1st Qu.:0.000000   1st Qu.:0.0000  
+#>  Median :0.000   Median :1.0000   Median :1.0000   Mode  :character   Median : 5.00   Median :0.000000   Median :0.0000  
+#>  Mean   :0.247   Mean   :0.8395   Mean   :0.8395                      Mean   : 5.96   Mean   :0.004803   Mean   :0.4091  
+#>  3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000                      3rd Qu.: 8.00   3rd Qu.:0.000000   3rd Qu.:1.0000  
+#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000                      Max.   :18.00   Max.   :1.000000   Max.   :7.0000  
+#>                                                                                                                          
+#>      sizec2         size2added       repstra2         repstrb2         repstr2added        feca2            fecb2         
+#>  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000  
+#>  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000  
+#>  Median :0.0000   Median :1.000   Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.000000  
+#>  Mean   :0.6656   Mean   :1.079   Mean   :0.4091   Mean   :0.004803   Mean   :0.4139   Mean   :0.4091   Mean   :0.004803  
+#>  3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:0.000000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000000  
+#>  Max.   :7.0000   Max.   :7.000   Max.   :7.0000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :1.000000  
+#>                                                                                                                           
+#>    fec2added        obsstatus2      repstatus2       fecstatus2       matstatus2     alive2     stage2           stage2index    
+#>  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871        Min.   : 4.000  
+#>  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character   1st Qu.: 4.000  
+#>  Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character   Median : 5.000  
+#>  Mean   :0.4139   Mean   :0.697   Mean   :0.2969   Mean   :0.2969   Mean   :1    Mean   :1                      Mean   : 7.158  
+#>  3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                      3rd Qu.:12.000  
+#>  Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                      Max.   :18.000  
+#>                                                                                                                                 
+#>      sizea3             sizeb3           sizec3         size3added        repstra3         repstrb3         repstr3added  
+#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.000  
+#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000  
+#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000   Median :0.000000   Median :0.000  
+#>  Mean   :0.004221   Mean   :0.3308   Mean   :0.5523   Mean   :0.8874   Mean   :0.3308   Mean   :0.004221   Mean   :0.335  
+#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000  
+#>  Max.   :2.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :2.000000   Max.   :7.000  
+#>                                                                                                                           
+#>      feca3            fecb3            fec3added       obsstatus3      repstatus3       fecstatus3       matstatus3     alive3     
+#>  Min.   :0.0000   Min.   :0.000000   Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000  
+#>  1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000  
+#>  Median :0.0000   Median :0.000000   Median :0.000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000  
+#>  Mean   :0.3308   Mean   :0.004221   Mean   :0.335   Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874  
+#>  3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000   3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000  
+#>  Max.   :7.0000   Max.   :2.000000   Max.   :7.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000  
+#>                                                                                                                                    
+#>     stage3           stage3index    
+#>  Length:6871        Min.   : 0.000  
+#>  Class :character   1st Qu.: 4.000  
+#>  Mode  :character   Median : 5.000  
+#>                     Mean   : 6.057  
+#>                     3rd Qu.: 7.000  
+#>                     Max.   :18.000  
+#> 
+```
+  
+  <p style="text-indent: 20px">Now we will develop the vital rate models. These will be developed as mixed, non-linear models. Survival probability, observation probability (equivalent to sprouting probability, which is assumed to be less than 1.0 due to vegetative dormancy), and reproduction probability will all be assessed assuming a binomial response under a logit link. Size and fecundity will be assessed assuming a Poisson distribution using a log link, though fecundity will be zero-inflated.</p>
+
+``` r
+cypmodels2 <- modelsearch(cypraw_v2, historical = FALSE, approach = "mixed", 
   vitalrates = c("surv", "obs", "size", "repst", "fec"),
-  sizedist = "negbin", size.trunc = TRUE, fecdist = "poisson", fec.zero = TRUE,
-  suite = "main", size = c("size3added", "size2added"),
+  sizedist = "poisson", fecdist = "poisson", fec.zero = TRUE,
+  suite = "main", size = c("size3added", "size2added", "size1added"),
   quiet = "partial")
 #> 
 #> Developing global model of survival probability...
@@ -298,116 +593,566 @@ cypmodels2 <- modelsearch(cypraw_v1, historical = FALSE, approach = "mixed",
 #> Global model of fecundity developed. Proceeding with model dredge...
 #> 
 #> Finished selecting best-fit models.
-#summary(cypmodels2)
+summary(cypmodels2)
+#> This LefkoMod object includes 5 linear models.
+#> Best-fit model criterion used: aicc&k
+#> 
+#> 
+#> 
+#> Survival model:
+#> Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+#>  Family: binomial  ( logit )
+#> Formula: alive3 ~ repstatus2 + size2added + (1 | year2) + (1 | individ)
+#>    Data: surv.data
+#>       AIC       BIC    logLik -2*log(L)  df.resid 
+#>  5064.423  5098.598 -2527.211  5054.423      6866 
+#> Random effects:
+#>  Groups  Name        Std.Dev.
+#>  individ (Intercept) 1.1962  
+#>  year2   (Intercept) 0.4063  
+#> Number of obs: 6871, groups:  individ, 1025; year2, 17
+#> Fixed Effects:
+#> (Intercept)   repstatus2   size2added  
+#>      2.1917       0.2537      -0.4618  
+#> optimizer (Nelder_Mead) convergence code: 0 (OK) ; 0 optimizer warnings; 2 lme4 warnings 
+#> 
+#> 
+#> 
+#> Observation model:
+#> Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+#>  Family: binomial  ( logit )
+#> Formula: obsstatus3 ~ size2added + (1 | year2) + (1 | individ)
+#>    Data: obs.data
+#>       AIC       BIC    logLik -2*log(L)  df.resid 
+#>  7246.503  7273.305 -3619.252  7238.503      6001 
+#> Random effects:
+#>  Groups  Name        Std.Dev.
+#>  individ (Intercept) 0.6777  
+#>  year2   (Intercept) 1.0130  
+#> Number of obs: 6005, groups:  individ, 779; year2, 17
+#> Fixed Effects:
+#> (Intercept)   size2added  
+#>      0.6961       0.1791  
+#> 
+#> 
+#> 
+#> Size model:
+#> Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+#>  Family: poisson  ( log )
+#> Formula: size3added ~ size2added + (1 | year2) + (1 | individ)
+#>    Data: size.data
+#>       AIC       BIC    logLik -2*log(L)  df.resid 
+#> 10296.756 10321.854 -5144.378 10288.756      3919 
+#> Random effects:
+#>  Groups  Name        Std.Dev.
+#>  individ (Intercept) 0.00000 
+#>  year2   (Intercept) 0.06961 
+#> Number of obs: 3923, groups:  individ, 779; year2, 17
+#> Fixed Effects:
+#> (Intercept)   size2added  
+#>      0.1682       0.2038  
+#> optimizer (Nelder_Mead) convergence code: 0 (OK) ; 0 optimizer warnings; 1 lme4 warnings 
+#> 
+#> 
+#> 
+#> Secondary size model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Tertiary size model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Reproductive status model:
+#> Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+#>  Family: binomial  ( logit )
+#> Formula: repstatus3 ~ repstatus2 + size2added + (1 | year2) + (1 | individ)
+#>    Data: repst.data
+#>       AIC       BIC    logLik -2*log(L)  df.resid 
+#>  4635.477  4666.850 -2312.738  4625.477      3918 
+#> Random effects:
+#>  Groups  Name        Std.Dev.
+#>  individ (Intercept) 0.7218  
+#>  year2   (Intercept) 0.7104  
+#> Number of obs: 3923, groups:  individ, 779; year2, 17
+#> Fixed Effects:
+#> (Intercept)   repstatus2   size2added  
+#>     -1.0444       1.0124       0.2542  
+#> 
+#> 
+#> 
+#> Fecundity model:
+#> Formula:          feca2 ~ size2added + (1 | year2) + (1 | individ)
+#> Zero inflation:         ~(1 | year2) + (1 | individ)
+#> Data: fec.data
+#>       AIC       BIC    logLik -2*log(L)  df.resid 
+#>  4826.427  4865.771 -2406.213  4812.427      2033 
+#> Random-effects (co)variances:
+#> 
+#> Conditional model:
+#>  Groups  Name        Std.Dev. 
+#>  year2   (Intercept) 0.0002205
+#>  individ (Intercept) 0.0003349
+#> 
+#> Zero-inflation model:
+#>  Groups  Name        Std.Dev.
+#>  year2   (Intercept) 1.81323 
+#>  individ (Intercept) 0.03543 
+#> 
+#> Number of obs: 2040 / Conditional model: year2, 17; individ, 699 / Zero-inflation model: year2, 17; individ, 699
+#> 
+#> Fixed Effects:
+#> 
+#> Conditional model:
+#> (Intercept)   size2added  
+#>     -0.2199       0.2612  
+#> 
+#> Zero-inflation model:
+#> (Intercept)  
+#>      -33.79  
+#> 
+#> 
+#> Juvenile survival model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Juvenile observation model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Juvenile size model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Juvenile secondary size model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Juvenile tertiary size model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Juvenile reproduction model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> Juvenile maturity model:
+#> [1] 1
+#> 
+#> 
+#> 
+#> 
+#> 
+#> Number of models in survival table: 4
+#> 
+#> Number of models in observation table: 4
+#> 
+#> Number of models in size table: 4
+#> 
+#> Number of models in secondary size table: 1
+#> 
+#> Number of models in tertiary size table: 1
+#> 
+#> Number of models in reproduction status table: 4
+#> 
+#> Number of models in fecundity table: 16
+#> 
+#> Number of models in juvenile survival table: 1
+#> 
+#> Number of models in juvenile observation table: 1
+#> 
+#> Number of models in juvenile size table: 1
+#> 
+#> Number of models in juvenile secondary size table: 1
+#> 
+#> Number of models in juvenile tertiary size table: 1
+#> 
+#> Number of models in juvenile reproduction table: 1
+#> 
+#> Number of models in juvenile maturity table: 1
+#> 
+#> 
+#> 
+#> 
+#> 
+#> General model parameter names (column 1), and 
+#> specific names used in these models (column 2): 
+#>                       parameter_names mainparams
+#> 1                              time t      year2
+#> 2                          individual    individ
+#> 3                               patch      patch
+#> 4                   alive in time t+1      surv3
+#> 5                observed in time t+1       obs3
+#> 6                   sizea in time t+1      size3
+#> 7                   sizeb in time t+1     sizeb3
+#> 8                   sizec in time t+1     sizec3
+#> 9     reproductive status in time t+1     repst3
+#> 10              fecundity in time t+1       fec3
+#> 11                fecundity in time t       fec2
+#> 12                    sizea in time t      size2
+#> 13                  sizea in time t-1      size1
+#> 14                    sizeb in time t     sizeb2
+#> 15                  sizeb in time t-1     sizeb1
+#> 16                    sizec in time t     sizec2
+#> 17                  sizec in time t-1     sizec1
+#> 18      reproductive status in time t     repst2
+#> 19    reproductive status in time t-1     repst1
+#> 20        maturity status in time t+1     matst3
+#> 21          maturity status in time t     matst2
+#> 22                      age in time t        age
+#> 23                  density in time t    density
+#> 24   individual covariate a in time t   indcova2
+#> 25 individual covariate a in time t-1   indcova1
+#> 26   individual covariate b in time t   indcovb2
+#> 27 individual covariate b in time t-1   indcovb1
+#> 28   individual covariate c in time t   indcovc2
+#> 29 individual covariate c in time t-1   indcovc1
+#> 30              stage group in time t     group2
+#> 31            stage group in time t-1     group1
+#> 32       annual covariate a in time t  annucova2
+#> 33     annual covariate a in time t-1  annucova1
+#> 34       annual covariate b in time t  annucovb2
+#> 35     annual covariate b in time t-1  annucovb1
+#> 36       annual covariate c in time t  annucovc2
+#> 37     annual covariate c in time t-1  annucovc1
+#> 
+#> 
+#> 
+#> 
+#> 
+#> Quality control:
+#> 
+#> Survival model estimated with 1025 individuals and 6871 individual transitions.
+#> Survival model accuracy is 0.875.
+#> Observation status model estimated with 779 individuals and 6005 individual transitions.
+#> Observation status model accuracy is 0.726.
+#> Primary size model estimated with 779 individuals and 3923 individual transitions.
+#> Primary size model R-squared is 0.271.
+#> Secondary size model not estimated.
+#> Tertiary size model not estimated.
+#> Reproductive status model estimated with 779 individuals and 3923 individual transitions.
+#> Reproductive status model accuracy is 0.737.
+#> Fecundity model estimated with 699 individuals and 2040 individual transitions.
+#> Fecundity model R-squared is 0.481.
+#> Juvenile survival model not estimated.
+#> Juvenile observation status model not estimated.
+#> Juvenile primary size model not estimated.
+#> Juvenile secondary size model not estimated.
+#> Juvenile tertiary size model not estimated.
+#> Juvenile reproductive status model not estimated.
+#> Juvenile maturity status model not estimated.
 ```
   
+  <p style="text-indent: 20px">The output of the vital rate modeling exercise is worth looking over. Note that our best-fit models vary in interesting ways. For example, increasing size has a negative impact on survival, while reproductive status has a positive impact. These patterns suggest interesting trade-offs that might constrain natural selection. Also note the model accuracy in the best-fit models, which includes some models with high accuracy (e.g., survival, at around 88%), and others with fairly low accuracy (e.g., primary size, with roughly 27%).</p>
   
+  <p style="text-indent: 20px">Our next step will be to develop an MPM. Although we will not project this MPM through our invasibility analysis, this is our chance to see what the matrices will look like that will be built in the course of analysis. So, we will set up the proper supplemental parameters, and then create MPMs to look at more carefully.</p>
 
 ``` r
-cypmatrix2f <- flefko2(stageframe = cypframe_raw, supplement = cypsupp2r, 
-  modelsuite = cypmodels2, data = cypraw_v1)
+germ <- 0.2
+sl_mult <- 0.2
+sl_surv <- 0.2
+seeds_per_fruit <- 10000
+
+cypsupp2f <- supplemental(stage3 = c("SD", "P1", "SL", "SL", "D", "V1", "mat",
+    "mat", "mat", "SD", "P1"),
+  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "D", "V1", "V2", "rep", "rep"),
+  eststage3 = c(NA, NA, NA, NA, "D", "V1", "mat", "mat", "mat", NA, NA), 
+  eststage2 = c(NA, NA, NA, NA, "V1", "V1", "D", "V1", "V2", NA, NA),
+  givenrate = c(0.1, germ, sl_surv, sl_surv, NA, NA, NA, NA, NA, NA, NA),
+  multiplier = c(NA, NA, NA, NA, sl_mult, sl_mult, 0.4, 0.4, 0.4,
+    0.5 * seeds_per_fruit * 0.1, 0.5 * seeds_per_fruit * germ),
+  type =c(1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3),
+  stageframe = cypframe_fb, historical = FALSE)
+#> Warning: NA values in argument multiplier will be treated as 1 values.
+
+cypmatrix2f <- flefko2(stageframe = cypframe_fb, supplement = cypsupp2f, 
+  modelsuite = cypmodels2, data = cypraw_v2)
+summary(cypmatrix2f)
+#> 
+#> This ahistorical lefkoMat object contains 17 matrices.
+#> 
+#> Each matrix is square with 18 rows and columns, and a total of 324 elements.
+#> A total of 3927 survival transitions were estimated, with 231 per matrix.
+#> A total of 238 fecundity transitions were estimated, with 14 per matrix.
+#> This lefkoMat object covers 1 population, 1 patch, and 17 time steps.
+#> 
+#> The dataset contains a total of 1025 unique individuals and 6871 unique transitions.
+#> 
+#> Vital rate modeling quality control:
+#> 
+#> Survival estimated with 1025 individuals and 6871 individual transitions.
+#> Observation estimated with 779 individuals and 6005 individual transitions.
+#> Primary size estimated with 779 individuals and 3923 individual transitions.
+#> Secondary size transition not estimated.
+#> Tertiary size transition not estimated.
+#> Reproductive status estimated with 779 individuals and 3923 individual transitions.
+#> Fecundity estimated with 699 individuals and 2040 individual transitions.
+#> Juvenile survival not estimated.
+#> Juvenile observation probability not estimated.
+#> Juvenile primary size transition not estimated.
+#> Juvenile secondary size transition not estimated.
+#> Juvenile tertiary size transition not estimated.
+#> Juvenile reproduction probability not estimated.
+#> Juvenile maturity transition probability not estimated.
+#> 
+#> Survival probability sum check (each matrix represented by column in order):
+#>          [,1]  [,2]  [,3]  [,4]  [,5]  [,6]  [,7]  [,8]  [,9] [,10] [,11] [,12] [,13] [,14] [,15] [,16] [,17]
+#> Min.    0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.200 0.178 0.160 0.136 0.151 0.200 0.109 0.126
+#> 1st Qu. 0.291 0.295 0.294 0.300 0.305 0.281 0.282 0.296 0.280 0.281 0.272 0.248 0.232 0.250 0.280 0.202 0.216
+#> Median  0.337 0.430 0.395 0.450 0.466 0.335 0.374 0.408 0.334 0.356 0.312 0.299 0.291 0.296 0.329 0.253 0.264
+#> Mean    0.420 0.469 0.446 0.481 0.491 0.416 0.437 0.458 0.415 0.421 0.389 0.365 0.337 0.363 0.410 0.297 0.318
+#> 3rd Qu. 0.567 0.659 0.611 0.674 0.686 0.568 0.604 0.634 0.568 0.572 0.526 0.475 0.430 0.471 0.559 0.372 0.422
+#> Max.    0.759 0.761 0.746 0.773 0.782 0.740 0.743 0.762 0.738 0.723 0.711 0.703 0.672 0.711 0.730 0.602 0.604
+#> 
+#> 
+#> All matrices have no stage discontinuities.
 ```
   
+  <p style="text-indent: 20px">Since everything looks alright, we will now need to translate the `lefkoMod` object that we created to hold our vital rate models into an object accessible by `adapt3`. We will do that with the `miniMod()` function in package `lefko3`.</p>
 
 ``` r
-cyp_vrm <- miniMod(cypmodels2, hfv_data = cypraw_v1)
+cyp_vrm <- miniMod(cypmodels2, hfv_data = cypraw_v2)
 ```
-
-
+  
+  <p style="text-indent: 20px">Next, as before, we need to define a starting vector for the simulation. We will use the same starting vector as before, using a single protocorm individual.</p>
 
 ``` r
-c2d_5 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
-  style = 1, time_delay = 1, alpha = 0.05, beta = 0.00000005, type = c(2, 2))
-c2d_5
+cyp_start <- start_input(cypmatrix2f, stage2 = "P1", value = 1)
+cyp_start
+#>   stage2 stage_id_2 stage1 stage_id_1 age2 row_num value
+#> 1     P1          2     NA         NA   NA       2     1
+```
+  
+  <p style="text-indent: 20px">Next, we will set up the proper density dependence to use in simulations. As before, we advise that users explore the proper development of density dependence elsewhere.</p>
+
+``` r
+c2d_1 <- density_input(cypmatrix2f, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
+  style = 1, time_delay = 1, alpha = 1.1, beta = 0.0000005, type = c(1, 2))
+c2d_1
 #>   stage3 stage2 stage1 age2 style alpha  beta time_delay type type_t12
-#> 1     P1     SD     NA   NA     1  0.05 5e-08          1    2        1
-#> 2     P1    XSm     NA   NA     1  0.05 5e-08          1    2        1
-#> 3     P1     Sm     NA   NA     1  0.05 5e-08          1    2        1
-#> 4     P1     Md     NA   NA     1  0.05 5e-08          1    2        1
-#> 5     P1     Lg     NA   NA     1  0.05 5e-08          1    2        1
-#> 6     P1    XLg     NA   NA     1  0.05 5e-08          1    2        1
+#> 1     P1     SD     NA   NA     1   1.1 5e-07          1    1        1
+#> 2     P1     F1     NA   NA     1   1.1 5e-07          1    2        1
+#> 3     P1     F2     NA   NA     1   1.1 5e-07          1    2        1
+#> 4     P1     F3     NA   NA     1   1.1 5e-07          1    2        1
+#> 5     P1     F4     NA   NA     1   1.1 5e-07          1    2        1
+#> 6     P1     F5     NA   NA     1   1.1 5e-07          1    2        1
+#> 7     P1     F6     NA   NA     1   1.1 5e-07          1    2        1
+#> 8     P1     F7     NA   NA     1   1.1 5e-07          1    2        1
 ```
 
-
-A simple projection allows us to find a combination of density dependence and running time that produces a stable quasi-equilibrium
+  
+  <p style="text-indent: 20px">Next, we will quickly run a projection of the sample MPM under the density dependence that we set above, using `lefko3`'s `f_projection3()` function. This will give us a sense of whether everything appears to be working.</p>
 
 ``` r
-cyp_proj <- f_projection3(format = 3, stageframe = cypframe_raw,
-  supplement = cypsupp2r, modelsuite = cypmodels2, times = 1000,
-  start_frame = cyp_start, density = c2d_5, data = cypraw_v1, year = 2006,
-  integeronly = TRUE)
+cyp_proj1 <- f_projection3(format = 3, stageframe = cypframe_fb,
+  supplement = cypsupp2f, modelsuite = cypmodels2, times = 1000,
+  start_frame = cyp_start, data = cypraw_v2, density = c2d_1,
+  integeronly = FALSE, year = 2008)
 #> Warning: Option patch not set, so will set to first patch/population.
-plot(cyp_proj)
+plot(cyp_proj1)
 ```
 
-![plot of chunk ch1.14](ch1.14-1.png)
-
-
+![plot of chunk ch2.7](ch2.7-1.png)
+  
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 10 variants total, and please note that the resulting analysis may take a while to run.</p>
 
 ``` r
-current_traits <- ta_skeleton(10)
-current_traits$obs_dev <- seq(from = -100, to = 100, length.out = 10)
+current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
+  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 10)) 
 current_traits
-#>    variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype convtype_t12
-#> 1        1   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 2        2   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 3        3   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 4        4   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 5        5   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 6        6   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 7        7   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 8        8   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 9        9   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#> 10      10   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA           NA
-#>    surv_dev    obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev jrepst_dev
-#> 1        NA -100.00000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 2        NA  -77.77778       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 3        NA  -55.55556       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 4        NA  -33.33333       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 5        NA  -11.11111       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 6        NA   11.11111       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 7        NA   33.33333       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 8        NA   55.55556       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 9        NA   77.77778       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#> 10       NA  100.00000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA         NA
-#>    jmatst_dev
-#> 1          NA
-#> 2          NA
-#> 3          NA
-#> 4          NA
-#> 5          NA
-#> 6          NA
-#> 7          NA
-#> 8          NA
-#> 9          NA
-#> 10         NA
+#>    variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype
+#> 1        1   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 2        2   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 3        3   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 4        4   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 5        5   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 6        6   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 7        7   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 8        8   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 9        9   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 10      10   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#>    convtype_t12 surv_dev    obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev
+#> 1            NA       NA -0.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 2            NA       NA -0.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 3            NA       NA  0.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 4            NA       NA  0.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 5            NA       NA  0.8333333       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 6            NA       NA  1.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 7            NA       NA  1.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 8            NA       NA  1.8333333       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 9            NA       NA  2.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 10           NA       NA  2.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#>    jsizec_dev jrepst_dev jmatst_dev
+#> 1          NA         NA         NA
+#> 2          NA         NA         NA
+#> 3          NA         NA         NA
+#> 4          NA         NA         NA
+#> 5          NA         NA         NA
+#> 6          NA         NA         NA
+#> 7          NA         NA         NA
+#> 8          NA         NA         NA
+#> 9          NA         NA         NA
+#> 10         NA         NA         NA
 ```
-
-
+  
+  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 10 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values).</p>
 
 ``` r
-cyp_inv2 <- invade3(axis = current_traits, vrm = cyp_vrm, starts = cyp_start,
-  stageframe = cypframe_raw, supplement = cypsupp2r, entry_time = c(0, 250),
-  integeronly = TRUE, times = 350, fitness_times = 30, var_per_run = 2,
-  years = 2006, density = c2d_5, err_check = "extreme")
+cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
+  starts = cyp_start, years = 2008, stageframe = cypframe_fb,
+  supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
+  times = 1000, fitness_times = 100, var_per_run = 2, stochastic = FALSE,
+  density = c2d_1)
 ```
-
-
+  
+  *****Need a summary statement*****
+  
+  <p style="text-indent: 20px">As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 8, then there will be no run 50 and that line will lead to an error.</p>
 
 ``` r
-plot(cyp_inv2)
+par(mfrow = c(2, 1))
+
+plot(cyp_inv3, pip = FALSE, run = 1)
+plot(cyp_inv3, pip = FALSE, run = 11)
 ```
 
-![plot of chunk ch1.17](ch1.17-1.png)
-
-
-
-
-## Acknowledgements 
+![plot of chunk ch2.10](ch2.10-1.png)
   
-  <p style="text-indent: 20px">We are grateful to two anonymous reviewers whose scrutiny improved the quality of this vignette. The project resulting in this package and this tutorial was funded by Grant-In-Aid 19H03298 from the Japan Society for the Promotion of Science.</p>
+  <p style="text-indent: 20px">At first glance the invader seems to be so low as to be extinct in both cases. However, we can take a look at the actual growth of the invader in run 11 as follows.</p>
+
+``` r
+cyp_inv3$N_out[[1]][2,,11]
+#>    [1]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [11]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [21]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [31]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [41]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [51]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [61]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [71]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [81]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>   [91]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [101]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [111]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [121]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [131]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [141]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [151]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [161]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [171]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [181]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [191]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [201]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [211]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [221]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [231]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [241]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [251]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [261]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [271]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [281]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [291]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [301]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [311]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [321]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [331]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [341]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [351]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [361]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [371]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [381]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [391]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [401]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [411]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [421]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [431]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [441]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [451]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [461]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [471]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [481]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [491]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [501]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [511]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [521]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [531]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [541]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [551]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [561]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [571]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [581]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [591]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [601]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [611]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [621]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [631]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [641]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [651]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [661]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [671]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [681]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [691]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [701]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [711]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [721]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [731]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [741]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [751]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [761]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [771]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [781]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [791]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
+#>  [801]  1.00000000  0.20000000  0.05689552  0.01625870  0.81631092  0.85617878  0.56884989  0.31025232  0.43997450  0.65096681
+#>  [811]  0.69512922  0.58301000  0.51712301  0.56799126  0.64854320  0.66602652  0.63535322  0.62218076  0.64906498  0.68385887
+#>  [821]  0.69681686  0.69441208  0.69906616  0.71728093  0.73767113  0.75057789  0.75876312  0.76980312  0.78553886  0.80194955
+#>  [831]  0.81592588  0.82858892  0.84249309  0.85813917  0.87411811  0.88943722  0.90453951  0.92028509  0.93680407  0.95360756
+#>  [841]  0.97038336  0.98730467  1.00466246  1.02248994  1.04062084  1.05896053  1.07757791  1.09657379  1.11595848  1.13567851
+#>  [851]  1.15570856  1.17607825  1.19682534  1.21795603  1.23945633  1.26132310  1.28357165  1.30621919  1.32927205  1.35273025
+#>  [861]  1.37659801  1.40088575  1.42560433  1.45076091  1.47636079  1.50241091  1.52892037  1.55589839  1.58335304  1.61129189
+#>  [871]  1.63972323  1.66865616  1.69809991  1.72806337  1.75855546  1.78958543  1.82116290  1.85329765  1.88599949  1.91927833
+#>  [881]  1.95314432  1.98760788  2.02267958  2.05837016  2.09469048  2.13165167  2.16926504  2.20754211  2.24649460  2.28613441
+#>  [891]  2.32647366  2.36752470  2.40930010  2.45181264  2.49507531  2.53910136  2.58390425  2.62949770  2.67589566  2.72311231
+#>  [901]  2.77116211  2.82005976  2.86982021  2.92045869  2.97199070  3.02443199  3.07779862  3.13210692  3.18737349  3.24361525
+#>  [911]  3.30084940  3.35909345  3.41836524  3.47868288  3.54006483  3.60252988  3.66609713  3.73078604  3.79661639  3.86360832
+#>  [921]  3.93178234  4.00115930  4.07176042  4.14360732  4.21672195  4.29112671  4.36684435  4.44389803  4.52231134  4.60210826
+#>  [931]  4.68331321  4.76595103  4.85004700  4.93562686  5.02271678  5.11134342  5.20153388  5.29331576  5.38671715  5.48176662
+#>  [941]  5.57849324  5.67692662  5.77709686  5.87903462  5.98277108  6.08833798  6.19576762  6.30509287  6.41634717  6.52956457
+#>  [951]  6.64477969  6.76202780  6.88134477  7.00276709  7.12633192  7.25207706  7.38004099  7.51026285  7.64278248  7.77764044
+#>  [961]  7.91487797  8.05453707  8.19666047  8.34129164  8.48847484  8.63825509  8.79067823  8.94579089  9.10364052  9.26427541
+#>  [971]  9.42774471  9.59409844  9.76338749  9.93566365 10.11097963 10.28938907 10.47094655 10.65570762 10.84372881 11.03506763
+#>  [981] 11.22978263 11.42793338 11.62958051 11.83478570 12.04361175 12.25612253 12.47238306 12.69245951 12.91641922 13.14433069
+#>  [991] 13.37626365 13.61228908 13.85247916 14.09690740 14.34564857 14.59877877 14.85637544 15.11851740 15.38528485 15.65675940
+#> [1001] 15.93302410
+```
   
-  
+  <p style="text-indent: 20px">We can see that the invader does grow in at least some of the simulations. Now let's see the pairwise invasibility plot (PIP).</p>
+
+``` r
+plot(cyp_inv3)
+```
+
+![plot of chunk ch2.12](ch2.12-1.png)
+
+  <p style="text-indent: 20px">A fairly beautiful PIP, if I say so myself! We find that there appears to be an ESS value for sprouting. More to come as this package develops....</p>
+
+
+## Acknowledgements
+
+<p style="text-indent: 20px">
+
+We are grateful to two anonymous reviewers whose scrutiny improved the quality of this vignette. The project resulting in this package and this tutorial was funded by Grant-In-Aid 23H02552 from the Japan Society for the Promotion of Science.
+
+</p>
+
 ## Literature cited
 
-<div id="refs"></div>
+::: {#refs}
+:::

@@ -12,6 +12,7 @@ using namespace arma;
 using namespace LefkoUtils;
 using namespace LefkoMats;
 using namespace AdaptUtils;
+using namespace AdaptInputs;
 
 
 
@@ -503,544 +504,106 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   NumericVector jrepst_dev_;
   NumericVector jmatst_dev_;
   
-  int stage3_length {0};
-  int stage2_length {0};
-  int stage1_length {0};
-  int age3_length {0};
-  int age2_length {0};
-  int eststage3_length {0};
-  int eststage2_length {0};
-  int eststage1_length {0};
-  int estage3_length {0};
-  int estage2_length {0};
-  int type_length {0};
+  List element_vectors (15);
+  element_vectors(0) = stage3;
+  element_vectors(1) = stage2;
+  element_vectors(2) = stage1;
+  element_vectors(3) = eststage3;
+  element_vectors(4) = eststage2;
+  element_vectors(5) = eststage1;
+  element_vectors(6) = age3;
+  element_vectors(7) = age2;
+  element_vectors(8) = estage3;
+  element_vectors(9) = estage2;
+  element_vectors(10) = givenrate;
+  element_vectors(11) = offset;
+  element_vectors(12) = multiplier;
+  element_vectors(13) = type;
+  element_vectors(14) = type_t12;
+  
+  List vrm_vectors (14);
+  vrm_vectors(0) = surv_dev;
+  vrm_vectors(1) = obs_dev;
+  vrm_vectors(2) = size_dev;
+  vrm_vectors(3) = sizeb_dev;
+  vrm_vectors(4) = sizec_dev;
+  vrm_vectors(5) = repst_dev;
+  vrm_vectors(6) = fec_dev;
+  vrm_vectors(7) = jsurv_dev;
+  vrm_vectors(8) = jobs_dev;
+  vrm_vectors(9) = jsize_dev;
+  vrm_vectors(10) = jsizeb_dev;
+  vrm_vectors(11) = jsizec_dev;
+  vrm_vectors(12) = jrepst_dev;
+  vrm_vectors(13) = jmatst_dev;
+  
+  int element_change_vector_length = AdaptInputs::list_vector_length(element_vectors);
+  int vrm_change_vector_length = AdaptInputs::list_vector_length(vrm_vectors);
+  
+  int overall_length = element_change_vector_length;
+  if (vrm_change_vector_length > overall_length) overall_length = vrm_change_vector_length;
   
   StringVector all_stages;
   StringVector wildcard_names = {"all", "rep", "nrep", "mat", "immat", "prop",
     "npr", "notalive", "obs", "nobs"};;
   StringVector all_groups;
   
-  if (wtf < 3) {
-    all_stages = as<StringVector>(stageframe_["stage"]);
+  AdaptInputs::numeric_vectorizer(givenrate_, givenrate, "givenrate", overall_length, false, 0);
+  AdaptInputs::numeric_vectorizer(offset_, offset, "offset", overall_length, false, 0);
+  AdaptInputs::numeric_vectorizer(multiplier_, multiplier, "multiplier", overall_length, false, 0);
+  
+  AdaptInputs::integer_vectorizer (type_, type, "type", overall_length, 1, 3, true, false, 0);
+  AdaptInputs::integer_vectorizer (type_t12_, type_t12, "type_t12", overall_length, 1, 2, true, false, 0);
+  
+  AdaptInputs::numeric_vectorizer(surv_dev_, surv_dev, "surv_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(obs_dev_, obs_dev, "obs_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(size_dev_, size_dev, "size_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(sizeb_dev_, sizeb_dev, "sizeb_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(sizec_dev_, sizec_dev, "sizec_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(repst_dev_, repst_dev, "repst_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(fec_dev_, fec_dev, "fec_dev", overall_length, false);
+  
+  AdaptInputs::numeric_vectorizer(jsurv_dev_, jsurv_dev, "jsurv_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(jobs_dev_, jobs_dev, "jobs_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(jsize_dev_, jsize_dev, "jsize_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(jsizeb_dev_, jsizeb_dev, "jsizeb_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(jsizec_dev_, jsizec_dev, "jsizec_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(jrepst_dev_, jrepst_dev, "jrepst_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(jmatst_dev_, jmatst_dev, "jmatst_dev", overall_length, false);
+  
+  IntegerVector new_variants = seq(1, overall_length);
+  
+  if (element_change_vector_length > 0) {
+    AdaptInputs::character_vectorizer(stage3_, stage3, "stage3", overall_length, NA_STRING, false);
+    AdaptInputs::character_vectorizer(stage2_, stage2, "stage2", overall_length, NA_STRING, false);
+    AdaptInputs::character_vectorizer(stage1_, stage1, "stage1", overall_length, NA_STRING, false);
+    AdaptInputs::character_vectorizer(eststage3_, eststage3, "stage3", overall_length, NA_STRING, false);
+    AdaptInputs::character_vectorizer(eststage2_, eststage2, "stage2", overall_length, NA_STRING, false);
+    AdaptInputs::character_vectorizer(eststage1_, eststage1, "stage1", overall_length, NA_STRING, false);
     
-    StringVector all_groups_ = as<StringVector>(stageframe_["group"]);
-    StringVector all_groups_temp (all_groups_.length());
-    for (int i = 0; i < all_groups_.length(); i++) {
-      String group_slot = "group";
-      String group_term_added = all_groups_(i);
-      group_slot += group_term_added;
-      all_groups_temp(i) = group_slot;
-    }
-    all_groups = all_groups_temp;
-  }
-  
-  if (stage3.isNotNull() && wtf != 3) {
-    if (is<StringVector>(stage3)) {
-      stage3_ = as<StringVector>(stage3);
-      stage3_length = static_cast<int>(stage3_.length());
-      
-      for (int i = 0; i < stage3_length; i++) {
-        bool found_stage {false};
-        
-        if (!(StringVector::is_na(stage3_(i)) || stage3_(i) == "NA")) { 
-          for (int j = 0; j < all_stages.length(); j++) {
-            if (stage3_(i) == all_stages(j)) found_stage = true;
-          }
-          for (int j = 0; j < wildcard_names.length(); j++) {
-            if (stage3_(i) == wildcard_names(j)) found_stage = true;
-          }
-          for (int j = 0; j < all_groups.length(); j++) {
-            if (stage3_(i) == all_groups(j)) found_stage = true;
-          }
-          if (stage3_(i) == "AlmostBorn") {
-            throw Rcpp::exception("Stage AlmostBorn can only be used in arguments stage1 and eststage1.", false);
-          }
-          if (!found_stage) {
-            String ems = "Some entered stage names (stage3) do not ";
-            String ems1 = "match expectation.";
-            ems += ems1;
-            
-            throw Rcpp::exception(ems.get_cstring(), false);
-          }
-        }
-      }
-      
-    } else {
-      throw Rcpp::exception("Please enter argument stage3 as text.", 
-        false);
-    }
-  } else if (wtf != 3) {
-    throw Rcpp::exception("Stage information (stage3) for transitions is required.",
-      false);
-  }
-  
-  if (stage2.isNotNull() && wtf != 3) {
-    if (is<StringVector>(stage2)) {
-      stage2_ = as<StringVector>(stage2);
-      stage2_length = static_cast<int>(stage2_.length());
-      
-      for (int i = 0; i < stage2_length; i++) {
-        bool found_stage {false};
-        
-        if (!(StringVector::is_na(stage2_(i)) || stage2_(i) == "NA")) { 
-          for (int j = 0; j < all_stages.length(); j++) {
-            if (stage2_(i) == all_stages(j)) found_stage = true;
-          }
-          for (int j = 0; j < wildcard_names.length(); j++) {
-            if (stage2_(i) == wildcard_names(j)) found_stage = true;
-          }
-          for (int j = 0; j < all_groups.length(); j++) {
-            if (stage2_(i) == all_groups(j)) found_stage = true;
-          }
-          if (stage2_(i) == "AlmostBorn") {
-            throw Rcpp::exception("Stage AlmostBorn can only be used in arguments stage1 and eststage1.",
-              false);
-          }
-          if (!found_stage) {
-            String ems = "Some entered stage names (stage2) do not ";
-            String ems1 = "match expectation.";
-            ems += ems1;
-            
-            throw Rcpp::exception(ems.get_cstring(), false);
-          }
-        }
-      }
-      
-    } else {
-      throw Rcpp::exception("Please enter argument stage2 as text.", false);
-    }
-  } else if (wtf != 3) {
-    throw Rcpp::exception("Stage information (stage2) for transitions is required.",
-      false);
-  }
-  
-  if (stage1.isNotNull() && wtf == 0) {
-    if (is<StringVector>(stage1)) {
-      stage1_ = as<StringVector>(stage1);
-      stage1_length = static_cast<int>(stage1_.length());
-      
-      for (int i = 0; i < stage1_length; i++) {
-        bool found_stage {false};
-        
-        if (!(StringVector::is_na(stage1_(i)) || stage1_(i) == "NA")) { 
-          for (int j = 0; j < all_stages.length(); j++) {
-            if (stage1_(i) == all_stages(j)) found_stage = true;
-          }
-          for (int j = 0; j < wildcard_names.length(); j++) {
-            if (stage1_(i) == wildcard_names(j)) found_stage = true;
-          }
-          for (int j = 0; j < all_groups.length(); j++) {
-            if (stage1_(i) == all_groups(j)) found_stage = true;
-          }
-          if (stage1_(i) == "AlmostBorn") found_stage = true;
-          if (!found_stage) {
-            String ems = "Some entered stage names (stage1) do not ";
-            String ems1 = "match expectation.";
-            ems += ems1;
-            
-            throw Rcpp::exception(ems.get_cstring(), false);
-          }
-        }
-      }
-      
-    } else if (is<LogicalVector>(stage1)) {
-      if (wtf == 0) {
-        throw Rcpp::exception("Stage information (stage1) for transitions is required.",
-          false);
-      }
-      
-      StringVector stage1_temp (stage2_length, NA_STRING);
-      stage1_ = stage1_temp;
-      stage1_length = stage2_length;
-      
-    } else {
-      throw Rcpp::exception("Please enter argument stage1 as text.", 
-        false);
-    }
+    AdaptInputs::integer_vectorizer(age3_, age3, "age3", overall_length, 1, 100, false, false, 0);
+    AdaptInputs::integer_vectorizer(age2_, age2, "age2", overall_length, 1, 100, false, false, 0);
+    AdaptInputs::integer_vectorizer(estage3_, estage3, "estage3", overall_length, 1, 100, false, false, 0);
+    AdaptInputs::integer_vectorizer(estage2_, estage2, "estage2", overall_length, 1, 100, false, false, 0);
   } else {
-    if (wtf == 0) {
-      throw Rcpp::exception("Stage information (stage1) for transitions is required.",
-        false);
-    } else if (wtf != 3) {
-      StringVector stage1_temp (stage2_length, NA_STRING);
-      stage1_ = stage1_temp;
-      stage1_length = stage2_length;
-    }
-  }
-  
-  if (age3.isNotNull() && wtf > 1) {
-    if (is<IntegerVector>(age3) || is<NumericVector>(age3)) {
-      age3_ = as<IntegerVector>(age3);
-      age3_length = static_cast<int>(age3_.length());
-      
-      arma::ivec a3_arma = as<arma::ivec>(age3_);
-      arma::uvec neg_tester = find(a3_arma < 0 && a3_arma > -2147483648);
-      if (neg_tester.n_elem > 0) {
-        Rf_warningcall(R_NilValue, "Some entered age3 values are negative.");
-      }
-    } else if (is<LogicalVector>(age3)) { 
-      IntegerVector age3_temp (stage2_length, NA_INTEGER);
-      age3_ = age3_temp;
-      age3_length = stage2_length;
-    } else {
-      throw Rcpp::exception("Please enter argument age3 in integer format.",
-        false);
-    }
-  } else {
-    IntegerVector age3_temp (stage2_length, NA_INTEGER);
-    age3_ = age3_temp;
-    age3_length = stage3_length;
-  }
-  
-  if (age2.isNotNull() && wtf > 1) {
-    if (is<IntegerVector>(age2) || is<NumericVector>(age2)) {
-      age2_ = as<IntegerVector>(age2);
-      age2_length = static_cast<int>(age2_.length());
-      
-      arma::ivec a2_arma = as<arma::ivec>(age2_);
-      arma::uvec neg_tester = find(a2_arma < 0 && a2_arma > -2147483648);
-      if (neg_tester.n_elem > 0) {
-        Rf_warningcall(R_NilValue, "Some entered age2 values are negative.");
-      }
-    } else if (is<LogicalVector>(age2)) { 
-      IntegerVector age2_temp (stage2_length, NA_INTEGER);
-      age2_ = age2_temp;
-      age2_length = stage2_length;
-    } else {
-      throw Rcpp::exception("Please enter argument age2 in integer format.",
-        false);
-    }
-  } else {
-    IntegerVector age2_temp (stage2_length, NA_INTEGER);
-    age2_ = age2_temp;
-    age2_length = stage2_length;
-  }
-  
-  if (eststage3.isNotNull() && wtf != 3) {
-    if (is<StringVector>(eststage3)) {
-      eststage3_ = as<StringVector>(eststage3);
-      eststage3_length = static_cast<int>(eststage3_.length());
-      
-      for (int i = 0; i < eststage3_length; i++) {
-        bool found_stage {false};
-        
-        if (!(StringVector::is_na(eststage3_(i)) || eststage3_(i) == "NA")) { 
-          for (int j = 0; j < all_stages.length(); j++) {
-            if (eststage3_(i) == all_stages(j)) found_stage = true;
-          }
-          for (int j = 0; j < wildcard_names.length(); j++) {
-            if (eststage3_(i) == wildcard_names(j)) found_stage = true;
-          }
-          for (int j = 0; j < all_groups.length(); j++) {
-            if (eststage3_(i) == all_groups(j)) found_stage = true;
-          }
-          if (eststage3_(i) == "AlmostBorn") {
-            throw Rcpp::exception("Stage AlmostBorn can only be used in arguments stage1 and eststage1.", false);
-          }
-          if (!found_stage) {
-            String ems = "Some entered stage names (eststage3) do not ";
-            String ems1 = "match expectation.";
-            ems += ems1;
-            
-            throw Rcpp::exception(ems.get_cstring(), false);
-          }
-        } else found_stage = true;
-        
-      }
-      
-    } else if (is<LogicalVector>(eststage3)) {
-      StringVector eststage3_temp (stage3_length, NA_STRING);
-      eststage3_ = eststage3_temp;
-      eststage3_length = stage3_length;
-      
-    } else {
-      throw Rcpp::exception("Please enter argument eststage3 as text.", false);
-    }
-  } else if (stage3_length != 0) {
-    StringVector eststage3_temp (stage3_length, NA_STRING);
-    eststage3_ = eststage3_temp;
-    eststage3_length = stage3_length;
-  }
-  
-  if (eststage2.isNotNull() && wtf != 3) {
-    if (is<StringVector>(eststage2)) {
-      eststage2_ = as<StringVector>(eststage2);
-      eststage2_length = static_cast<int>(eststage2_.length());
-      
-      for (int i = 0; i < eststage2_length; i++) {
-        bool found_stage {false};
-        
-        if (!(StringVector::is_na(eststage2_(i)) || eststage2_(i) == "NA")) { 
-          for (int j = 0; j < all_stages.length(); j++) {
-            if (eststage2_(i) == all_stages(j)) found_stage = true;
-          }
-          for (int j = 0; j < wildcard_names.length(); j++) {
-            if (eststage2_(i) == wildcard_names(j)) found_stage = true;
-          }
-          for (int j = 0; j < all_groups.length(); j++) {
-            if (eststage2_(i) == all_groups(j)) found_stage = true;
-          }
-          if (eststage2_(i) == "AlmostBorn") {
-            throw Rcpp::exception("Stage AlmostBorn can only be used in arguments stage1 and eststage1.", false);
-          }
-          if (!found_stage) {
-            String ems = "Some entered stage names (eststage2) do not ";
-            String ems1 = "match expectation.";
-            ems += ems1;
-            
-            throw Rcpp::exception(ems.get_cstring(), false);
-          }
-        } else found_stage = true;
-        
-      }
-      
-    } else if (is<LogicalVector>(eststage2)) {
-      StringVector eststage2_temp (stage2_length, NA_STRING);
-      eststage2_ = eststage2_temp;
-      eststage2_length = stage2_length;
-      
-    } else {
-      throw Rcpp::exception("Please enter argument eststage2 as text.", false);
-    }
-  } else if (stage2_length != 0) {
-    StringVector eststage2_temp (stage2_length, NA_STRING);
-    eststage2_ = eststage2_temp;
-    eststage2_length = stage2_length;
-  }
-  
-  if (eststage1.isNotNull() && wtf == 0) {
-    if (is<StringVector>(eststage1)) {
-      eststage1_ = as<StringVector>(eststage1);
-      eststage1_length = static_cast<int>(eststage1_.length());
-      
-      for (int i = 0; i < eststage1_length; i++) {
-        bool found_stage {false};
-        
-        if (!(StringVector::is_na(eststage1_(i)) || eststage1_(i) == "NA")) { 
-          for (int j = 0; j < all_stages.length(); j++) {
-            if (eststage1_(i) == all_stages(j)) found_stage = true;
-          }
-          for (int j = 0; j < wildcard_names.length(); j++) {
-            if (eststage1_(i) == wildcard_names(j)) found_stage = true;
-          }
-          for (int j = 0; j < all_groups.length(); j++) {
-            if (eststage1_(i) == all_groups(j)) found_stage = true;
-          }
-          if (eststage1_(i) == "AlmostBorn") found_stage = true;
-          if (!found_stage) {
-            String ems = "Some entered stage names (eststage1) do not ";
-            String ems1 = "match expectation.";
-            ems += ems1;
-            
-            throw Rcpp::exception(ems.get_cstring(), false);
-          }
-        } else found_stage = true;
-        
-      }
-      
-    } else if (is<LogicalVector>(eststage1)) {
-      StringVector eststage1_temp (stage2_length, NA_STRING);
-      eststage1_ = eststage1_temp;
-      eststage1_length = stage2_length;
-      
-    } else {
-      throw Rcpp::exception("Please enter argument eststage1 as text.", false);
-    }
-  } else if (stage2_length != 0) {
-    StringVector eststage1_temp (stage2_length, NA_STRING);
-    eststage1_ = eststage1_temp;
-    eststage1_length = stage2_length;
-  }
-  
-  if (estage3.isNotNull() && wtf > 1) {
-    if (is<IntegerVector>(estage3) || is<NumericVector>(estage3)) {
-      estage3_ = as<IntegerVector>(estage3);
-      estage3_length = static_cast<int>(estage3_.length());
-      
-      arma::ivec ea3_arma = as<arma::ivec>(estage3_);
-      arma::uvec neg_tester = find(ea3_arma < 0 && ea3_arma > -2147483648);
-      if (neg_tester.n_elem > 0) {
-        Rf_warningcall(R_NilValue, "Some entered estage3 values are negative.");
-      }
-    } else if (is<LogicalVector>(estage3)) {
-      LogicalVector estage3_temp = as<LogicalVector>(estage3);
-      estage3_length = static_cast<int>(estage3_temp.length());
-      
-      IntegerVector estage3_new (estage3_length, NA_INTEGER);
-      estage3_ = estage3_new;
-      
-    } else {
-      throw Rcpp::exception("Please enter argument estage3 in integer format.",
-        false);
-    }
-  } else {
-    if (stage2_length > 0) {
-      IntegerVector estage3_temp (stage2_length, NA_INTEGER);
-      estage3_ = estage3_temp;
-      estage3_length = stage2_length;
-    } else if (age2_length > 0) {
-      IntegerVector estage3_temp (age2_length, NA_INTEGER);
-      estage3_ = estage3_temp;
-      estage3_length = age2_length;
-    }
-  }
-  
-  if (estage2.isNotNull() && wtf > 1) {
-    if (is<IntegerVector>(estage2) || is<NumericVector>(estage2)) {
-      estage2_ = as<IntegerVector>(estage2);
-      estage2_length = static_cast<int>(estage2_.length());
-      
-      arma::ivec ea2_arma = as<arma::ivec>(estage2_);
-      arma::uvec neg_tester = find(ea2_arma < 0 && ea2_arma > -2147483648);
-      if (neg_tester.n_elem > 0) {
-        Rf_warningcall(R_NilValue, "Some entered estage2 values are negative.");
-      }
-    } else if (is<LogicalVector>(estage2)) {
-      LogicalVector estage2_temp = as<LogicalVector>(estage2);
-      estage2_length = static_cast<int>(estage2_temp.length());
-      
-      IntegerVector estage2_new (estage2_length, NA_INTEGER);
-      estage2_ = estage2_new;
-      
-    } else {
-      throw Rcpp::exception("Please enter argument estage2 in integer format.",
-        false);
-    }
-  } else {
-    if (stage2_length > 0) {
-      IntegerVector estage2_temp (stage2_length, NA_INTEGER);
-      estage2_ = estage2_temp;
-      estage2_length = stage2_length;
-    } else if (age2_length > 0) {
-      IntegerVector estage2_temp (age2_length, NA_INTEGER);
-      estage2_ = estage2_temp;
-      estage2_length = age2_length;
-    }
-  }
-  
-  LefkoInputs::numeric_vectorizer(givenrate_, givenrate, "givenrate", stage2_length, age2_length, false, 0);
-  LefkoInputs::numeric_vectorizer(offset_, offset, "offset", stage2_length, age2_length, false, 0);
-  LefkoInputs::numeric_vectorizer(multiplier_, multiplier, "multiplier", stage2_length, age2_length, false, 0);
-  
-  LefkoInputs::integer_vectorizer (type_, type, "type", stage2_length, age2_length, 1, 3,
-    true, false, 0);
-  LefkoInputs::integer_vectorizer (type_t12_, type_t12, "type_t12", stage2_length,
-    age2_length, 1, 2, true, false, 0);
-  
-  if (wtf < 3 && type_length != 0  && type_length != stage2_length) { 
-    throw Rcpp::exception("All input vectors must be of the same length.", false);
-  }
-  
-  if (wtf == 0) {
-    if (stage2_length == 0) throw Rcpp::exception("Stage (stage2) information required.", false);
+    IntegerVector int_na_vec (overall_length, NA_INTEGER);
+    age3_ = clone(int_na_vec);
+    age2_ = clone(int_na_vec);
+    estage3_ = clone(int_na_vec);
+    estage2_ = clone(int_na_vec);
     
-    if (stage2_length != stage3_length || stage2_length != stage1_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
+    StringVector char_na_vec (overall_length, NA_STRING);
     
-    if (eststage1_length != 0 && stage1_length != eststage1_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
+    stage3_ = clone(char_na_vec);
+    stage2_ = clone(char_na_vec);
+    stage1_ = clone(char_na_vec);
+    eststage3_ = clone(char_na_vec);
+    eststage2_ = clone(char_na_vec);
+    eststage1_ = clone(char_na_vec);
     
-    if (eststage2_length != 0 && stage2_length != eststage2_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    
-    if (eststage3_length != 0 && stage3_length != eststage3_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    
-  } else if (wtf == 1) {
-    if (stage2_length == 0) throw Rcpp::exception("Stage (stage2) information required.", false);
-    
-    if (stage2_length != stage3_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    
-    if (eststage2_length != 0 && stage2_length != eststage2_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    
-    if (eststage3_length != 0 && stage3_length != eststage3_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    
-  } else if (wtf == 2) {
-    if (stage2_length == 0) throw Rcpp::exception("Argument stage2 is required.", false);
-    if (age3_length == 0) throw Rcpp::exception("Argument age3 is required.", false);
-    if (age2_length == 0) throw Rcpp::exception("Argument age2 is required.", false);
-    
-    if (stage2_length != stage3_length || stage2_length != age2_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    
-    if (estage3_length != 0 && age2_length != estage3_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    if (estage2_length != 0 && age2_length != estage2_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-  
-  } else if (wtf == 3) {
-    if (age2_length == 0) throw Rcpp::exception("Argument age2 is required.", false);
-    if (age3_length == 0) throw Rcpp::exception("Argument age2 is required.", false);
-    
-    if (estage3_length != 0 && age2_length != estage3_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-    if (estage2_length != 0 && age2_length != estage2_length) {
-      throw Rcpp::exception("All input vectors must be of the same length.", false);
-    }
-  }
-    
-  if (stage3_length == 0) { 
-    StringVector s3_temp (age2_length, NA_STRING);
-    stage3_ = s3_temp;
-    stage3_length = age2_length;
-  }
-  if (stage2_length == 0) { 
-    StringVector s2_temp (age2_length, NA_STRING);
-    stage2_ = s2_temp;
-    stage2_length = age2_length;
-  }
-  if (stage1_length == 0) { 
-    StringVector s1_temp (stage2_length, NA_STRING);
-    stage1_ = s1_temp;
-    stage1_length = stage2_length;
-  }
-  if (eststage3_length == 0) { 
-    StringVector s3_temp (stage2_length, NA_STRING);
-    eststage3_ = s3_temp;
-    eststage3_length = stage2_length;
-  }
-  if (eststage2_length == 0) { 
-    StringVector s2_temp (stage2_length, NA_STRING);
-    eststage2_ = s2_temp;
-    eststage2_length = stage2_length;
-  }
-  if (eststage1_length == 0) { 
-    StringVector s1_temp (stage2_length, NA_STRING);
-    eststage1_ = s1_temp;
-    eststage1_length = stage2_length;
   }
   
-  LefkoInputs::numeric_vectorizer(surv_dev_, surv_dev, "surv_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(obs_dev_, obs_dev, "obs_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(size_dev_, size_dev, "size_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(sizeb_dev_, sizeb_dev, "sizeb_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(sizec_dev_, sizec_dev, "sizec_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(repst_dev_, repst_dev, "repst_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(fec_dev_, fec_dev, "fec_dev", stage2_length, age2_length, false);
   
-  LefkoInputs::numeric_vectorizer(jsurv_dev_, jsurv_dev, "jsurv_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(jobs_dev_, jobs_dev, "jobs_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(jsize_dev_, jsize_dev, "jsize_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(jsizeb_dev_, jsizeb_dev, "jsizeb_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(jsizec_dev_, jsizec_dev, "jsizec_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(jrepst_dev_, jrepst_dev, "jrepst_dev", stage2_length, age2_length, false);
-  LefkoInputs::numeric_vectorizer(jmatst_dev_, jmatst_dev, "jmatst_dev", stage2_length, age2_length, false);
-  
-  IntegerVector new_variants = seq(1, stage2_length);
   
   List newtraitaxis (30);
   
@@ -1085,7 +648,7 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   
   newtraitaxis.attr("class") = ta_class;
   newtraitaxis.attr("names") = ta_names;
-  newtraitaxis.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, stage2_length);
+  newtraitaxis.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, overall_length);
   
   return newtraitaxis;
 }

@@ -214,6 +214,10 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' subpopulation.
 #' @param repl The replicate number to plot, in the \code{fitness} data frame
 #' within the \code{adaptInv} object entered in argument \code{x}.
+#' @param pip A logical value indicating whether to produce a pairwise
+#' invasibility plot. If \code{FALSE}, then will produce a diagnostic population
+#' size plot. Defaults to \code{TRUE}.
+#' @param run An integer giving the run to plot if \code{pip = FALSE}.
 #' @param filled A logical value indicating whether to produce a filled contour
 #' plot, or a standard contour plot. Defaults to \code{TRUE}, but reverts if
 #' invader fitness is consistently positive, or consistently negative, relative
@@ -223,6 +227,21 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' @param axes A logical value indicating whether to include axis lines.
 #' Defaults to \code{TRUE}.
 #' @param frame.plot A logical value indicating whether to frame the plot.
+#' @param auto_ylim A logical value indicating whether the maximum of the y axis
+#' should be determined automatically. Defaults to \code{TRUE}, but reverts to
+#' \code{FALSE} if any setting for \code{ylim} is given. Used only if
+#' \code{pip = FALSE}.
+#' @param auto_col A logical value indicating whether to shift the color of
+#' lines associated with each patch automatically. Defaults to \code{TRUE}, but
+#' reverts to \code{FALSE} if any setting for \code{col} is given. Used only if
+#' \code{pip = FALSE}.
+#' @param auto_lty A logical value indicating whether to shift the line type
+#' associated with each replicate automatically. Defaults to \code{TRUE}, but
+#' reverts to \code{FALSE} if any setting for \code{lty} is given. Used only if
+#' \code{pip = FALSE}.
+#' @param auto_title A logical value indicating whether to add a title to each
+#' plot. The plot is composed of the concatenated population and patch names.
+#' Defaults to \code{FALSE}. Used only if \code{pip = FALSE}.
 #' @param ... Other parameters used by functions \code{plot.default()}.
 #' 
 #' @return A contour plot showing the overall fitness dynamics of the invader
@@ -230,8 +249,8 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' 
 #' @section Notes:
 #' By default, function \code{plot.adaptInv} produces a filled contour plot in
-#' which black regions show where the invader has negative fitness relative to
-#' the resident, and white regions show where the invader has positive fitness
+#' which grey regions show where the invader has positive fitness relative to
+#' the resident, and white regions show where the invader has negative fitness
 #' relative to the resident. Fitness here refers to the Lyapunov coefficient,
 #' calculated over the final \code{fitness_times} in the original call to
 #' function \code{\link{invade3}()}.
@@ -302,15 +321,17 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #'   var_per_run = 2)
 #' plot(cyp_inv)
 #' 
-#' 
 #' @export
 plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
-  res_variant = 1, inv_variant = 2, repl = 1, filled = TRUE,
-  plot.title, plot.axes, axes = TRUE, frame.plot = TRUE, ...) {
+  res_variant = 1, inv_variant = 2, repl = 1, pip = TRUE, run = 1,
+  filled = TRUE, plot.title, plot.axes, axes = TRUE, frame.plot = TRUE,
+  auto_ylim = TRUE, auto_col = TRUE, auto_lty = TRUE, auto_title = FALSE, ...) {
   
   asp <- NA
   las <- 1
   xaxs <- yaxs <- "i"
+  xlab <- ylab <- NULL
+  chosen_colours <- c("white", "darkgrey")
   
   if (!axes) frame.plot <- FALSE
   
@@ -318,91 +339,181 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
   if (length(further_args) == 0) further_args <- list()
   found_terms <- names(further_args)
   
-  if (is.element("las", found_terms)) las <- further_args$las
-  if (is.element("xaxs", found_terms)) xaxs <- further_args$xaxs
-  if (is.element("yaxs", found_terms)) yaxs <- further_args$yaxs
-  if (is.element("asp", found_terms)) asp <- further_args$asp
-  
-  if (!is.element("fitness", names(x))) {
-    stop("Argument x does not appear to be an adaptInv object.", call. = FALSE)
+  if (is.character(repl)) {
+    stop("Argument repl not understood.", call. = FALSE)
   }
   
-  if (res_variant == inv_variant) {
-    stop("Arguments res_variant and inv_variant cannot be equal.", call. = FALSE)
-  }
-  fit_var_name_res <- paste0("variant", res_variant)
-  fit_var_name_fitres <- paste0("fitness_variant", res_variant)
-  fit_var_name_inv <- paste0("variant", inv_variant)
-  fit_var_name_fitinv <- paste0("fitness_variant", inv_variant)
-  
-  if (!is.element(fit_var_name_inv, names(x$fitness)) | !is.element(fit_var_name_fitinv, names(x$fitness))) {
-    stop("Pairwise invasibility analysis requires data on two variants.", call. = FALSE)
-  }
-  if (!is.element(fit_var_name_res, names(x$fitness)) | !is.element(fit_var_name_fitres, names(x$fitness))) {
-    stop("Pairwise invasibility analysis requires data on two variants.", call. = FALSE)
-  }
-  
-  correct_indices <- which(x$fitness$rep == repl)
-  if (length(correct_indices) == 0) {
-    stop("Replicate entered in argument repl could not be found.", call. = FALSE)
-  }
-  
-  res_column <- which(names(x$fitness) == fit_var_name_res)[1]
-  resfit_column <- which(names(x$fitness) == fit_var_name_fitres)[1]
-  inv_column <- which(names(x$fitness) == fit_var_name_inv)[1]
-  invfit_column <- which(names(x$fitness) == fit_var_name_fitinv)[1]
-  
-  resident_index <- x$fitness[correct_indices, res_column]
-  invader_index <- x$fitness[correct_indices, inv_column]
-  invader_fitness <- x$fitness[correct_indices, invfit_column]
-  
-  unique_variants <- unique(resident_index)
-  num_variants <- length(unique_variants)
-  uv_range <- range(unique_variants, finite = TRUE)
-  
-  ifmat <- matrix(invader_fitness, ncol = num_variants)
-  ifmat_simplified <- ifmat
-  ifmat_simplified[which(ifmat < 0)] <- -1
-  ifmat_simplified[which(ifmat > 0)] <- 1
-  found_levels <- unique(as.vector(ifmat_simplified))
-  xylim <- range(found_levels, finite = TRUE)
-  
-  if (filled & length(found_levels) == 1) {
-    filled <- FALSE
-    message("Invader fitness is consistently either negative or positive, relative to the resident.")
-    message("Cannot produce a filled contour plot.")
-  }
-  
-  mar.orig <- (par.orig <- par(c("mar", "las", "mfrow")))$mar
-  on.exit(par(par.orig))
-  
-  #do.call("plot.new", args = list())
-  #further_stuff <- list(xlim = xylim, ylim = xylim, "", xaxs = xaxs, yaxs = yaxs, asp = asp)
-  #do.call("plot.window", further_stuff)
-  #plot.window(xlim = xylim, ylim = xylim, "", xaxs = xaxs, yaxs = yaxs, asp = asp)
-  
-  if (!filled) {
-    contour(unique_variants, unique_variants, ifmat, col = "black")
+  if (!pip) {
+    if (!is.element("type", found_terms)) {
+      further_args$type <- "l"
+    }
+    if (is.element("col", found_terms)) {
+      auto_col <- FALSE
+    }
+    if (is.element("lty", found_terms)) {
+      auto_lty <- FALSE
+    }
+    if (is.element("ylim", found_terms)) {
+      auto_ylim <- FALSE
+    }
+    if (is.element("main", found_terms)) {
+      auto_title <- FALSE
+    }
+    basal_args <- further_args
+    
+    if (!is.element("ylab", names(further_args))) {
+      further_args$ylab <- "Population size"
+    }
+    if (!is.element("xlab", names(further_args))) {
+      further_args$xlab <- "Time"
+    }
+    
+    used_col <- 1
+    
+    if (auto_title) {
+      used_string <- paste("pop", x$labels[i, 1], "patch", x$labels[i, 2])
+      further_args$main <- used_string
+    }
+    
+    N_length <- length(x$N_out)
+    if (repl < 1 | repl > N_length) {
+      stop("Invalid replciate chosen.", call. = FALSE)
+    }
+    
+    N_dims <- dim(x$N_out[[repl]])
+    if (run < 1 | run > N_dims[3]) {
+      stop("Invalid run chosen.", call. = FALSE)
+    }
+    
+    used_N_mat <- x$N_out[[repl]][,,run]
+    
+    used_col <- 1
+    used_lty <- 1
+    
+    if (auto_ylim) {
+      further_args$ylim <- c(0, max(used_N_mat, na.rm = TRUE))
+    }
+    
+    if (auto_col) {
+      further_args$col <- used_col
+      basal_args$col <- used_col
+    }
+    if (auto_lty) {
+      further_args$lty <- used_lty
+    }
+    
+    num_pops <- dim(used_N_mat)[1]
+    c_xy <- xy.coords(x = c(1:length(used_N_mat[1,])), y = used_N_mat[1,])
+    further_args$x <- c_xy
+    
+    do.call("plot.default", further_args)
+    
+    if (num_pops > 1) {
+      for (j in c(2:num_pops)) {
+        if (auto_lty) {
+          used_lty <- used_lty + 1;
+          basal_args$lty <- used_lty
+        }
+        if (auto_col) {
+          used_col <- used_col + 1;
+          if (used_col > length(palette())) used_col <- 1;
+          basal_args$col <- used_col
+        }
+        used_col <- used_col + 1;
+        
+        basal_args$x <- c(1:length(used_N_mat[j,]))
+        basal_args$y <- used_N_mat[j,]
+        
+        do.call("lines", basal_args)
+      }
+    }
   } else {
-#    crazy_list <- list(x = unique_variants, y = unique_variants, z = ifmat_simplified,
-#      levels = c(-1, 0, 1), col = c("black", "white"))
-#    do.call(".filled.contour", crazy_list)
-    w <- (3 + mar.orig[2L]) * par("csi") * 2.54
-    layout(matrix(c(2, 1), ncol = 2L), widths = c(1, lcm(w)))
-    par(las = las)
-    mar <- mar.orig
-    par(mar=mar)
-    plot.new()
-    #plot.window(xlim = xylim, ylim = xylim, "", xaxs = xaxs, yaxs = yaxs, asp = asp)
-    plot.window(xlim = c(0, 1), ylim = uv_range, xaxs = "i", yaxs = "i")
+    if (is.element("las", found_terms)) las <- further_args$las
+    if (is.element("xaxs", found_terms)) xaxs <- further_args$xaxs
+    if (is.element("yaxs", found_terms)) yaxs <- further_args$yaxs
+    if (is.element("asp", found_terms)) asp <- further_args$asp
     
-    plot.new()
-    plot.window(xlim = uv_range, ylim = uv_range, "", xaxs = xaxs, yaxs = yaxs, asp = asp)
+    if (is.element("xlab", found_terms)) xlab <- further_args$xlab
+    if (is.element("ylab", found_terms)) xlab <- further_args$ylab
     
-    .filled.contour(unique_variants, unique_variants, ifmat_simplified,
-      levels = c(-1, 0, 1), col = c("black", "white"))
-  }
-  
+    if (is.element("col", found_terms)) {
+      found_colours <- further_args$col
+      if (length(found_colours) < 2) stop("Argument col needs 2 color choices.", call. = FALSE)
+      chosen_colours <- found_colours[c(1,2)]
+    }
+    
+    if (!is.element("fitness", names(x))) {
+      stop("Argument x does not appear to be an adaptInv object.", call. = FALSE)
+    }
+    
+    if (res_variant == inv_variant) {
+      stop("Arguments res_variant and inv_variant cannot be equal.", call. = FALSE)
+    }
+    fit_var_name_res <- paste0("variant", res_variant)
+    fit_var_name_fitres <- paste0("fitness_variant", res_variant)
+    fit_var_name_inv <- paste0("variant", inv_variant)
+    fit_var_name_fitinv <- paste0("fitness_variant", inv_variant)
+    
+    if (!is.element(fit_var_name_inv, names(x$fitness)) | !is.element(fit_var_name_fitinv, names(x$fitness))) {
+      stop("Pairwise invasibility analysis requires data on two variants.", call. = FALSE)
+    }
+    if (!is.element(fit_var_name_res, names(x$fitness)) | !is.element(fit_var_name_fitres, names(x$fitness))) {
+      stop("Pairwise invasibility analysis requires data on two variants.", call. = FALSE)
+    }
+    
+    correct_indices <- which(x$fitness$rep == repl)
+    if (length(correct_indices) == 0) {
+      stop("Replicate entered in argument repl could not be found.", call. = FALSE)
+    }
+    
+    res_column <- which(names(x$fitness) == fit_var_name_res)[1]
+    resfit_column <- which(names(x$fitness) == fit_var_name_fitres)[1]
+    inv_column <- which(names(x$fitness) == fit_var_name_inv)[1]
+    invfit_column <- which(names(x$fitness) == fit_var_name_fitinv)[1]
+    
+    resident_index <- x$fitness[correct_indices, res_column]
+    invader_index <- x$fitness[correct_indices, inv_column]
+    invader_fitness <- x$fitness[correct_indices, invfit_column]
+    
+    unique_variants <- unique(resident_index)
+    num_variants <- length(unique_variants)
+    uv_range <- range(unique_variants, finite = TRUE)
+    
+    ifmat <- matrix(invader_fitness, ncol = num_variants)
+    ifmat_simplified <- ifmat
+    ifmat_simplified[which(ifmat < 0)] <- -1
+    ifmat_simplified[which(ifmat > 0)] <- 1
+    found_levels <- unique(as.vector(ifmat_simplified))
+    xylim <- range(found_levels, finite = TRUE)
+    
+    if (filled & length(found_levels) == 1) {
+      filled <- FALSE
+      message("Invader fitness is consistently either negative or positive, relative to the resident.")
+      message("Cannot produce a filled contour plot.")
+    }
+    
+    mar.orig <- (par.orig <- par(c("mar", "las", "mfrow")))$mar
+    on.exit(par(par.orig))
+    
+    if (!filled) {
+      contour(unique_variants, unique_variants, ifmat, col = "black")
+    } else {
+      w <- (3 + mar.orig[2L]) * par("csi") * 2.54
+      layout(matrix(c(2, 1), ncol = 2L), widths = c(1, lcm(w)))
+      par(las = las)
+      mar <- mar.orig
+      par(mar=mar)
+      plot.new()
+      plot.window(xlim = c(0, 1), ylim = uv_range, xaxs = "i", yaxs = "i")
+      
+      plot.new()
+      plot.window(xlim = uv_range, ylim = uv_range, "", xaxs = xaxs,
+        yaxs = yaxs, asp = asp, xlab = xlab, ylab = ylab)
+      
+      .filled.contour(unique_variants, unique_variants, ifmat_simplified,
+        levels = c(-1, 0, 1), col = chosen_colours)
+    }
+    
     if (missing(plot.axes)) {
       if (axes) {
         title(main = "", xlab = "", ylab = "")
@@ -411,10 +522,9 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
       }
     }
     else plot.axes
-    if (frame.plot)
-      box()
-    if (missing(plot.title))
-      title(...)
+    if (frame.plot) box()
+    if (missing(plot.title)) title(...)
     else plot.title
     invisible()
+  }
 }

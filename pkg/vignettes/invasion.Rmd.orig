@@ -17,29 +17,33 @@ knitr::opts_chunk$set(
 ```
 
   <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset to illustrate pairwise invasibility analysis using package `adapt3`. We will conduct two such analyses, the first focused on testing variants created by altering matrix elements, and the second focused on testing variants created through alterations to vital rate models used in function-based MPM development.</p>
-  
+
   <p style="text-indent: 20px">To reduce vignette size, we have prevented some statements from running if they produce long stretches of output. Examples include most `summary()` calls. In these cases, we include hashtagged versions of these calls, and we encourage the user to run these statements without hashtags.</p>
-  
+
   <p style="text-indent: 20px">This vignette is only a sample analysis. Detailed information and instructions on using `adapt3` will be made available over time. Please check available resources on <a href = "http://www.revolutionarydemography.com/projects.html">the projects page</a> of the `{r}evolutionary demography` website.</p>
-  
-### Organism and population 
-  
+
+### Organism and population
+
   <p style="text-indent: 20px">*Cypripedium parviflorum* (family Orchidaceae) is a long-lived herbaceous perennial, native to North America and particularly common near the Great Lakes. It typically lives in wet, calcareous wetlands on the edges of woodlands [@shefferson_estimating_2001]. Individuals begin life as dust seeds, which may or may not germinate the year following production. Germination leads to the protocorm stage, a life history stage in which the individual grows underground in a non-photosynthetic, mycoheterotrophic state [@rasmussen_orchids_1995]. They may live in this state for several years prior to becoming a seedling, at which point they may or may not sprout. Maturity involves the production of flowering sprouts, each with several leaves and typically only a single flower, although an individual may produce mostly non-flowering sprouts. Most individuals produce only a single sprout, and vegetative dormancy is common and can occur for overa decade in a single individual [@shefferson_drivers_2018].</p>
-  
+
   <p style="text-indent: 20px">Data for this study were collected from a population in northeastern Illinois, from 2004 to 2009 [@shefferson_predicting_2017]. Each year at the start of the flowering season, all individuals at the site were located, with previously identified individuals identified based on their previous locations, and new individuals recorded via an exhaustive survey. Plant characteristics including the number of sprouts, which sprouts were flowering vs. non-flowering, and the number of flowers per sprout, were recorded for every individual in every year.</p>
-  
-### DATASET PREPARATION
-  
+
+### Dataset preparation
+
   <p style="text-indent: 20px">Package `adapt3` is built to take advantage of package `lefko3`, which offers a general language and architecture to build and analyze most kinds of matrix projection models, including even discretized integral projection models [@shefferson_lefko3_2021]. To start, we will load both `lefko3` and `adapt3`, and also load the dataset that we will use for our two examples.</p>
 ```{r ch1.0}
 library(lefko3)
 library(adapt3)
 
 data(cypa_data)
-#summary(cypa_data)
+summary(cypa_data)
 ```
 
   <p style="text-indent: 20px">This dataset includes information on 114 individuals arranged horizontally, by row. There are 26 variables, by column. The first two columns are variables giving identifying information about each individual, including the individual identity and the patch the individual is located in. This is followed by six sets of four columns, each named `Inf2XX`, `InfXX`, `VegXX`, and `PodXX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 3-6 refer to year 2004, columns 7-10 refer to year 2005, etc. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3`.</p>
+
+### Pairwise invasibility analysis focused on matrix element manipulation
+
+  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process is generally quite quick, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
   
   <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below.</p>
 ```{r ch1.1}
@@ -59,34 +63,26 @@ cypframe_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
   binhalfwidth = binvec)
 cypframe_raw
 ```
-
+  
   <p style="text-indent: 20px">Next we will create our verticalized dataset, in which our horizontal dataset is restructured to have all data for each individual split into blocks of 3 consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame.</p>
 ```{r ch1.2}
-cypraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
-  patchidcol = "patch", individcol = "plantid", blocksize = 4,
-  sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-  repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
-  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
-  NRasRep = TRUE)
-#summary_hfv(cypraw_v1)
+cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 2004,
+  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+  repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
+  stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
+summary_hfv(cypraw_v1)
 ```
-
-### Pairwise invasibility analysis focused on matrix element manipulation
   
-  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
-  
-### Part 1. MPM preparation
-  
-
+  <p style="text-indent: 20px">Now we will create our MPM. Later on, this will be projected through our invasibility analyses, so we need to be sure that it is constructed correctly. See our online book, <a href = "https://bookdown.org/cdorm/lefko3gentle/">lefko3: a gentle introduction</a>, for further material on how to construct MPMs properly.</p>
 ```{r ch1.3}
-cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", 
-    "XSm", "Sm", "SD", "P1"),
-  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep",
-    "rep"),
+cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", "XSm", "Sm", "SD",
+  "P1"),
+  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep", "rep"),
   eststage3 = c(NA, NA, NA, "D", "XSm", "Sm", NA, NA),
   eststage2 = c(NA, NA, NA, "XSm", "XSm", "XSm", NA, NA),
-  givenrate = c(0.10, 0.40, 0.25, NA, NA, NA, NA, NA),
-  multiplier = c(NA, NA, NA, NA, NA, NA, 1000, 1000),
+  givenrate = c(0.10, 0.20, 0.25, NA, NA, NA, NA, NA),
+  multiplier = c(NA, NA, NA, NA, NA, NA, 5000, 5000),
   type =c(1, 1, 1, 1, 1, 1, 3, 3),
   stageframe = cypframe_raw, historical = FALSE)
 
@@ -98,119 +94,203 @@ cypmean <- lmean(cypmatrix2r)
 
 summary(cypmean)
 ```
-
-
+  
+  <p style="text-indent: 20px">Now that we have our core MPM, we will need to clarify some of the assumptions of the projection. First, let's set up a starting vector residents and mutants. We will use the typical setting in this case, assuming that both variants will start with a single individual. We will make that individual a protocorm, since that is the youngest post-germination individual possible.</p>
 ```{r ch1.4}
-cyp_start <- start_input(cypmean, stage2 = c("SD", "P1", "D"),
-  value = c(1000, 200, 4))
+cyp_start <- start_input(cypmean, stage2 = "P1", value = 1)
 cyp_start
 ```
-
-
+  
+  <p style="text-indent: 20px">Next we need to define the desntiy dependence that we will use. In herbaceous perennial plants, the germination stage is most commonly negatively density dependent. In orchids, germination may be from a fresh seed, or from a previously dormant seed, and we will assume density dependence in both. Clarifying the exact nature and proper parameterization of density dependence is too great a topic for this vignette, and so we utilize the following two-parameter Ricker function-based approach, which we know works in this case.</p>
 ```{r ch1.5}
 c2d_4 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
   style = 2, time_delay = 1, alpha = 0.005, beta = 0.000005, type = c(2, 2))
 c2d_4
 ```
-
-A simple projection allows us to find a combination of density dependence and running time that produces a stable quasi-equilibrium
+  
+  <p style="text-indent: 20px">Next, we need to propose the variants to test. In the following data frame, which we call a trait axis, we define 15 genetic variants, each of which differs in fecundity multipliers. In a pairwise invasibility analysis, each possible pair permutation will be projected, with one serving as the resident population and the other as the mutant invader.</p>
 ```{r ch1.6}
-cyp_proj <- projection3(cypmean, times = 1000, start_frame = cyp_start,
-  density = c2d_4, integeronly = TRUE)
-plot(cyp_proj)
-```
-
-
-```{r ch1.7}
 cyp_ta <- trait_axis(stageframe = cypframe_raw, stage3 = rep("P1", 15),
-  stage2 = rep("rep", 15), multiplier = seq(from=0.1, to=10.0, length.out = 15),
+  stage2 = rep("rep", 15), multiplier = seq(from=1, to=3, length.out = 15),
   type = rep(2, 15))
 cyp_ta
 ```
-
-
-```{r ch1.8}
+  
+  <p style="text-indent: 20px">Finally, we will run our invasibility analysis.</p>
+```{r ch1.7}
 cyp_inv <- invade3(axis = cyp_ta, mpm = cypmean, density = c2d_4, times = 350,
   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
   var_per_run = 2)
 ```
-
-
+  
+  <p style="text-indent: 20px">Let's see some diagnostics, in particular by plotting the sizes of the resident and invader subpopulations in each time step. We will look at two separate runs.</p>
+```{r ch1.8}
+par(mfrow = c(2, 1))
+plot(cyp_inv, pip = FALSE, run = 25)
+plot(cyp_inv, pip = FALSE, run = 50)
+```
+  
+  <p style="text-indent: 20px">It appears that our mutant never gained a footing in the population, likely going extinct while the resident grew to a stable population size.</p>
+  
+  *****Need a summary statement here*****
+  
+  <p style="text-indent: 20px">Next, we can view the pairwise invasibility plot (PIP). This will give us a sense of whether we have any evolutionarily stable equilibria, or whether natural selection appears to completely directional.</p>
 ```{r ch1.9}
 plot(cyp_inv)
 ```
   
+  <p style="text-indent: 20px">It appears that natural selection is completely directional here, favoring increasingly large multipliers.</p>
   
+### Pairwise invasibility analysis focused on vital rate model manipulation
+
+  <p style="text-indent: 20px">Let's now move on to looking at analyzing function-based MPMs. This approach works best when vital rates are given as linear or non-linear functions of size, reproductive status, and other variables. Here, the linear or non-linear models can be manipulated by altering their y-intercepts.</p>
   
+  <p style="text-indent: 20px">Our example will once again focus on *Cypripedium parviflorum*. However, this time we will attempt to replicate the pairwise invasibility analysis results from the ahistorical, deterministic analysis of the same population published in Shefferson et al. @shefferson_life_2014. That analysis was used to explore the adaptive context of vegetative dormancy, and hence imperfect sprouting, and found an evolutionarily stable strategy at an intermediate level of sprouting. The dataset that we will use is not exactly the same as in the paper, nor is the methodology exactly the same, but our results should be similar. Because we will use a function-based approach, which is very similar to building an integral projection model (IPM), we will use a larger resolution life history model allowing for all observed sizes of both vegetative and flowering adults, where size is defined by the number of sprouts.</p>
+```{r ch2.0}
+stagevector <- c("SD", "P1", "SL", "D", "V1", "V2", "V3", "V4", "V5", "V6",
+  "V7", "F1", "F2", "F3", "F4", "F5", "F6", "F7")
+indataset <- c(0, 0, 0, 1, rep(1, 7), rep(1, 7))
+sizevector <- c(0, 0, 0, 0, c(1:7), c(1:7))
+repvector <- c(0, 0, 0, 0, rep(0, 7), rep(1, 7))
+obsvector <- c(0, 0, 0, 0, rep(1, 7), rep(1, 7))
+matvector <- c(0, 0, 0, 1, rep(1, 7), rep(1, 7))
+immvector <- c(0, 1, 1, 0, rep(0, 7), rep(0, 7))
+propvector <- c(1, 0, 0, 0, rep(0, 7), rep(0, 7))
+comments <- c("Dormant seed", "Protocorm", "Seedling", "Veg dorm",
+  "Veg adult 1 stem", "Veg adult 2 stems", "Veg adult 3 stems",
+  "Veg adult 4 stems", "Veg adult 5 stems", "Veg adult 6 stems",
+  "Veg adult 7 stems", "Flo adult 1 stem", "Flo adult 2 stems",
+  "Flo adult 3 stems", "Flo adult 4 stems", "Flo adult 5 stems",
+  "Flo adult 6 stems", "Flo adult 7 stems")
+
+cypframe_fb <- sf_create(sizes = sizevector, stagenames = stagevector, 
+  repstatus = repvector, obsstatus = obsvector, matstatus = matvector, 
+  propstatus = propvector, immstatus = immvector, indataset = indataset,
+  comments = comments)
+cypframe_fb
+```
   
+  <p style="text-indent: 20px">Now we will standardize our dataset using the new life history model, allowing lefko3 to develop new stage calls in all cases.</p>
+```{r ch2.1}
+cypraw_v2 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+  repstrbcol = "Inf2.94", fecacol = "Inf.94", fecbcol = "Inf2.94",
+  stageassign = cypframe_fb, stagesize = "sizeadded", NAas0 = TRUE)
+summary_hfv(cypraw_v2)
+```
   
-## Pairwise invasibility analysis focused on vital rate model manipulation  
-  
-  
-```{r ch1.10}
-cypmodels2 <- modelsearch(cypraw_v1, historical = FALSE, approach = "mixed", 
+  <p style="text-indent: 20px">Now we will develop the vital rate models. These will be developed as mixed, non-linear models. Survival probability, observation probability (equivalent to sprouting probability, which is assumed to be less than 1.0 due to vegetative dormancy), and reproduction probability will all be assessed assuming a binomial response under a logit link. Size and fecundity will be assessed assuming a Poisson distribution using a log link, though fecundity will be zero-inflated.</p>
+```{r ch2.2}
+cypmodels2 <- modelsearch(cypraw_v2, historical = FALSE, approach = "mixed", 
   vitalrates = c("surv", "obs", "size", "repst", "fec"),
-  sizedist = "negbin", size.trunc = TRUE, fecdist = "poisson", fec.zero = TRUE,
-  suite = "main", size = c("size3added", "size2added"),
+  sizedist = "poisson", fecdist = "poisson", fec.zero = TRUE,
+  suite = "main", size = c("size3added", "size2added", "size1added"),
   quiet = "partial")
-#summary(cypmodels2)
+summary(cypmodels2)
 ```
   
+  <p style="text-indent: 20px">The output of the vital rate modeling exercise is worth looking over. Note that our best-fit models vary in interesting ways. For example, increasing size has a negative impact on survival, while reproductive status has a positive impact. These patterns suggest interesting trade-offs that might constrain natural selection. Also note the model accuracy in the best-fit models, which includes some models with high accuracy (e.g., survival, at around 88%), and others with fairly low accuracy (e.g., primary size, with roughly 27%).</p>
   
-```{r ch1.11}
-cypmatrix2f <- flefko2(stageframe = cypframe_raw, supplement = cypsupp2r, 
-  modelsuite = cypmodels2, data = cypraw_v1)
+  <p style="text-indent: 20px">Our next step will be to develop an MPM. Although we will not project this MPM through our invasibility analysis, this is our chance to see what the matrices will look like that will be built in the course of analysis. So, we will set up the proper supplemental parameters, and then create MPMs to look at more carefully.</p>
+```{r ch2.3}
+germ <- 0.2
+sl_mult <- 0.2
+sl_surv <- 0.2
+seeds_per_fruit <- 10000
+
+cypsupp2f <- supplemental(stage3 = c("SD", "P1", "SL", "SL", "D", "V1", "mat",
+    "mat", "mat", "SD", "P1"),
+  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "D", "V1", "V2", "rep", "rep"),
+  eststage3 = c(NA, NA, NA, NA, "D", "V1", "mat", "mat", "mat", NA, NA), 
+  eststage2 = c(NA, NA, NA, NA, "V1", "V1", "D", "V1", "V2", NA, NA),
+  givenrate = c(0.1, germ, sl_surv, sl_surv, NA, NA, NA, NA, NA, NA, NA),
+  multiplier = c(NA, NA, NA, NA, sl_mult, sl_mult, 0.4, 0.4, 0.4,
+    0.5 * seeds_per_fruit * 0.1, 0.5 * seeds_per_fruit * germ),
+  type =c(1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3),
+  stageframe = cypframe_fb, historical = FALSE)
+
+cypmatrix2f <- flefko2(stageframe = cypframe_fb, supplement = cypsupp2f, 
+  modelsuite = cypmodels2, data = cypraw_v2)
+summary(cypmatrix2f)
 ```
   
-```{r ch1.12}
-cyp_vrm <- miniMod(cypmodels2, hfv_data = cypraw_v1)
+  <p style="text-indent: 20px">Since everything looks alright, we will now need to translate the `lefkoMod` object that we created to hold our vital rate models into an object accessible by `adapt3`. We will do that with the `miniMod()` function in package `lefko3`.</p>
+```{r ch2.4}
+cyp_vrm <- miniMod(cypmodels2, hfv_data = cypraw_v2)
+```
+  
+  <p style="text-indent: 20px">Next, as before, we need to define a starting vector for the simulation. We will use the same starting vector as before, using a single protocorm individual.</p>
+```{r ch2.5}
+cyp_start <- start_input(cypmatrix2f, stage2 = "P1", value = 1)
+cyp_start
+```
+  
+  <p style="text-indent: 20px">Next, we will set up the proper density dependence to use in simulations. As before, we advise that users explore the proper development of density dependence elsewhere.</p>
+```{r ch2.6}
+c2d_1 <- density_input(cypmatrix2f, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
+  style = 1, time_delay = 1, alpha = 1.1, beta = 0.0000005, type = c(1, 2))
+c2d_1
 ```
 
-
-```{r ch1.13}
-c2d_5 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
-  style = 1, time_delay = 1, alpha = 0.05, beta = 0.00000005, type = c(2, 2))
-c2d_5
+  
+  <p style="text-indent: 20px">Next, we will quickly run a projection of the sample MPM under the density dependence that we set above, using `lefko3`'s `f_projection3()` function. This will give us a sense of whether everything appears to be working.</p>
+```{r ch2.7}
+cyp_proj1 <- f_projection3(format = 3, stageframe = cypframe_fb,
+  supplement = cypsupp2f, modelsuite = cypmodels2, times = 1000,
+  start_frame = cyp_start, data = cypraw_v2, density = c2d_1,
+  integeronly = FALSE, year = 2008)
+plot(cyp_proj1)
 ```
-
-
-A simple projection allows us to find a combination of density dependence and running time that produces a stable quasi-equilibrium
-```{r ch1.14}
-cyp_proj <- f_projection3(format = 3, stageframe = cypframe_raw,
-  supplement = cypsupp2r, modelsuite = cypmodels2, times = 1000,
-  start_frame = cyp_start, density = c2d_5, data = cypraw_v1, year = 2006,
-  integeronly = TRUE)
-plot(cyp_proj)
-```
-
-
-```{r ch1.15}
-current_traits <- ta_skeleton(10)
-current_traits$obs_dev <- seq(from = -100, to = 100, length.out = 10)
+  
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 10 variants total, and please note that the resulting analysis may take a while to run.</p>
+```{r ch2.8}
+current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
+  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 10)) 
 current_traits
 ```
+  
+  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 10 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values).</p>
+```{r ch2.9}
+cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
+  starts = cyp_start, years = 2008, stageframe = cypframe_fb,
+  supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
+  times = 1000, fitness_times = 100, var_per_run = 2, stochastic = FALSE,
+  density = c2d_1)
+```
+  
+  *****Need a summary statement*****
+  
+  <p style="text-indent: 20px">As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 8, then there will be no run 50 and that line will lead to an error.</p>
+```{r ch2.10}
+par(mfrow = c(2, 1))
 
-
-```{r ch1.16}
-cyp_inv2 <- invade3(axis = current_traits, vrm = cyp_vrm, starts = cyp_start,
-  stageframe = cypframe_raw, supplement = cypsupp2r, entry_time = c(0, 250),
-  integeronly = TRUE, times = 350, fitness_times = 30, var_per_run = 2,
-  years = 2006, density = c2d_5, err_check = "extreme")
+plot(cyp_inv3, pip = FALSE, run = 1)
+plot(cyp_inv3, pip = FALSE, run = 11)
+```
+  
+  <p style="text-indent: 20px">At first glance the invader seems to be so low as to be extinct in both cases. However, we can take a look at the actual growth of the invader in run 11 as follows.</p>
+```{r ch2.11}
+cyp_inv3$N_out[[1]][2,,11]
+```
+  
+  <p style="text-indent: 20px">We can see that the invader does grow in at least some of the simulations. Now let's see the pairwise invasibility plot (PIP).</p>
+```{r ch2.12}
+plot(cyp_inv3)
 ```
 
-
-```{r ch1.17}
-plot(cyp_inv2)
-```
+  <p style="text-indent: 20px">A fairly beautiful PIP, if I say so myself! We find that there appears to be an ESS value for sprouting. More to come as this package develops....</p>
 
 
+## Acknowledgements
 
+<p style="text-indent: 20px">
 
-## Acknowledgements 
-  
-  <p style="text-indent: 20px">We are grateful to two anonymous reviewers whose scrutiny improved the quality of this vignette. The project resulting in this package and this tutorial was funded by Grant-In-Aid 19H03298 from the Japan Society for the Promotion of Science.</p>
-  
-  
+We are grateful to two anonymous reviewers whose scrutiny improved the quality of this vignette. The project resulting in this package and this tutorial was funded by Grant-In-Aid 23H02552 from the Japan Society for the Promotion of Science.
+
+</p>
+
 ## Literature cited
 
-<div id="refs"></div>
+::: {#refs}
+:::

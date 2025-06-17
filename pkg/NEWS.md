@@ -2,9 +2,14 @@
 
 ## NEW FEATURES
 
-* Function plot.adaptProj() created to plot community projections.
+* Functions plot.adaptProj() and summary.adaptProj() created to plot and
+  summarize community projections, respectively.
+
+* ESS optimization routine enabled for function invade3().
 
 * New invasibility analysis vignette added.
+
+* Threshold values for 0s created for function invade3().
 
 # adapt 0.9.6 (2025-04-12)
 

@@ -11,11 +11,17 @@
   res_variant = 1,
   inv_variant = 2,
   repl = 1,
+  pip = TRUE,
+  run = 1,
   filled = TRUE,
   plot.title,
   plot.axes,
   axes = TRUE,
   frame.plot = TRUE,
+  auto_ylim = TRUE,
+  auto_col = TRUE,
+  auto_lty = TRUE,
+  auto_title = FALSE,
   ...
 )
 }
@@ -38,6 +44,12 @@ subpopulation.}
 \item{repl}{The replicate number to plot, in the \code{fitness} data frame
 within the \code{adaptInv} object entered in argument \code{x}.}
 
+\item{pip}{A logical value indicating whether to produce a pairwise
+invasibility plot. If \code{FALSE}, then will produce a diagnostic population
+size plot. Defaults to \code{TRUE}.}
+
+\item{run}{An integer giving the run to plot if \code{pip = FALSE}.}
+
 \item{filled}{A logical value indicating whether to produce a filled contour
 plot, or a standard contour plot. Defaults to \code{TRUE}, but reverts if
 invader fitness is consistently positive, or consistently negative, relative
@@ -51,6 +63,25 @@ to the resident.}
 Defaults to \code{TRUE}.}
 
 \item{frame.plot}{A logical value indicating whether to frame the plot.}
+
+\item{auto_ylim}{A logical value indicating whether the maximum of the y axis
+should be determined automatically. Defaults to \code{TRUE}, but reverts to
+\code{FALSE} if any setting for \code{ylim} is given. Used only if
+\code{pip = FALSE}.}
+
+\item{auto_col}{A logical value indicating whether to shift the color of
+lines associated with each patch automatically. Defaults to \code{TRUE}, but
+reverts to \code{FALSE} if any setting for \code{col} is given. Used only if
+\code{pip = FALSE}.}
+
+\item{auto_lty}{A logical value indicating whether to shift the line type
+associated with each replicate automatically. Defaults to \code{TRUE}, but
+reverts to \code{FALSE} if any setting for \code{lty} is given. Used only if
+\code{pip = FALSE}.}
+
+\item{auto_title}{A logical value indicating whether to add a title to each
+plot. The plot is composed of the concatenated population and patch names.
+Defaults to \code{FALSE}. Used only if \code{pip = FALSE}.}
 
 \item{...}{Other parameters used by functions \code{plot.default()}.}
 }
@@ -66,8 +97,8 @@ Introduction to Numerical Methods (2010, Oxford University Press).
 \section{Notes}{
 
 By default, function \code{plot.adaptInv} produces a filled contour plot in
-which black regions show where the invader has negative fitness relative to
-the resident, and white regions show where the invader has positive fitness
+which grey regions show where the invader has positive fitness relative to
+the resident, and white regions show where the invader has negative fitness
 relative to the resident. Fitness here refers to the Lyapunov coefficient,
 calculated over the final \code{fitness_times} in the original call to
 function \code{\link{invade3}()}.
@@ -138,6 +169,5 @@ cyp_inv <- invade3(axis = cyp_ta, mpm = cypmean, density = c2d_4, times = 350,
   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
   var_per_run = 2)
 plot(cyp_inv)
-
 
 }

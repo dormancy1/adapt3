@@ -26,9 +26,14 @@ using namespace AdaptUtils;
 // 3. void project3_fb_core  Engine Projecting Multiple Function-based MPMs With or Without Density Dependence
 // 4. List project3  Project Multiple MPMs With or Without Density Dependence
 // 5. List cleanup3_inv  Clean Up RObject Inputs for Invasion Analysis
-// 6. void invade3_pre_core  Engine Running Invasion Analyses of Existing MPMs
-// 7. void invade3_fb_core  Engine Running Invasion Analyses of Function-based MPMs
-// 8. List invade3  Run Pairwise and Multiple Invasion Analysis
+// 6. void optim_ta_setup  Create Trait Axis Reassessed for Trait Optimization
+// 7. void invpre_project  Core Pre-Existing MPM Projection Engine
+// 8. void invpre_optim  Core Pre-Existing MPM Projection Engine for ESS Evaluation
+// 9. void invade3_pre_core  Engine Running Invasion Analyses of Existing MPMs
+// 10. void invfb_project  Core Function-Based Projection Engine
+// 11. void invfb_optim  Core Function-Based Projection Engine for ESS Evaluation
+// 12. void invade3_fb_core  Engine Running Invasion Analyses of Function-based MPMs
+// 13. List invade3  Run Pairwise and Multiple Invasion Analysis
 
 
 
@@ -5459,7 +5464,6 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' matrices prior to projection.
 //' 
 //' @examples
-//' 
 //' library(lefko3)
 //' data(cypdata)
 //' 
@@ -5488,12 +5492,11 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 //'   NRasRep = TRUE)
 //'   
-//' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 6, firstyear = 2004,
-//'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
-//'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-//'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
-//'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
-//'   NRasRep = TRUE)
+//' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+//'   individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
+//'   sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
+//'   repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
+//'   stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
 //' 
 //' cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
 //'     "XSm", "Sm", "SD", "P1"),
@@ -5513,8 +5516,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 //' 
 //' cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
-//'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
-//'   size = c("size3added", "size2added"), supplement = cypsupp2r_alt,
+//'   year = "all", stages = c("stage3", "stage2", "stage1"),
+//'   size = c("size3added", "size2added"), supplement = cypsupp2r,
 //'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 //' 
 //' cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)
@@ -5532,6 +5535,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' 
 //' cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
 //'   density = cyp_dv_list, times = 10)
+//'   
+//' summary(cyp_comm_proj)
 //' 
 //' @export project3
 // [[Rcpp::export(project3)]]
@@ -9392,7 +9397,1551 @@ Rcpp::List cleanup3_inv (Nullable<RObject> mpm = R_NilValue,
   return(out_list);
 }
 
-//' Engine Running Invasion Analyses of Existing MPMs
+//' Create Trait Axis Reassessed for Trait Optimization
+//' 
+//' @name optim_ta_setup
+//' 
+//' @param ta_reassessed A data frame giving trait axis data post-processing
+//' with function \code{ta_reassess()}.
+//' @param optim_ta A data frame giving trait axis data processed for ESS
+//' optimization. This is one of two data frames, and gives the core info.
+//' @param optim_ta_995 A data frame giving trait axis data processed for ESS
+//' optimization. This is one of two data frames, and gives info for 99.5% the
+//' values of variable traits in \code{optim_ta}.
+//' @param opt_res If evaluating optima, then this integer gives the number
+//' of variants to create between each minimum and maximum for each trait found
+//' to be variable in the input trait axis. Defaults to \code{100}.
+//' 
+//' @return Creates a new data frame with all variants to be tested, in order,
+//' and places that at the \code{optim_ta} reference.
+//' 
+//' @keywords internal
+//' @noRd
+inline void optim_ta_setup (DataFrame& ta_reassessed, DataFrame& optim_ta,
+  DataFrame& optim_ta_995, int opt_res, bool& opt_res_squared) {
+  
+  //Rcout << "Entered optim_ta_setup              ";
+  
+  // Vectors for optim_ta
+  IntegerVector optim_variant;
+  
+  StringVector optim_stage3;
+  StringVector optim_stage2;
+  StringVector optim_stage1;
+  IntegerVector optim_age3;
+  IntegerVector optim_age2;
+  StringVector optim_eststage3;
+  StringVector optim_eststage2;
+  StringVector optim_eststage1;
+  IntegerVector optim_estage3;
+  IntegerVector optim_estage2;
+  IntegerVector optim_convtype;
+  IntegerVector optim_convtype_t12;
+  StringVector optim_year2;
+  IntegerVector optim_mpm_altered;
+  IntegerVector optim_vrm_altered;
+  
+  NumericVector optim_givenrate;
+  NumericVector optim_offset;
+  NumericVector optim_multiplier;
+  
+  NumericVector optim_surv_dev;
+  NumericVector optim_obs_dev;
+  NumericVector optim_size_dev;
+  NumericVector optim_sizeb_dev;
+  NumericVector optim_sizec_dev;
+  NumericVector optim_repst_dev;
+  NumericVector optim_fec_dev;
+  
+  NumericVector optim_jsurv_dev;
+  NumericVector optim_jobs_dev;
+  NumericVector optim_jsize_dev;
+  NumericVector optim_jsizeb_dev;
+  NumericVector optim_jsizec_dev;
+  NumericVector optim_jrepst_dev;
+  NumericVector optim_jmatst_dev;
+  
+  // Vectors for optim_ta_995
+  IntegerVector optim_variant_995;
+  
+  StringVector optim_stage3_995;
+  StringVector optim_stage2_995;
+  StringVector optim_stage1_995;
+  IntegerVector optim_age3_995;
+  IntegerVector optim_age2_995;
+  StringVector optim_eststage3_995;
+  StringVector optim_eststage2_995;
+  StringVector optim_eststage1_995;
+  IntegerVector optim_estage3_995;
+  IntegerVector optim_estage2_995;
+  IntegerVector optim_convtype_995;
+  IntegerVector optim_convtype_t12_995;
+  StringVector optim_year2_995;
+  IntegerVector optim_mpm_altered_995;
+  IntegerVector optim_vrm_altered_995;
+  
+  NumericVector optim_givenrate_995;
+  NumericVector optim_offset_995;
+  NumericVector optim_multiplier_995;
+  
+  NumericVector optim_surv_dev_995;
+  NumericVector optim_obs_dev_995;
+  NumericVector optim_size_dev_995;
+  NumericVector optim_sizeb_dev_995;
+  NumericVector optim_sizec_dev_995;
+  NumericVector optim_repst_dev_995;
+  NumericVector optim_fec_dev_995;
+  
+  NumericVector optim_jsurv_dev_995;
+  NumericVector optim_jobs_dev_995;
+  NumericVector optim_jsize_dev_995;
+  NumericVector optim_jsizeb_dev_995;
+  NumericVector optim_jsizec_dev_995;
+  NumericVector optim_jrepst_dev_995;
+  NumericVector optim_jmatst_dev_995;
+  
+  // Vectors supplied in ta_reassessed
+  IntegerVector variant = as<IntegerVector>(ta_reassessed["variant"]);
+  
+  NumericVector givenrate = as<NumericVector>(ta_reassessed["givenrate"]);
+  NumericVector offset = as<NumericVector>(ta_reassessed["offset"]);
+  NumericVector multiplier = as<NumericVector>(ta_reassessed["multiplier"]);
+  
+  NumericVector surv_dev = as<NumericVector>(ta_reassessed["surv_dev"]);
+  NumericVector obs_dev = as<NumericVector>(ta_reassessed["obs_dev"]);
+  NumericVector size_dev = as<NumericVector>(ta_reassessed["size_dev"]);
+  NumericVector sizeb_dev = as<NumericVector>(ta_reassessed["sizeb_dev"]);
+  NumericVector sizec_dev = as<NumericVector>(ta_reassessed["sizec_dev"]);
+  NumericVector repst_dev = as<NumericVector>(ta_reassessed["repst_dev"]);
+  NumericVector fec_dev = as<NumericVector>(ta_reassessed["fec_dev"]);
+  NumericVector jsurv_dev = as<NumericVector>(ta_reassessed["jsurv_dev"]);
+  NumericVector jobs_dev = as<NumericVector>(ta_reassessed["jobs_dev"]);
+  NumericVector jsize_dev = as<NumericVector>(ta_reassessed["jsize_dev"]);
+  NumericVector jsizeb_dev = as<NumericVector>(ta_reassessed["jsizeb_dev"]);
+  NumericVector jsizec_dev = as<NumericVector>(ta_reassessed["jsizec_dev"]);
+  NumericVector jrepst_dev = as<NumericVector>(ta_reassessed["jrepst_dev"]);
+  NumericVector jmatst_dev = as<NumericVector>(ta_reassessed["jmatst_dev"]);
+  
+  StringVector stage3 = as<StringVector>(ta_reassessed["stage3"]);
+  StringVector stage2 = as<StringVector>(ta_reassessed["stage2"]);
+  StringVector stage1 = as<StringVector>(ta_reassessed["stage1"]);
+  IntegerVector age3 = as<IntegerVector>(ta_reassessed["age3"]);
+  IntegerVector age2 = as<IntegerVector>(ta_reassessed["age2"]);
+  StringVector eststage3 = as<StringVector>(ta_reassessed["eststage3"]);
+  StringVector eststage2 = as<StringVector>(ta_reassessed["eststage2"]);
+  StringVector eststage1 = as<StringVector>(ta_reassessed["eststage1"]);
+  IntegerVector estage3 = as<IntegerVector>(ta_reassessed["estage3"]);
+  IntegerVector estage2 = as<IntegerVector>(ta_reassessed["estage2"]);
+  IntegerVector convtype = as<IntegerVector>(ta_reassessed["convtype"]);
+  IntegerVector convtype_t12 = as<IntegerVector>(ta_reassessed["convtype_t12"]);
+  StringVector year2 = as<StringVector>(ta_reassessed["year2"]);
+  IntegerVector mpm_altered = as<IntegerVector>(ta_reassessed["mpm_altered"]);
+  IntegerVector vrm_altered = as<IntegerVector>(ta_reassessed["vrm_altered"]);
+  
+  NumericVector givenrate_noNA = na_omit(givenrate);
+  NumericVector offset_noNA = na_omit(offset);
+  NumericVector multiplier_noNA = na_omit(multiplier);
+  NumericVector surv_dev_noNA = na_omit(surv_dev);
+  NumericVector obs_dev_noNA = na_omit(obs_dev);
+  NumericVector size_dev_noNA = na_omit(size_dev);
+  NumericVector sizeb_dev_noNA = na_omit(sizeb_dev);
+  NumericVector sizec_dev_noNA = na_omit(sizec_dev);
+  NumericVector repst_dev_noNA = na_omit(repst_dev);
+  NumericVector fec_dev_noNA = na_omit(fec_dev);
+  NumericVector jsurv_dev_noNA = na_omit(jsurv_dev);
+  NumericVector jobs_dev_noNA = na_omit(jobs_dev);
+  NumericVector jsize_dev_noNA = na_omit(jsize_dev);
+  NumericVector jsizeb_dev_noNA = na_omit(jsizeb_dev);
+  NumericVector jsizec_dev_noNA = na_omit(jsizec_dev);
+  NumericVector jrepst_dev_noNA = na_omit(jrepst_dev);
+  NumericVector jmatst_dev_noNA = na_omit(jmatst_dev);
+  
+  bool givenrate_NA {false};
+  bool multiplier_NA {false};
+  bool offset_NA {false};
+  bool surv_dev_NA {false};
+  bool obs_dev_NA {false};
+  bool size_dev_NA {false};
+  bool sizeb_dev_NA {false};
+  bool sizec_dev_NA {false};
+  bool repst_dev_NA {false};
+  bool fec_dev_NA {false};
+  bool jsurv_dev_NA {false};
+  bool jobs_dev_NA {false};
+  bool jsize_dev_NA {false};
+  bool jsizeb_dev_NA {false};
+  bool jsizec_dev_NA {false};
+  bool jrepst_dev_NA {false};
+  bool jmatst_dev_NA {false};
+  
+  //Rcout << "optim_ta_setup A              ";
+  
+  int var1_length {0};
+  
+  for (int i = 0; i < static_cast<int>(variant.length()); i++) {
+    if (variant(i) == 1) var1_length++;
+  }
+  
+  if (var1_length == 0) {
+    throw Rcpp::exception("Cannot locate variant 1. Cannot determine variant dimensions.", false);
+  }
+  
+  double givenrate_min {0};
+  double givenrate_max {0};
+  
+  if (static_cast<int>(givenrate_noNA.length()) > 0) {
+    givenrate_min = min(givenrate_noNA);
+    givenrate_max = max(givenrate_noNA);
+  } else {
+    givenrate_NA = true;
+  }
+  
+  double offset_min {0};
+  double offset_max {0};
+  
+  if (static_cast<int>(offset_noNA.length()) > 0) {
+    offset_min = min(offset_noNA);
+    offset_max = max(offset_noNA);
+  } else {
+    offset_NA = true;
+  }
+  
+  double multiplier_min {0};
+  double multiplier_max {0};
+  
+  if (static_cast<int>(multiplier_noNA.length()) > 0) {
+    multiplier_min = min(multiplier_noNA);
+    multiplier_max = max(multiplier_noNA);
+  } else {
+    multiplier_NA = true;
+  }
+  
+  double surv_dev_min {0};
+  double surv_dev_max {0};
+  
+  if (static_cast<int>(surv_dev_noNA.length()) > 0) {
+    surv_dev_min = min(surv_dev_noNA);
+    surv_dev_max = max(surv_dev_noNA);
+  } else {
+    surv_dev_NA = true;
+  }
+  
+  double obs_dev_min {0};
+  double obs_dev_max {0};
+  
+  if (static_cast<int>(obs_dev_noNA.length()) > 0) {
+    obs_dev_min = min(obs_dev_noNA);
+    obs_dev_max = max(obs_dev_noNA);
+  } else {
+    obs_dev_NA = true;
+  }
+  
+  double size_dev_min {0};
+  double size_dev_max {0};
+  
+  if (static_cast<int>(size_dev_noNA.length()) > 0) {
+    size_dev_min = min(size_dev_noNA);
+    size_dev_max = max(size_dev_noNA);
+  } else {
+    size_dev_NA = true;
+  }
+  
+  double sizeb_dev_min {0};
+  double sizeb_dev_max {0};
+  
+  if (static_cast<int>(sizeb_dev_noNA.length()) > 0) {
+    sizeb_dev_min = min(sizeb_dev_noNA);
+    sizeb_dev_max = max(sizeb_dev_noNA);
+  } else {
+    sizeb_dev_NA = true;
+  }
+  
+  double sizec_dev_min {0};
+  double sizec_dev_max {0};
+  
+  if (static_cast<int>(sizec_dev_noNA.length()) > 0) {
+    sizec_dev_min = min(sizec_dev_noNA);
+    sizec_dev_max = max(sizec_dev_noNA);
+  } else {
+    sizec_dev_NA = true;
+  }
+  
+  double repst_dev_min {0};
+  double repst_dev_max {0};
+  
+  if (static_cast<int>(repst_dev_noNA.length()) > 0) {
+    repst_dev_min = min(repst_dev_noNA);
+    repst_dev_max = max(repst_dev_noNA);
+  } else {
+    repst_dev_NA = true;
+  }
+  
+  double fec_dev_min {0};
+  double fec_dev_max {0};
+  
+  if (static_cast<int>(fec_dev_noNA.length()) > 0) {
+    fec_dev_min = min(fec_dev_noNA);
+    fec_dev_max = max(fec_dev_noNA);
+  } else {
+    fec_dev_NA = true;
+  }
+  
+  double jsurv_dev_min {0};
+  double jsurv_dev_max {0};
+  
+  if (static_cast<int>(jsurv_dev_noNA.length()) > 0) {
+    jsurv_dev_min = min(jsurv_dev_noNA);
+    jsurv_dev_max = max(jsurv_dev_noNA);
+  } else {
+    jsurv_dev_NA = true;
+  }
+  
+  double jobs_dev_min {0};
+  double jobs_dev_max {0};
+  
+  if (static_cast<int>(jobs_dev_noNA.length()) > 0) {
+    jobs_dev_min = min(jobs_dev_noNA);
+    jobs_dev_max = max(jobs_dev_noNA);
+  } else {
+    jobs_dev_NA = true;
+  }
+  
+  double jsize_dev_min {0};
+  double jsize_dev_max {0};
+  
+  if (static_cast<int>(jsize_dev_noNA.length()) > 0) {
+    jsize_dev_min = min(jsize_dev_noNA);
+    jsize_dev_max = max(jsize_dev_noNA);
+  } else {
+    jsize_dev_NA = true;
+  }
+  
+  double jsizeb_dev_min {0};
+  double jsizeb_dev_max {0};
+  
+  if (static_cast<int>(jsizeb_dev_noNA.length()) > 0) {
+    jsizeb_dev_min = min(jsizeb_dev_noNA);
+    jsizeb_dev_max = max(jsizeb_dev_noNA);
+  } else {
+    jsizeb_dev_NA = true;
+  }
+  
+  double jsizec_dev_min {0};
+  double jsizec_dev_max {0};
+  
+  if (static_cast<int>(jsizec_dev_noNA.length()) > 0) {
+    jsizec_dev_min = min(jsizec_dev_noNA);
+    jsizec_dev_max = max(jsizec_dev_noNA);
+  } else {
+    jsizec_dev_NA = true;
+  }
+  
+  double jrepst_dev_min {0};
+  double jrepst_dev_max {0};
+  
+  if (static_cast<int>(jrepst_dev_noNA.length()) > 0) {
+    jrepst_dev_min = min(jrepst_dev_noNA);
+    jrepst_dev_max = max(jrepst_dev_noNA);
+  } else {
+    jrepst_dev_NA = true;
+  }
+  
+  double jmatst_dev_min {0};
+  double jmatst_dev_max {0};
+  
+  if (static_cast<int>(jmatst_dev_noNA.length()) > 0) {
+    jmatst_dev_min = min(jmatst_dev_noNA);
+    jmatst_dev_max = max(jmatst_dev_noNA);
+  } else {
+    jmatst_dev_NA = true;
+  }
+  
+  
+  //Rcout << "optim_ta_setup B              ";
+  
+  int found_variables {0};
+  bool first_var_found {false};
+  
+  if (givenrate_min != givenrate_max) found_variables++;
+  //Rcout << "found_variables givenrate: " << found_variables << endl;
+  if (offset_min != offset_max) found_variables++;
+  //Rcout << "found_variables offset: " << found_variables << endl;
+  if (multiplier_min != multiplier_max) found_variables++;
+  //Rcout << "found_variables multiplier: " << found_variables << endl;
+  
+  if (surv_dev_min != surv_dev_max) found_variables++;
+  //Rcout << "found_variables surv_dev: " << found_variables << endl;
+  if (obs_dev_min != obs_dev_max) found_variables++;
+  //Rcout << "found_variables obs_dev: " << found_variables << endl;
+  if (size_dev_min != size_dev_max) found_variables++;
+  //Rcout << "found_variables size_dev: " << found_variables << endl;
+  if (sizeb_dev_min != sizeb_dev_max) found_variables++;
+  //Rcout << "found_variables sizeb_dev: " << found_variables << endl;
+  if (sizec_dev_min != sizec_dev_max) found_variables++;
+  //Rcout << "found_variables sizec_dev: " << found_variables << endl;
+  if (repst_dev_min != repst_dev_max) found_variables++;
+  //Rcout << "found_variables repst_dev: " << found_variables << endl;
+  if (fec_dev_min != fec_dev_max) found_variables++;
+  //Rcout << "found_variables fec_dev: " << found_variables << endl;
+  if (jsurv_dev_min != jsurv_dev_max) found_variables++;
+  //Rcout << "found_variables jsurv_dev: " << found_variables << endl;
+  if (jobs_dev_min != jobs_dev_max) found_variables++;
+  //Rcout << "found_variables jobs_dev: " << found_variables << endl;
+  if (jsize_dev_min != jsize_dev_max) found_variables++;
+  //Rcout << "found_variables jsize_dev: " << found_variables << endl;
+  if (jsizeb_dev_min != jsizeb_dev_max) found_variables++;
+  //Rcout << "found_variables jsizeb_dev: " << found_variables << endl;
+  if (jsizec_dev_min != jsizec_dev_max) found_variables++;
+  //Rcout << "found_variables jsizec_dev: " << found_variables << endl;
+  if (jrepst_dev_min != jrepst_dev_max) found_variables++;
+  //Rcout << "found_variables jrepst_dev: " << found_variables << endl;
+  if (jmatst_dev_min != jmatst_dev_max) found_variables++;
+  //Rcout << "found_variables jmatst_dev: " << found_variables << endl;
+  
+  if (found_variables > 2) {
+    throw Rcpp::exception("Only one or two traits may be optimized.", false);
+  }
+  
+  int data_frame_length = opt_res * var1_length;
+  
+  //Rcout << "optim_ta_setup C              ";
+  
+  {
+    if (found_variables == 1) {
+      IntegerVector chopping_block (opt_res * var1_length);
+      
+      StringVector optim_stage3_cb (opt_res * var1_length);
+      StringVector optim_stage2_cb (opt_res * var1_length);
+      StringVector optim_stage1_cb (opt_res * var1_length);
+      IntegerVector optim_age3_cb (opt_res * var1_length);
+      IntegerVector optim_age2_cb (opt_res * var1_length);
+      StringVector optim_eststage3_cb (opt_res * var1_length);
+      StringVector optim_eststage2_cb (opt_res * var1_length);
+      StringVector optim_eststage1_cb (opt_res * var1_length);
+      IntegerVector optim_estage3_cb (opt_res * var1_length);
+      IntegerVector optim_estage2_cb (opt_res * var1_length);
+      IntegerVector optim_convtype_cb (opt_res * var1_length);
+      IntegerVector optim_convtype_t12_cb (opt_res * var1_length);
+      StringVector optim_year2_cb (opt_res * var1_length);
+      IntegerVector optim_mpm_altered_cb (opt_res * var1_length);
+      IntegerVector optim_vrm_altered_cb (opt_res * var1_length);
+      
+      for (int i = 0; i < opt_res; i++) {
+        for (int j = 0; j < var1_length; j++) {
+          chopping_block((i * var1_length) + j) = i + 1;
+          optim_stage3_cb((i * var1_length) + j) = stage3(j);
+          optim_stage2_cb((i * var1_length) + j) = stage2(j);
+          optim_stage1_cb((i * var1_length) + j) = stage1(j);
+          optim_age3_cb((i * var1_length) + j) = age3(j);
+          optim_age2_cb((i * var1_length) + j) = age2(j);
+          optim_eststage3_cb((i * var1_length) + j) = eststage3(j);
+          optim_eststage2_cb((i * var1_length) + j) = eststage2(j);
+          optim_eststage1_cb((i * var1_length) + j) = eststage1(j);
+          optim_estage3_cb((i * var1_length) + j) = estage3(j);
+          optim_estage2_cb((i * var1_length) + j) = estage2(j);
+          optim_convtype_cb((i * var1_length) + j) = convtype(j);
+          optim_convtype_t12_cb((i * var1_length) + j) = convtype_t12(j);
+          optim_year2_cb((i * var1_length) + j) = year2(j);
+          optim_mpm_altered_cb((i * var1_length) + j) = mpm_altered(j);
+          optim_vrm_altered_cb((i * var1_length) + j) = vrm_altered(j);
+        }
+      }
+      
+      optim_variant = chopping_block;
+      
+      optim_stage3 = optim_stage3_cb;
+      optim_stage2 = optim_stage2_cb;
+      optim_stage1 = optim_stage1_cb;
+      optim_age3 = optim_age3_cb;
+      optim_age2 = optim_age2_cb;
+      optim_eststage3 = optim_eststage3_cb;
+      optim_eststage2 = optim_eststage2_cb;
+      optim_eststage1 = optim_eststage1_cb;
+      optim_estage3 = optim_estage3_cb;
+      optim_estage2 = optim_estage2_cb;
+      optim_convtype = optim_convtype_cb;
+      optim_convtype_t12 = optim_convtype_t12_cb;
+      optim_year2 = optim_year2_cb;
+      optim_mpm_altered = optim_mpm_altered_cb;
+      optim_vrm_altered = optim_vrm_altered_cb;
+      
+    } else if (found_variables == 2) {
+      String eat_my_shorts = "Two variable traits found in trait axis. Will develop ";
+      eat_my_shorts += opt_res * opt_res;
+      eat_my_shorts += " total variants. If not desired, press ESC to cancel.";
+      
+      Rf_warningcall(R_NilValue, "%s", eat_my_shorts.get_cstring());
+      
+      opt_res_squared = true;
+      
+      data_frame_length = opt_res * opt_res * var1_length;
+      IntegerVector chopping_block_2 (opt_res * opt_res * var1_length);
+      
+      StringVector optim_stage3_cb (opt_res * opt_res * var1_length);
+      StringVector optim_stage2_cb (opt_res * opt_res * var1_length);
+      StringVector optim_stage1_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_age3_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_age2_cb (opt_res * opt_res * var1_length);
+      StringVector optim_eststage3_cb (opt_res * opt_res * var1_length);
+      StringVector optim_eststage2_cb (opt_res * opt_res * var1_length);
+      StringVector optim_eststage1_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_estage3_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_estage2_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_convtype_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_convtype_t12_cb (opt_res * opt_res * var1_length);
+      StringVector optim_year2_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_mpm_altered_cb (opt_res * opt_res * var1_length);
+      IntegerVector optim_vrm_altered_cb (opt_res * opt_res * var1_length);
+
+      for (int i = 0; i < opt_res; i++) {
+        for (int j = 0; j < opt_res; j++) {
+          for (int k = 0; k < var1_length; k++) {
+            //if (!first_var_found) {
+            //  chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) = i + 1;
+            //} else {
+            //  chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) = j + 1;
+            //}
+            chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) = (i * opt_res) + j + 1;
+            
+            optim_stage3_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = stage3(k);
+            optim_stage2_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = stage2(k);
+            optim_stage1_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = stage1(k);
+            optim_age3_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = age3(k);
+            optim_age2_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = age2(k);
+            optim_eststage3_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = eststage3(k);
+            optim_eststage2_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = eststage2(k);
+            optim_eststage1_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = eststage1(k);
+            optim_estage3_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = estage3(k);
+            optim_estage2_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = estage2(k);
+            optim_convtype_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = convtype(k);
+            optim_convtype_t12_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = convtype_t12(k);
+            optim_year2_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = year2(k);
+            optim_mpm_altered_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = mpm_altered(k);
+            optim_vrm_altered_cb((i * (opt_res * var1_length)) + (j * var1_length) + k) = vrm_altered(k);
+          }
+        }
+      }
+      optim_variant = chopping_block_2;
+      
+      optim_stage3 = optim_stage3_cb;
+      optim_stage2 = optim_stage2_cb;
+      optim_stage1 = optim_stage1_cb;
+      optim_age3 = optim_age3_cb;
+      optim_age2 = optim_age2_cb;
+      optim_eststage3 = optim_eststage3_cb;
+      optim_eststage2 = optim_eststage2_cb;
+      optim_eststage1 = optim_eststage1_cb;
+      optim_estage3 = optim_estage3_cb;
+      optim_estage2 = optim_estage2_cb;
+      optim_convtype = optim_convtype_cb;
+      optim_convtype_t12 = optim_convtype_t12_cb;
+      optim_year2 = optim_year2_cb;
+      optim_mpm_altered = optim_mpm_altered_cb;
+      optim_vrm_altered = optim_vrm_altered_cb;
+    }
+  }
+  
+  //Rcout << "optim_variant: " << optim_variant << endl;
+  //Rcout << "optim_stage3: " << optim_stage3 << endl;
+  //Rcout << "optim_stage2: " << optim_stage2 << endl;
+  //Rcout << "optim_stage1: " << optim_stage1 << endl;
+  //Rcout << "optim_age3: " << optim_age3 << endl;
+  //Rcout << "optim_age2: " << optim_age2 << endl;
+  //Rcout << "optim_eststage3: " << optim_eststage3 << endl;
+  //Rcout << "optim_eststage2: " << optim_eststage2 << endl;
+  //Rcout << "optim_eststage1: " << optim_eststage1 << endl;
+  //Rcout << "optim_estage3: " << optim_estage3 << endl;
+  //Rcout << "optim_estage2: " << optim_estage2 << endl;
+  //Rcout << "optim_convtype: " << optim_convtype << endl;
+  //Rcout << "optim_convtype_t12: " << optim_convtype_t12 << endl;
+  //Rcout << "optim_year2: " << optim_year2 << endl;
+  //Rcout << "optim_mpm_altered: " << optim_mpm_altered << endl;
+  //Rcout << "optim_vrm_altered: " << optim_vrm_altered << endl;
+  
+  optim_variant_995 = clone(optim_variant);
+  
+  optim_stage3_995 = clone(optim_stage3);
+  optim_stage2_995 = clone(optim_stage2);
+  optim_stage1_995 = clone(optim_stage1);
+  optim_age3_995 = clone(optim_age3);
+  optim_age2_995 = clone(optim_age2);
+  optim_eststage3_995 = clone(optim_eststage3);
+  optim_eststage2_995 = clone(optim_eststage2);
+  optim_eststage1_995 = clone(optim_eststage1);
+  optim_estage3_995 = clone(optim_estage3);
+  optim_estage2_995 = clone(optim_estage2);
+  optim_convtype_995 = clone(optim_convtype);
+  optim_convtype_t12_995 = clone(optim_convtype_t12);
+  optim_year2_995 = clone(optim_year2);
+  optim_mpm_altered_995 = clone(optim_mpm_altered);
+  optim_vrm_altered_995 = clone(optim_vrm_altered);
+  
+  
+  //Rcout << "optim_ta_setup D              ";
+  
+  // Establish core values in variable vs. constant traits
+  
+  AdaptUtils::ta_trianator (optim_givenrate, optim_givenrate_995, givenrate,
+    givenrate_min, givenrate_max, found_variables, opt_res, var1_length,
+    givenrate_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_offset, optim_offset_995, offset, offset_min,
+    offset_max, found_variables, opt_res, var1_length, offset_NA,
+    first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_multiplier, optim_multiplier_995, multiplier,
+    multiplier_min, multiplier_max, found_variables, opt_res, var1_length,
+    multiplier_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_surv_dev, optim_surv_dev_995, surv_dev,
+    surv_dev_min, surv_dev_max, found_variables, opt_res, var1_length,
+    surv_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_obs_dev, optim_obs_dev_995, obs_dev,
+    obs_dev_min, obs_dev_max, found_variables, opt_res, var1_length, obs_dev_NA,
+    first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_size_dev, optim_size_dev_995, size_dev,
+    size_dev_min, size_dev_max, found_variables, opt_res, var1_length,
+    size_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_sizeb_dev, optim_sizeb_dev_995, sizeb_dev,
+    sizeb_dev_min, sizeb_dev_max, found_variables, opt_res, var1_length,
+    sizeb_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_sizec_dev, optim_sizec_dev_995, sizec_dev,
+    sizec_dev_min, sizec_dev_max, found_variables, opt_res, var1_length,
+    sizec_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_repst_dev, optim_repst_dev_995, repst_dev,
+    repst_dev_min, repst_dev_max, found_variables, opt_res, var1_length,
+    repst_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_fec_dev, optim_fec_dev_995, fec_dev,
+    fec_dev_min, fec_dev_max, found_variables, opt_res, var1_length, fec_dev_NA,
+    first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jsurv_dev, optim_jsurv_dev_995, jsurv_dev,
+    jsurv_dev_min, jsurv_dev_max, found_variables, opt_res, var1_length,
+    jsurv_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jobs_dev, optim_jobs_dev_995, jobs_dev,
+    jobs_dev_min, jobs_dev_max, found_variables, opt_res, var1_length,
+    jobs_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jsize_dev, optim_jsize_dev_995, jsize_dev,
+    jsize_dev_min, jsize_dev_max, found_variables, opt_res, var1_length,
+    jsize_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jsizeb_dev, optim_jsizeb_dev_995, jsizeb_dev,
+    jsizeb_dev_min, jsizeb_dev_max, found_variables, opt_res, var1_length,
+    jsizeb_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jsizec_dev, optim_jsizec_dev_995, jsizec_dev,
+    jsizec_dev_min, jsizec_dev_max, found_variables, opt_res, var1_length,
+    jsizec_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jrepst_dev, optim_jrepst_dev_995, jrepst_dev,
+    jrepst_dev_min, jrepst_dev_max, found_variables, opt_res, var1_length,
+    jrepst_dev_NA, first_var_found);
+  
+  AdaptUtils::ta_trianator (optim_jmatst_dev, optim_jmatst_dev_995, jmatst_dev,
+    jmatst_dev_min, jmatst_dev_max, found_variables, opt_res, var1_length,
+    jmatst_dev_NA, first_var_found);
+  
+  
+  //Rcout << "optim_ta_setup E              ";
+  
+  //Rcout << "data_frame_length: " << data_frame_length << endl;
+  //Rcout << "optim_surv_dev: " << optim_surv_dev << endl;
+  //Rcout << "optim_fec_dev: " << optim_fec_dev << endl;
+  
+  List output (33);
+  
+  output(0) = optim_variant;
+  output(1) = optim_stage3;
+  output(2) = optim_stage2;
+  output(3) = optim_stage1;
+  output(4) = optim_age3;
+  output(5) = optim_age2;
+  output(6) = optim_eststage3;
+  output(7) = optim_eststage2;
+  output(8) = optim_eststage1;
+  output(9) = optim_estage3;
+  output(10) = optim_estage2;
+  output(11) = optim_givenrate;
+  output(12) = optim_offset;
+  output(13) = optim_multiplier;
+  output(14) = optim_convtype;
+  output(15) = optim_convtype_t12;
+  output(16) = optim_surv_dev;
+  output(17) = optim_obs_dev;
+  output(18) = optim_size_dev;
+  output(19) = optim_sizeb_dev;
+  output(20) = optim_sizec_dev;
+  output(21) = optim_repst_dev;
+  output(22) = optim_fec_dev;
+  output(23) = optim_jsurv_dev;
+  output(24) = optim_jobs_dev;
+  output(25) = optim_jsize_dev;
+  output(26) = optim_jsizeb_dev;
+  output(27) = optim_jsizec_dev;
+  output(28) = optim_jrepst_dev;
+  output(29) = optim_jmatst_dev;
+  output(30) = optim_year2;
+  output(31) = optim_mpm_altered;
+  output(32) = optim_vrm_altered;
+  
+  CharacterVector ta_names = as<CharacterVector>(ta_reassessed.attr("names"));
+  //Rcout << "ta_names: " << ta_names << endl;
+  output.attr("names") = clone(ta_names);
+  output.attr("class") = "data.frame";
+  output.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, data_frame_length);
+  
+  optim_ta = output;
+  
+  List output_995 (33);
+  
+  output_995(0) = optim_variant_995;
+  output_995(1) = optim_stage3_995;
+  output_995(2) = optim_stage2_995;
+  output_995(3) = optim_stage1_995;
+  output_995(4) = optim_age3_995;
+  output_995(5) = optim_age2_995;
+  output_995(6) = optim_eststage3_995;
+  output_995(7) = optim_eststage2_995;
+  output_995(8) = optim_eststage1_995;
+  output_995(9) = optim_estage3_995;
+  output_995(10) = optim_estage2_995;
+  output_995(11) = optim_givenrate_995;
+  output_995(12) = optim_offset_995;
+  output_995(13) = optim_multiplier_995;
+  output_995(14) = optim_convtype_995;
+  output_995(15) = optim_convtype_t12_995;
+  output_995(16) = optim_surv_dev_995;
+  output_995(17) = optim_obs_dev_995;
+  output_995(18) = optim_size_dev_995;
+  output_995(19) = optim_sizeb_dev_995;
+  output_995(20) = optim_sizec_dev_995;
+  output_995(21) = optim_repst_dev_995;
+  output_995(22) = optim_fec_dev_995;
+  output_995(23) = optim_jsurv_dev_995;
+  output_995(24) = optim_jobs_dev_995;
+  output_995(25) = optim_jsize_dev_995;
+  output_995(26) = optim_jsizeb_dev_995;
+  output_995(27) = optim_jsizec_dev_995;
+  output_995(28) = optim_jrepst_dev_995;
+  output_995(29) = optim_jmatst_dev_995;
+  output_995(30) = optim_year2_995;
+  output_995(31) = optim_mpm_altered_995;
+  output_995(32) = optim_vrm_altered_995;
+  
+  output_995.attr("names") = clone(ta_names);
+  output_995.attr("class") = "data.frame";
+  output_995.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, data_frame_length);
+  
+  optim_ta_995 = output_995;
+}
+
+//' Core Pre-Existing MPM Projection Engine
+//' 
+//' Function \code{invpre_project} runs the projections in function
+//' \code{invade3_pre_core}.
+//' 
+//' @name invpre_project
+//' 
+//' @param var_run_mat A matrix giving the the variants to be run in each
+//' projection, with rows giving the projections and columns giving the
+//' variants.
+//' @param N_out_pre The main list of final population sizes, supplied as a
+//' reference and altered by this function.
+//' @param comm_out_pre The main list of full projection results for the community,
+//' supplied as a pointer and altered by this function.
+//' @param new_stageexpansion_list A list with stage expansions for all trait
+//' axis data leading to matrix element changes with each list element
+//' corresponding to each respective variant.
+//' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+//' output if \code{err_check = "extreme"}.
+//' @param used_times A list of year numbers for each time per run.
+//' @param zero_stage_vec_list A list of population stage vectors full of zeros.
+//' @param start_list A list of starting information, supplied in \code{lefkoSV}
+//' format.
+//' @param equivalence_list A list giving the effect of each individual in each
+//' stage relative to a reference individual.
+//' @param A_list A list of allA matrices.
+//' @param U_list A list of all U matrices.
+//' @param F_list A list of all F matrices.
+//' @param density_df A data frame of class \code{lefkoDens}.
+//' @param dens_index_df A data frame giving indices for density dependent
+//' transitions.
+//' @param entry_time_vec An IntegerVector containing the entry time of each
+//' mutant, population, or species, as given by each MPM.
+//' @param var_per_run An integer giving the number of variants per run.
+//' @param times An integer giving the number of occasions to project.
+//' @param var_mat_length An integer giving the number of rows in the variant
+//' matrix.
+//' @param format_int An integer giving the MPM format.
+//' @param current_rep The integer giving the current replicate.
+//' @param firstage_int An integer giving the first age in a Leslie or
+//' age-by-stage MPM.
+//' @param finalage_int  An integer giving the final age in a Leslie or
+//' age-by-stage MPM.
+//' @param substoch An integer giving the level of sustochasticity to enforce.
+//' @param exp_tol The maximum tolerated exponent.
+//' @param theta_tol The maximum tolerated limit for theta, in non-linear
+//' @param err_check A logical value indicating whether to include an extra list
+//' of output objects for error checking.
+//' @param err_check_extreme A logical value indicating whether to include an
+//' extra list of all matrices projected in the \code{err_check} object.
+//' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+//' matrix format.
+//' @param A_only A Boolean value indicating whether to export U and F matrices
+//' for alteration, or only A matrices.
+//' @param stages_not_equal A Boolean value indicating whether equivalence
+//' info is supplied suggesting even stages within MPMs are not equal.
+//' @param integeronly A Boolean value indicating whether to allow only whole
+//' values of individuals or not.
+//' @param dens_yn_bool A Boolean value stating whether density dependence is
+//' used, given through \code{lefkoDens} objects.
+//' 
+//' @return Arguments 2 through 7 are directly manipulated without any values
+//' returned.
+//' 
+//' @keywords internal
+//' @noRd
+inline void invpre_project (const arma::mat var_run_mat, List& N_out_pre,
+  List& comm_out_pre, List& new_stageexpansion_list, List& errcheck_mpm_reps,
+  List& used_times, List& zero_stage_vec_list, const List start_list,
+  const List equivalence_list, const List A_list, const List U_list,
+  const List F_list, const DataFrame density_df, const DataFrame dens_index_df,
+  const IntegerVector entry_time_vec, const int var_per_run, const int times,
+  const int var_mat_length, const int format_int, const int current_rep,
+  const int firstage_int, const int finalage_int, const int substoch,
+  const double exp_tol, const double theta_tol, const bool err_check,
+  const bool err_check_extreme, const bool sparse_bool, const bool A_only,
+  const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool) {
+    
+  //Rcout << "invpre_project A" << endl;
+  
+  int i = current_rep;
+  
+  List running_popvecs; //  = clone(start_list)
+  List running_popvecs_startonly; //  = clone(start_list)
+  arma::cube N_mpm (var_per_run, (times + 1), var_mat_length); // rows = vars, cols = times, slices = permutes 
+  
+  List errcheck_mpm_reps_time (times); // Could remove later
+  for (int j = 0; j < times; j++) { // 2nd loop - time j
+    //Rcout << "invade3_pre_core r          ";
+    if (j % 10 == 0){
+      Rcpp::checkUserInterrupt();
+    }
+    
+    List errcheck_mpm_reps_time_vmt (var_mat_length); // Could remove later
+    
+    for (int l = 0; l < var_mat_length; l++) { // 3rd loop - permutes l
+      //Rcout << "invade3_pre_core s          ";
+      List errcheck_mpm_reps_time_vmt_var(var_per_run); // Could remove later
+      //Rcout << "current_permutation (l): " << l << "          ";
+      if (j == 0) {
+        List var_popvecs_to_start (var_per_run);
+        for (int n = 0; n < var_per_run; n++) {
+          var_popvecs_to_start(n) = as<arma::vec>(start_list(static_cast<int>(var_run_mat(l, n))));
+        }
+        running_popvecs = var_popvecs_to_start;
+        running_popvecs_startonly = clone(var_popvecs_to_start);
+      }
+      
+      for (int m = 0; m < var_per_run; m++) {
+        if (j == entry_time_vec(m)) {
+          arma::vec running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+          
+          double N_current = accu(running_popvec_mpm);
+          N_mpm(m, j, l) = N_current; // Used to be (k, j)
+        }
+      }
+      
+      List all_pops_per_run = as<List>(comm_out_pre(l));
+      for (int m = 0; m < var_per_run; m++) { // 4th loop - var per run m
+        //Rcout << "invade3_pre_core t          ";
+        int current_variant_index = var_run_mat(l, m); // Equivalent to index integer k
+        
+        DataFrame sge_current = as<DataFrame>(new_stageexpansion_list(current_variant_index));
+        
+        List pop_reps = as<List>(all_pops_per_run(m));
+        arma::mat pops_out = as<arma::mat>(pop_reps(i));
+        
+        if (j > (entry_time_vec(m) - 1)) {
+          //Rcout << "invade3_pre_core u          ";
+          List used_times_per_run = as<List>(used_times(l));
+          List used_times_current_var = as<List>(used_times_per_run(m));
+          IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(i));
+          
+          arma::vec running_popvec_mpm;
+          if (j == entry_time_vec(m)) {
+            running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+            pops_out.col(j) = running_popvec_mpm;
+            
+          } else {
+            running_popvec_mpm = pops_out.col(j);
+          }
+          
+          //Rcout << "invade3_pre_core v          ";
+          if (!dens_yn_bool) {
+            if (!sparse_bool) {
+              arma::mat current_A = as<arma::mat>(A_list(current_times_vec(j)));
+              
+              if (A_only) {
+                AdaptUtils::Amat_alter(current_A, sge_current); 
+              } else {
+                arma::mat current_U_unaltered = as<arma::mat>(U_list(current_times_vec(j)));
+                arma::mat current_F_unaltered = as<arma::mat>(F_list(current_times_vec(j)));
+                AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+              }
+              
+              if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+              running_popvec_mpm = current_A * running_popvec_mpm; 
+            } else {
+              arma::sp_mat current_A = as<arma::sp_mat>(A_list(current_times_vec(j)));
+              
+              if (A_only) {
+                AdaptUtils::sp_Amat_alter(current_A, sge_current);
+              } else {
+                arma::sp_mat current_U_unaltered = as<arma::sp_mat>(U_list(current_times_vec(j)));
+                arma::sp_mat current_F_unaltered = as<arma::sp_mat>(F_list(current_times_vec(j)));
+                AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+              }
+              if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+              running_popvec_mpm = current_A * running_popvec_mpm;
+            }
+          } else {
+            DataFrame used_density_input = density_df;
+            DataFrame used_density_index_input = as<DataFrame>(dens_index_df);
+            
+            IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
+            int used_delay = max(ud_delay_vec);
+            
+            if (j >= (used_delay - 1 )) { // Change to allow different delay Ns for different entries
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(l);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                
+                double delay_N_sum = arma::sum(delay_issue);
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_mpm, sge_current, A_list, delay_N_sum,
+                  static_cast<int>(current_times_vec(j)), integeronly,
+                  substoch, used_density_input, used_density_index_input,
+                  false, sparse_bool, sparse_bool, false, err_check);
+                
+                running_popvec_mpm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              } else {
+                double delay_N_sum {0.0};
+                
+                if (j > 0) {
+                  for (int p = 0; p < var_per_run; p++) {
+                    int current_variant_index_agg = var_run_mat(l, p);
+                    
+                    List current_pop_list = as<List>(comm_out_pre(l));
+                    List pop_rep_list = as<List>(current_pop_list(p)); // Changed from m to p
+                    arma::mat delay_pop = as<arma::mat>(pop_rep_list(i));
+                    
+                    arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
+                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
+                    arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
+                    double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
+                    
+                    delay_N_sum += delay_pop_N;
+                  }
+                }
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_mpm, sge_current, A_list, delay_N_sum,
+                  static_cast<int>(current_times_vec(j)), integeronly,
+                  substoch, used_density_input, used_density_index_input,
+                  false, sparse_bool, sparse_bool, false, err_check);
+                
+                running_popvec_mpm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              }
+              //Rcout << "invade3_pre_core aa          ";
+            } else {
+              //Rcout << "invade3_pre_core ab          ";
+              arma::vec new_popvec;
+              arma::mat new_projmat;
+              arma::sp_mat new_projsp;
+              
+              AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                running_popvec_mpm, sge_current, A_list, 0.0,
+                static_cast<int>(current_times_vec(j)), integeronly, substoch,
+                used_density_input, used_density_index_input, false,
+                sparse_bool, sparse_bool, false, err_check);
+              
+              running_popvec_mpm = new_popvec;
+              if (err_check_extreme) { // Could remove later
+                if (!sparse_bool) {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                } else {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                }
+              } // Could remove later
+              //Rcout << "invade3_pre_core ac          ";
+            }
+          }
+          
+          //Rcout << "invade3_pre_core ad          ";
+          if (integeronly) running_popvec_mpm = floor(running_popvec_mpm);
+          double N_current = arma::sum(running_popvec_mpm);
+          N_mpm(m, (j + 1), l) = N_current; // Used to be (k, (j + 1))
+          
+          running_popvecs(m) = running_popvec_mpm;
+          pops_out.col(j + 1) = running_popvec_mpm;
+          //Rcout << "invade3_pre_core ae          ";
+        } else {
+          //Rcout << "invade3_pre_core af          ";
+          arma::vec current_zero_vec = as<arma::vec>(zero_stage_vec_list(current_variant_index));
+          pops_out.col(j + 1) = current_zero_vec;
+        }
+        pop_reps(i) = pops_out;
+      } // m loop - var_per_run
+      if (err_check_extreme) errcheck_mpm_reps_time_vmt(l) = errcheck_mpm_reps_time_vmt_var;
+    } // l loop - var_mat_length
+    if (err_check_extreme) errcheck_mpm_reps_time(j) = errcheck_mpm_reps_time_vmt;
+    
+  } // j loop - time
+  if (err_check_extreme) errcheck_mpm_reps(i) = errcheck_mpm_reps_time; // Could remove later
+  N_out_pre(i) = N_mpm;
+  
+  //Rcout << "invpre_project B" << endl;
+}
+
+//' Core Pre-Existing MPM Projection Engine for ESS Evaluation
+//' 
+//' Function \code{invpre_optim} runs the optimization projections in function
+//' \code{invade3_pre_core} used to estimate ESS values.
+//' 
+//' @name invpre_optim
+//' 
+//' @param N_out_pre The main list of final population sizes, supplied as a
+//' reference and altered by this function.
+//' @param comm_out_pre The main list of full projection results for the community,
+//' supplied as a pointer and altered by this function.
+//' @param new_stageexpansion_list A list with stage expansions for all
+//' variant data used in ESS evaluation. This list includes an extra layer of
+//' list elements, corresponding to the optim_ta and optim_ta_995 data.
+//' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+//' output if \code{err_check = "extreme"}.
+//' @param used_times A list of year numbers for each time per run.
+//' @param zero_stage_vec_list A list of population stage vectors full of zeros.
+//' @param start_list A list of starting information, supplied in \code{lefkoSV}
+//' format.
+//' @param equivalence_list A list giving the effect of each individual in each
+//' stage relative to a reference individual.
+//' @param A_list A list of allA matrices.
+//' @param U_list A list of all U matrices.
+//' @param F_list A list of all F matrices.
+//' @param density_df A data frame of class \code{lefkoDens}.
+//' @param dens_index_df A data frame giving indices for density dependent
+//' transitions.
+//' @param entry_time_vec An IntegerVector containing the entry time of each
+//' mutant, population, or species, as given by each MPM.
+//' @param var_per_run An integer giving the number of variants per run.
+//' @param times An integer giving the number of occasions to project.
+//' @param var_mat_length An integer giving the number of rows in the variant
+//' matrix.
+//' @param format_int An integer giving the MPM format.
+//' @param current_rep The integer giving the current replicate.
+//' @param firstage_int An integer giving the first age in a Leslie or
+//' age-by-stage MPM.
+//' @param finalage_int  An integer giving the final age in a Leslie or
+//' age-by-stage MPM.
+//' @param substoch An integer giving the level of sustochasticity to enforce.
+//' @param opt_res If evaluating optima, then this integer gives the number
+//' of variants to create between each minimum and maximum for each trait found
+//' to be variable in the input trait axis. Defaults to \code{100}.
+//' @param exp_tol The maximum tolerated exponent.
+//' @param theta_tol The maximum tolerated limit for theta, in non-linear
+//' @param err_check A logical value indicating whether to include an extra list
+//' of output objects for error checking.
+//' @param err_check_extreme A logical value indicating whether to include an
+//' extra list of all matrices projected in the \code{err_check} object.
+//' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+//' matrix format.
+//' @param A_only A Boolean value indicating whether to export U and F matrices
+//' for alteration, or only A matrices.
+//' @param stages_not_equal A Boolean value indicating whether equivalence
+//' info is supplied suggesting even stages within MPMs are not equal.
+//' @param integeronly A Boolean value indicating whether to allow only whole
+//' values of individuals or not.
+//' @param dens_yn_bool A Boolean value stating whether density dependence is
+//' used, given through \code{lefkoDens} objects.
+//' 
+//' @return Arguments 2 through 7 are directly manipulated without any values
+//' returned.
+//' 
+//' @keywords internal
+//' @noRd
+inline void invpre_optim (List& N_out_pre, List& comm_out_pre,
+  List& new_stageexpansion_list, List& errcheck_mpm_reps, List& used_times,
+  List& zero_stage_vec_list, const List start_list, const List equivalence_list,
+  const List A_list, const List U_list, const List F_list,
+  const DataFrame density_df, const DataFrame dens_index_df,
+  const IntegerVector entry_time_vec, const int var_per_run, const int times,
+  const int var_mat_length, const int format_int, const int current_rep,
+  const int firstage_int, const int finalage_int, const int substoch, const int opt_res,
+  const double exp_tol, const double theta_tol, const bool err_check,
+  const bool err_check_extreme, const bool sparse_bool, const bool A_only,
+  const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool) {
+  
+  //Rcout << "invpre_optim A" << endl;
+  
+  int i = current_rep;
+  
+  List running_popvecs; //  = clone(start_list)
+  List running_popvecs_startonly; //  = clone(start_list)
+  arma::cube N_mpm (2, (times + 1), opt_res); // rows = vars, cols = times, slices = permutes 
+  
+  List errcheck_mpm_reps_time (times); // Could remove later
+  
+  
+  
+  
+  /////
+  
+  
+  
+  
+  
+  for (int j = 0; j < times; j++) { // 2nd loop - time j
+    //Rcout << "invpre_optim A1          ";
+    if (j % 10 == 0){
+      Rcpp::checkUserInterrupt();
+    }
+    
+    List errcheck_mpm_reps_time_vmt (opt_res); // Could remove later
+    
+    for (int l = 0; l < opt_res; l++) { // 3rd loop - permutes l
+      //Rcout << "invpre_optim A2          ";
+      List errcheck_mpm_reps_time_vmt_var(2); // Could remove later
+      //Rcout << "current_permutation (l): " << l << "          ";
+      if (j == 0) {
+        List var_popvecs_to_start (2);
+        for (int n = 0; n < var_per_run; n++) {
+          var_popvecs_to_start(n) = as<arma::vec>(start_list(static_cast<int>(0)));
+        }
+        running_popvecs = var_popvecs_to_start;
+        running_popvecs_startonly = clone(var_popvecs_to_start);
+      }
+      
+      for (int m = 0; m < 2; m++) {
+        if (j == entry_time_vec(m)) {
+          arma::vec running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+          
+          double N_current = accu(running_popvec_mpm);
+          N_mpm(m, j, l) = N_current; // Used to be (k, j)
+        }
+      }
+      
+      List all_pops_per_run = as<List>(comm_out_pre(l));
+      
+      { // main variant run
+        int m = 0;
+        //Rcout << "invpre_optim A3          ";
+        int current_variant_index = l; // Equivalent to index integer k
+        
+        List sge_list = as<List>(new_stageexpansion_list(current_variant_index));
+        DataFrame sge_current = as<DataFrame>(sge_list(m));
+        
+        List pop_reps = as<List>(all_pops_per_run(m));
+        arma::mat pops_out = as<arma::mat>(pop_reps(i));
+          
+        if (j > (entry_time_vec(m) - 1)) {
+          //Rcout << "invpre_optim A4          ";
+          List used_times_per_run = as<List>(used_times(0));
+          List used_times_current_var = as<List>(used_times_per_run(m));
+          IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(i));
+          
+          arma::vec running_popvec_mpm;
+          if (j == entry_time_vec(m)) {
+            running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+            pops_out.col(j) = running_popvec_mpm;
+            
+          } else {
+            running_popvec_mpm = pops_out.col(j);
+          }
+          
+          //Rcout << "invpre_optim A5          ";
+          if (!dens_yn_bool) {
+            if (!sparse_bool) {
+              //Rcout << "invpre_optim A6          ";
+              arma::mat current_A = as<arma::mat>(A_list(current_times_vec(j)));
+              
+              //Rcout << "invpre_optim A7          ";
+              if (A_only) {
+                AdaptUtils::Amat_alter(current_A, sge_current); 
+              } else {
+                arma::mat current_U_unaltered = as<arma::mat>(U_list(current_times_vec(j)));
+                arma::mat current_F_unaltered = as<arma::mat>(F_list(current_times_vec(j)));
+                AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+              }
+              
+              //Rcout << "invpre_optim A8          ";
+              if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+              running_popvec_mpm = current_A * running_popvec_mpm; 
+            } else {
+              //Rcout << "invpre_optim A9          ";
+              arma::sp_mat current_A = as<arma::sp_mat>(A_list(current_times_vec(j)));
+              
+              //Rcout << "invpre_optim A10          ";
+              if (A_only) {
+                AdaptUtils::sp_Amat_alter(current_A, sge_current);
+              } else {
+                arma::sp_mat current_U_unaltered = as<arma::sp_mat>(U_list(current_times_vec(j)));
+                arma::sp_mat current_F_unaltered = as<arma::sp_mat>(F_list(current_times_vec(j)));
+                AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+              }
+              //Rcout << "invpre_optim A11          ";
+              if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+              running_popvec_mpm = current_A * running_popvec_mpm;
+              //Rcout << "invpre_optim A12          ";
+            }
+          } else {
+            //Rcout << "invpre_optim A13          ";
+            DataFrame used_density_input = density_df;
+            DataFrame used_density_index_input = as<DataFrame>(dens_index_df);
+            
+            IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
+            int used_delay = max(ud_delay_vec);
+            
+            //Rcout << "invpre_optim A14          ";
+            if (j >= (used_delay - 1 )) { // Change to allow different delay Ns for different entries
+              if (!stages_not_equal) {
+                //Rcout << "invpre_optim A15          ";
+                arma::mat di_mat = N_mpm.slice(l);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                
+                //Rcout << "invpre_optim A16          ";
+                double delay_N_sum = arma::sum(delay_issue);
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                //Rcout << "invpre_optim A17          ";
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_mpm, sge_current, A_list, delay_N_sum,
+                  static_cast<int>(current_times_vec(j)), integeronly,
+                  substoch, used_density_input, used_density_index_input,
+                  false, sparse_bool, sparse_bool, false, err_check);
+                
+                //Rcout << "invpre_optim A18          ";
+                running_popvec_mpm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+                //Rcout << "invpre_optim A19          ";
+              } else {
+                //Rcout << "invpre_optim A20          ";
+                double delay_N_sum {0.0};
+                
+                if (j > 0) {
+                  for (int p = 0; p < 2; p++) {
+                    int current_variant_index_agg = l;
+                    
+                    List current_pop_list = as<List>(comm_out_pre(l));
+                    List pop_rep_list = as<List>(current_pop_list(p)); // Changed from m to p
+                    arma::mat delay_pop = as<arma::mat>(pop_rep_list(i));
+                    
+                    arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
+                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
+                    arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
+                    double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
+                    
+                    delay_N_sum += delay_pop_N;
+                  }
+                }
+                
+                //Rcout << "invpre_optim A21          ";
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_mpm, sge_current, A_list, delay_N_sum,
+                  static_cast<int>(current_times_vec(j)), integeronly,
+                  substoch, used_density_input, used_density_index_input,
+                  false, sparse_bool, sparse_bool, false, err_check);
+                
+                //Rcout << "invpre_optim A22          ";
+                running_popvec_mpm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              }
+              //Rcout << "invpre_optim A23          ";
+            } else {
+              //Rcout << "invpre_optim A24          ";
+              arma::vec new_popvec;
+              arma::mat new_projmat;
+              arma::sp_mat new_projsp;
+              
+              AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                running_popvec_mpm, sge_current, A_list, 0.0,
+                static_cast<int>(current_times_vec(j)), integeronly, substoch,
+                used_density_input, used_density_index_input, false,
+                sparse_bool, sparse_bool, false, err_check);
+              
+              //Rcout << "invpre_optim A25          ";
+              running_popvec_mpm = new_popvec;
+              if (err_check_extreme) { // Could remove later
+                if (!sparse_bool) {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                } else {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                }
+              } // Could remove later
+              //Rcout << "invpre_optim A26          ";
+            }
+          }
+          
+          //Rcout << "invpre_optim A27          ";
+          if (integeronly) running_popvec_mpm = floor(running_popvec_mpm);
+          double N_current = arma::sum(running_popvec_mpm);
+          N_mpm(m, (j + 1), l) = N_current; // Used to be (k, (j + 1))
+          
+          running_popvecs(m) = running_popvec_mpm;
+          pops_out.col(j + 1) = running_popvec_mpm;
+          //Rcout << "invpre_optim A28          ";
+        } else {
+          //Rcout << "invpre_optim A29          ";
+          arma::vec current_zero_vec = as<arma::vec>(zero_stage_vec_list(0));
+          pops_out.col(j + 1) = current_zero_vec;
+        }
+        pop_reps(i) = pops_out;
+      } // m loop - var_per_run
+      //Rcout << "invpre_optim A30          ";
+      if (err_check_extreme) errcheck_mpm_reps_time_vmt(l) = errcheck_mpm_reps_time_vmt_var;
+      //Rcout << "invpre_optim A31          ";
+    
+    
+    
+    
+    
+      { // 0.995 variant run
+        int m = 1;
+        //Rcout << "invpre_optim A32          ";
+        int current_variant_index = l; // Equivalent to index integer k
+        
+        List sge_list = as<List>(new_stageexpansion_list(current_variant_index));
+        DataFrame sge_current = as<DataFrame>(sge_list(m));
+        
+        List pop_reps = as<List>(all_pops_per_run(m));
+        arma::mat pops_out = as<arma::mat>(pop_reps(i));
+        
+        if (j > (entry_time_vec(m) - 1)) {
+          //Rcout << "invpre_optim A33          ";
+          List used_times_per_run = as<List>(used_times(0));
+          List used_times_current_var = as<List>(used_times_per_run(m));
+          IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(i));
+          
+          arma::vec running_popvec_mpm;
+          if (j == entry_time_vec(m)) {
+            running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+            pops_out.col(j) = running_popvec_mpm;
+            
+          } else {
+            running_popvec_mpm = pops_out.col(j);
+          }
+          
+          //Rcout << "invpre_optim A34          ";
+          if (!dens_yn_bool) {
+            if (!sparse_bool) {
+              //Rcout << "invpre_optim A35          ";
+              arma::mat current_A = as<arma::mat>(A_list(current_times_vec(j)));
+              
+              if (A_only) {
+                AdaptUtils::Amat_alter(current_A, sge_current); 
+              } else {
+                arma::mat current_U_unaltered = as<arma::mat>(U_list(current_times_vec(j)));
+                arma::mat current_F_unaltered = as<arma::mat>(F_list(current_times_vec(j)));
+                AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+              }
+              
+              //Rcout << "invpre_optim A36          ";
+              if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+              running_popvec_mpm = current_A * running_popvec_mpm; 
+            } else {
+              //Rcout << "invpre_optim A37          ";
+              arma::sp_mat current_A = as<arma::sp_mat>(A_list(current_times_vec(j)));
+              
+              if (A_only) {
+                AdaptUtils::sp_Amat_alter(current_A, sge_current);
+              } else {
+                arma::sp_mat current_U_unaltered = as<arma::sp_mat>(U_list(current_times_vec(j)));
+                arma::sp_mat current_F_unaltered = as<arma::sp_mat>(F_list(current_times_vec(j)));
+                AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+              }
+              if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+              running_popvec_mpm = current_A * running_popvec_mpm;
+              //Rcout << "invpre_optim A38          ";
+            }
+          } else {
+            //Rcout << "invpre_optim A39          ";
+            DataFrame used_density_input = density_df;
+            DataFrame used_density_index_input = as<DataFrame>(dens_index_df);
+            
+            IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
+            int used_delay = max(ud_delay_vec);
+            
+            //Rcout << "invpre_optim A40          ";
+            if (j >= (used_delay - 1 )) { // Change to allow different delay Ns for different entries
+              if (!stages_not_equal) {
+                //Rcout << "invpre_optim A41          ";
+                arma::mat di_mat = N_mpm.slice(l);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                
+                double delay_N_sum = arma::sum(delay_issue);
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_mpm, sge_current, A_list, delay_N_sum,
+                  static_cast<int>(current_times_vec(j)), integeronly,
+                  substoch, used_density_input, used_density_index_input,
+                  false, sparse_bool, sparse_bool, false, err_check);
+                
+                //Rcout << "invpre_optim A42          ";
+                running_popvec_mpm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+                //Rcout << "invpre_optim A43          ";
+              } else {
+                //Rcout << "invpre_optim A44          ";
+                double delay_N_sum {0.0};
+                
+                if (j > 0) {
+                  for (int p = 0; p < 2; p++) {
+                    int current_variant_index_agg = l;
+                    
+                    List current_pop_list = as<List>(comm_out_pre(l));
+                    List pop_rep_list = as<List>(current_pop_list(p)); // Changed from m to p
+                    arma::mat delay_pop = as<arma::mat>(pop_rep_list(i));
+                    
+                    arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
+                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
+                    arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
+                    double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
+                    
+                    delay_N_sum += delay_pop_N;
+                  }
+                }
+                
+                //Rcout << "invpre_optim A46          ";
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_mpm, sge_current, A_list, delay_N_sum,
+                  static_cast<int>(current_times_vec(j)), integeronly,
+                  substoch, used_density_input, used_density_index_input,
+                  false, sparse_bool, sparse_bool, false, err_check);
+                
+                running_popvec_mpm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              }
+              //Rcout << "invpre_optim A47          ";
+            } else {
+              //Rcout << "invpre_optim A48          ";
+              arma::vec new_popvec;
+              arma::mat new_projmat;
+              arma::sp_mat new_projsp;
+              
+              AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                running_popvec_mpm, sge_current, A_list, 0.0,
+                static_cast<int>(current_times_vec(j)), integeronly, substoch,
+                used_density_input, used_density_index_input, false,
+                sparse_bool, sparse_bool, false, err_check);
+              
+              //Rcout << "invpre_optim A49          ";
+              running_popvec_mpm = new_popvec;
+              if (err_check_extreme) { // Could remove later
+                if (!sparse_bool) {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                } else {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                }
+              } // Could remove later
+              //Rcout << "invade3_pre_core ac          ";
+            }
+          }
+          
+          //Rcout << "invpre_optim A50          ";
+          if (integeronly) running_popvec_mpm = floor(running_popvec_mpm);
+          double N_current = arma::sum(running_popvec_mpm);
+          N_mpm(m, (j + 1), l) = N_current; // Used to be (k, (j + 1))
+          
+          //Rcout << "invpre_optim A51          ";
+          running_popvecs(m) = running_popvec_mpm;
+          pops_out.col(j + 1) = running_popvec_mpm;
+          //Rcout << "invpre_optim A52          ";
+        } else {
+          //Rcout << "invpre_optim A53          ";
+          arma::vec current_zero_vec = as<arma::vec>(zero_stage_vec_list(0));
+          pops_out.col(j + 1) = current_zero_vec;
+        }
+        pop_reps(i) = pops_out;
+      } // m loop - var_per_run
+      if (err_check_extreme) errcheck_mpm_reps_time_vmt(l) = errcheck_mpm_reps_time_vmt_var;
+    } // l loop - var_mat_length
+    if (err_check_extreme) errcheck_mpm_reps_time(j) = errcheck_mpm_reps_time_vmt;
+    //Rcout << "invpre_optim A54          ";
+  } // j loop - time
+  if (err_check_extreme) errcheck_mpm_reps(i) = errcheck_mpm_reps_time; // Could remove later
+  N_out_pre(i) = N_mpm;
+  
+  //Rcout << "invpre_optim B" << endl;
+}
+
+//' Set-Up Running Invasion Analyses of Existing MPMs
 //' 
 //' Function \code{invade3_pre_core} is the main function running invasion
 //' analyses with existing MPMs supplied by the user.
@@ -9408,15 +10957,26 @@ Rcpp::List cleanup3_inv (Nullable<RObject> mpm = R_NilValue,
 //' reference and altered by this function.
 //' @param comm_out The main list of full projection results for the community,
 //' supplied as a pointer and altered by this function.
+//' @param N_out_optim The main list of final population sizes from ESS
+//' optimization, supplied as a reference and altered by this function.
+//' @param comm_out_optim The main list of full projection results for the
+//' community resulting from ESS optimization, supplied as a pointer and altered
+//' by this function.
 //' @param zero_stage_vec_list A list of vectors giving zero stage vectors for
 //' each MPM, if entry times are staggered.
 //' @param trait_axis A data frame of class \code{adaptAxis} holding the trait
 //' data to test.
 //' @param new_trait_axis A data frame giving trait axis data post-processing
 //' with function \code{ta_reassess()}.
+//' @param optim_trait_axis A data frame giving trait axis data processed for
+//' ESS optimization.
+//' @param optim_trait_axis_995 A data frame giving trait axis data processed
+//' for ESS optimization for variants 99.5% the values of the core frame.
 //' @param new_stageexpansion_list A list with stage expansions for all trait
 //' axis data leading to matrix element changes with each list element
 //' corresponding to each respective variant.
+//' @param new_stageexpansion_list_optima A list with stage expansions for all
+//' variant data used in ESS evaluation.
 //' @param errcheck_mpms An optional list of all MPMs post-processing. Only
 //' output if \code{err_check = TRUE}.
 //' @param chosen_mpm An MPM in \code{lefkoMat} format.
@@ -9474,6 +11034,9 @@ Rcpp::List cleanup3_inv (Nullable<RObject> mpm = R_NilValue,
 //' age-by-stage MPM.
 //' @param finalage_int  An integer giving the final age in a Leslie or
 //' age-by-stage MPM.
+//' @param opt_res If evaluating optima, then this integer gives the number
+//' of variants to create between each minimum and maximum for each trait found
+//' to be variable in the input trait axis. Defaults to \code{100}.
 //' @param exp_tol The maximum tolerated exponent.
 //' @param theta_tol The maximum tolerated limit for theta, in non-linear
 //' models such as those using the negative binomial.
@@ -9497,6 +11060,15 @@ Rcpp::List cleanup3_inv (Nullable<RObject> mpm = R_NilValue,
 //' of output objects for error checking.
 //' @param err_check_extreme A logical value indicating whether to include an
 //' extra list of all matrices projected in the \code{err_check} object.
+//' @param threshold The lower limit for the absolute value of fitness, below
+//' which fitness is rounded to 0. Defaults to 0.00000001.
+//' @param fitness_table A Boolean value dictating whether to include a data
+//' frame giving Lyapunov coefficients for all combinations of variants tested.
+//' Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+//' to \code{TRUE}.
+//' @param optima A Boolean value indicating whether to assess the values of ESS
+//' optima for traits that vary among variants in the given \code{adaptAxis}
+//' table. Defaults to \code{TRUE}.
 //' 
 //' @return The first four arguments are directly manipulated without any
 //' values returned.
@@ -9504,11 +11076,14 @@ Rcpp::List cleanup3_inv (Nullable<RObject> mpm = R_NilValue,
 //' @keywords internal
 //' @noRd
 void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
-  List& N_out, List& comm_out, List& zero_stage_vec_list, DataFrame& trait_axis,
-  DataFrame& new_trait_axis, List& new_stageexpansion_list, List& errcheck_mpms,
-  const List chosen_mpm, const List tweights_list, const List start_list,
-  const List vrm_list, DataFrame stageframe_df, const List allmodels_all,
-  const List allstages_all, const DataFrame supplement_df,
+  List& N_out, List& comm_out, List& N_out_optim, List& comm_out_optim,
+  List& zero_stage_vec_list, DataFrame& trait_axis,
+  DataFrame& new_trait_axis, DataFrame& optim_trait_axis,
+  DataFrame& optim_trait_axis_995, List& new_stageexpansion_list,
+  List& new_stageexpansion_list_optima, List& errcheck_mpms,
+  List& errcheck_mpms_optima, const List chosen_mpm, const List tweights_list,
+  const List start_list, const List vrm_list, DataFrame stageframe_df,
+  const List allmodels_all, const List allstages_all, const DataFrame supplement_df,
   const CharacterVector chosen_years, const List sp_density_list,
   const DataFrame density_df, const DataFrame dens_index_df,
   const List equivalence_list, const IntegerVector sp_density_num_vec,
@@ -9520,16 +11095,22 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   const CharacterVector patch_vec, const int variant_count, const int var_per_run,
   const int nreps, const int times, const int fitness_times, const int stagecounts,
   const int substoch, const int format_int, const int preexisting_mpm_size,
-  const int firstage_int, const int finalage_int, const double exp_tol,
+  const int firstage_int, const int finalage_int, const int opt_res, const double exp_tol,
   const double theta_tol, const bool integeronly, const bool stages_not_equal,
   const bool stochastic, const bool dens_yn_bool, const bool entry_time_vec_use,
   const bool sparse_bool, const bool historical, const bool pure_leslie,
-  const bool A_only, const bool err_check, const bool err_check_extreme) {
+  const bool A_only, const bool err_check, const bool err_check_extreme,
+  const double threshold, const bool fitness_table, const bool optima) {
   
+  // Structures for optim
+  List N_out_pre_optim (nreps);
+    
   // patches?????
   
   //Rcout << "invade3_pre_core a          ";
   int var_mat_length = static_cast<int>(var_run_mat.n_rows);
+  bool opt_res_squared {false};
+  int opt_res_true = opt_res;
   
   List A_list = as<List>(chosen_mpm["A"]);
   
@@ -9550,11 +11131,170 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   new_trait_axis = AdaptUtils::ta_reassess(stageframe_df, trait_axis_clone, firstage_int,
     historical, false, pure_leslie);
   
+  if (optima) {
+    optim_ta_setup(new_trait_axis, optim_trait_axis, optim_trait_axis_995,
+      opt_res, opt_res_squared);
+    if (opt_res_squared) opt_res_true = opt_res * opt_res; /////
+    
+    if (opt_res < 1) {
+      throw Rcpp::exception("Argument opt_res must be an integer no smaller than 1.", false);
+    }
+  }
+  
+  List comm_out_pre_optim (opt_res_true);
+  List trait_axis_by_variant_optim (opt_res_true); // Might wish to remove this later
+  
+  if (optima) {
+    List stageexpansion_by_variant_optim (opt_res_true); // Might wish to remove this later
+    // Set up comm_out_pre_optim 
+    for (int i = 0; i < opt_res_true; i++) {
+      //Rcout << "invade3_pre_core c          ";
+      //int chosen_mats_length = static_cast<int>(chosen_mats.length());
+      
+      List all_pops_per_run (2);
+      List all_used_times_per_run (2);
+      for (int m = 0; m < 2; m++) {
+        //Rcout << "invade3_pre_core d          ";
+        //int current_variant_index = var_run_mat(i, m);
+        
+        List pop_reps (nreps);
+        List used_times_reps (nreps);
+        for (int j = 0; j < nreps; j++) {
+          //Rcout << "invade3_pre_core e          ";
+          arma::mat pops_out_pre (stagecounts, (times + 1), fill::zeros);
+          
+          /*
+          IntegerVector years_topull;
+          
+          if (!stochastic) {
+            //Rcout << "invade3_pre_core j          ";
+            IntegerVector years_topull_pre (times);
+            
+            int mat_tracker {0};
+            for (int k = 0; k < times; k++) {
+              if (mat_tracker >= chosen_mats_length) mat_tracker = 0;
+              
+              years_topull_pre(k) = chosen_mats(mat_tracker);
+              mat_tracker++;
+            }
+            years_topull = years_topull_pre;
+            //Rcout << "invade3_pre_core k          ";
+          } else {
+            //Rcout << "invade3_pre_core l          ";
+            if (tweights_type_vec(0) == 0) {
+              NumericVector twinput (chosen_mats_length,
+                (1.0 / static_cast<double>(chosen_mats_length)));
+              years_topull = Rcpp::RcppArmadillo::sample(chosen_mats, times, true,
+                twinput);
+            } else if (tweights_type_vec(0) == 1) {
+              NumericVector twinput = as<NumericVector>(tweights_list(0));
+              NumericVector twinput_st = twinput / sum(twinput);
+              
+              years_topull = Rcpp::RcppArmadillo::sample(chosen_mats, times, true,
+                twinput_st);
+            } else if (tweights_type_vec(0) == 2) {
+              arma::ivec chosen_mats_arma = as<arma::ivec>(chosen_mats);
+              arma::mat twinput_mat = as<arma::mat>(tweights_list(0));
+              arma::vec twinput = twinput_mat.col(0);
+              twinput = twinput / sum(twinput);
+              
+              IntegerVector years_topull_pre (times);
+              NumericVector twinput_setup (chosen_mats_length, (1.0 / 
+                static_cast<double>(chosen_mats_length)));
+              arma::ivec first_choice = Rcpp::RcppArmadillo::sample(chosen_mats_arma,
+                times, true, twinput_setup);
+              years_topull_pre(0) = chosen_mats(first_choice(0));
+              
+              for (int k = 1; k < times; k++) {
+                arma::ivec theprophecy_piecemeal = Rcpp::RcppArmadillo::sample(chosen_mats_arma,
+                  1, true, twinput);
+                years_topull_pre(k) = theprophecy_piecemeal(0);
+                
+                arma::uvec tnotb_preassigned = 
+                  find(chosen_mats_arma == theprophecy_piecemeal(0));
+                twinput = twinput_mat.col(static_cast<int>(tnotb_preassigned(0)));
+                twinput = twinput / sum(twinput);
+              }
+              years_topull = years_topull_pre;
+              //Rcout << "invade3_pre_core m          ";
+            } else {
+              throw Rcpp::exception("tweights_type_vec error.", false);
+            }
+          }
+          */
+          //used_times_reps(j) = years_topull;
+          pop_reps(j) = pops_out_pre;
+        }
+        //all_used_times_per_run(m) = used_times_reps;
+        all_pops_per_run(m) = pop_reps;
+      }
+      //used_times(i) = all_used_times_per_run;
+      comm_out_pre_optim(i) = all_pops_per_run;
+    }
+  
+    //Rcout << "invade3_pre_core e1          ";
+    for (int i = 0; i < opt_res_true; i++) {
+      //Rcout << "i: " << i << endl;
+      
+      IntegerVector used_i = {i + 1};
+      StringVector focused_var = {"variant"};
+      //Rcout << "invade3_pre_core e2          ";
+      DataFrame current_optim_trait_axis = LefkoUtils::df_subset(optim_trait_axis,
+        as<RObject>(used_i), false, true, false, false, true,
+        as<RObject>(focused_var));
+      //Rcout << "invade3_pre_core e2a          ";
+      DataFrame current_optim_trait_axis_995 = LefkoUtils::df_subset(optim_trait_axis_995,
+        as<RObject>(used_i), false, true, false, false, true,
+        as<RObject>(focused_var));
+      //Rcout << "invade3_pre_core e3          ";
+      List tabvo = Rcpp::List::create(_["main"] = current_optim_trait_axis,
+        _["e995"] = current_optim_trait_axis_995);
+      trait_axis_by_variant_optim(i) = tabvo;
+      //Rcout << "invade3_pre_core e4          ";
+      
+      int ehrlen {1};
+      int style {0};
+      int filter {1};
+      
+      if (format_int == 2) ehrlen = 2;
+      if (format_int == 3 || format_int == 5) style = 1;
+      if (format_int == 4) {
+        //agemat = true;
+        style = 2;
+        filter = 2;
+      }
+      
+      //Rcout << "invade3_pre_core e5          ";
+      DataFrame stageexpansion = AdaptMats::thenewpizzle(stageframe_df,
+        current_optim_trait_axis, firstage_int, finalage_int, ehrlen, style,
+        filter);
+      DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+        current_optim_trait_axis_995, firstage_int, finalage_int, ehrlen, style,
+        filter);
+      //Rcout << "invade3_pre_core e6          ";
+      focused_var = {"mpm_altered"};
+      IntegerVector chosen_int = {1};
+      DataFrame stageexpansion_reduced = LefkoUtils::df_subset(stageexpansion,
+        as<RObject>(chosen_int), false, true, false, false, true,
+        as<RObject>(focused_var));
+      DataFrame stageexpansion_reduced_995 = LefkoUtils::df_subset(stageexpansion_995,
+        as<RObject>(chosen_int), false, true, false, false, true,
+        as<RObject>(focused_var));
+      //Rcout << "invade3_pre_core e7          ";
+      List sbvo = Rcpp::List::create(_["main"] = stageexpansion_reduced,
+        _["e995"] = stageexpansion_reduced_995);
+      stageexpansion_by_variant_optim(i) = sbvo;
+      //Rcout << "invade3_pre_core e8          ";
+    }
+    new_stageexpansion_list_optima = stageexpansion_by_variant_optim;
+    //Rcout << "invade3_pre_core e9          ";
+  }
+  
   //Rcout << "firstage_int: " << firstage_int << endl;
   //Rcout << "finalage_int: " << finalage_int << endl;
   //Rcout << "format_int: " << format_int << endl;
   
-  //Rcout << "invade3_pre_core c          ";
+  //Rcout << "invade3_pre_core f          ";
   // Matrix order set up and creation of zero stage vectors
   IntegerVector chosen_mats; // Eliminated matrix_choice_list
   List zvl (variant_count);
@@ -9568,7 +11308,7 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   CharacterVector mpm_labels_patch = as<CharacterVector>(chosen_labels["patch"]);
   IntegerVector pvis = index_l3(mpm_labels_patch, patch_vec(0)); // Is patch done properly?
   
-  //Rcout << "invade3_pre_core d          ";
+  //Rcout << "invade3_pre_core g          ";
   if (clm_y2.length() > 0) {
     CharacterVector mpm_labels_year2 = as<CharacterVector>(chosen_labels["year2"]);
     int chosen_years_length = static_cast<int>(chosen_years.length());
@@ -9591,7 +11331,7 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
     chosen_mats = chosen_mats_pre;
   }
   
-  //Rcout << "invade3_pre_core e          ";
+  //Rcout << "invade3_pre_core h          ";
   // Zero vector creation
   if (entry_time_vec_use) {
     if (!sparse_bool) {
@@ -9619,32 +11359,32 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   
   zero_stage_vec_list = zvl;
   
-  //Rcout << "invade3_pre_core f          ";
+  //Rcout << "invade3_pre_core i          ";
   // Year order determination
   List comm_out_pre (var_mat_length);
   List used_times (var_mat_length);
   
   // Determine order of matrices for each variant run
   for (int i = 0; i < var_mat_length; i++) {
-    //Rcout << "invade3_pre_core g          ";
+    //Rcout << "invade3_pre_core k          ";
     int chosen_mats_length = static_cast<int>(chosen_mats.length());
     
     List all_pops_per_run (var_per_run);
     List all_used_times_per_run (var_per_run);
     for (int m = 0; m < var_per_run; m++) {
-      //Rcout << "invade3_pre_core h          ";
+      //Rcout << "invade3_pre_core l          ";
       int current_variant_index = var_run_mat(i, m);
       
       List pop_reps (nreps);
       List used_times_reps (nreps);
       for (int j = 0; j < nreps; j++) {
-        //Rcout << "invade3_pre_core i          ";
+        //Rcout << "invade3_pre_core m          ";
         arma::mat pops_out_pre (stagecounts, (times + 1), fill::zeros);
       
         IntegerVector years_topull;
         
         if (!stochastic) {
-          //Rcout << "invade3_pre_core j          ";
+          //Rcout << "invade3_pre_core n          ";
           IntegerVector years_topull_pre (times);
           
           int mat_tracker {0};
@@ -9655,9 +11395,9 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
             mat_tracker++;
           }
           years_topull = years_topull_pre;
-          //Rcout << "invade3_pre_core k          ";
+          //Rcout << "invade3_pre_core o          ";
         } else {
-          //Rcout << "invade3_pre_core l          ";
+          //Rcout << "invade3_pre_core p          ";
           if (tweights_type_vec(0) == 0) {
             NumericVector twinput (chosen_mats_length,
               (1.0 / static_cast<double>(chosen_mats_length)));
@@ -9693,7 +11433,7 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
               twinput = twinput / sum(twinput);
             }
             years_topull = years_topull_pre;
-            //Rcout << "invade3_pre_core m          ";
+            //Rcout << "invade3_pre_core q          ";
           } else {
             throw Rcpp::exception("tweights_type_vec error.", false);
           }
@@ -9708,7 +11448,7 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
     comm_out_pre(i) = all_pops_per_run;
   }
   
-  //Rcout << "invade3_pre_core o          ";
+  //Rcout << "invade3_pre_core r          ";
   // Here we create the modified A matrices
   List new_A_list = clone(A_list);
   CharacterVector nta_vars = new_trait_axis.names();
@@ -9745,224 +11485,44 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   }
   new_stageexpansion_list = stageexpansion_by_variant;
   
-  //Rcout << "invade3_pre_core p          ";
+  //Rcout << "invade3_pre_core s          ";
   // Main projection
   List N_out_pre (nreps);
   List errcheck_mpm_reps (nreps);
+  List errcheck_mpm_reps_optima (nreps);
   
   for (int i = 0; i < nreps; i ++) { // 1st loop - reps i
-    //Rcout << "invade3_pre_core q          ";
-    List running_popvecs; //  = clone(start_list)
-    List running_popvecs_startonly; //  = clone(start_list)
-    arma::cube N_mpm (var_per_run, (times + 1), var_mat_length); // rows = vars, cols = times, slices = permutes 
+    //Rcout << "invade3_pre_core t          ";
+    invpre_project(var_run_mat, N_out_pre, comm_out_pre, new_stageexpansion_list,
+      errcheck_mpm_reps, used_times, zero_stage_vec_list, start_list,
+      equivalence_list, A_list, U_list, F_list, density_df, dens_index_df,
+      entry_time_vec, var_per_run, times, var_mat_length, format_int, i,
+      firstage_int, finalage_int, substoch, exp_tol, theta_tol, err_check,
+      err_check_extreme, sparse_bool, A_only, stages_not_equal, integeronly,
+      dens_yn_bool);
     
-    List errcheck_mpm_reps_time (times); // Could remove later
-    for (int j = 0; j < times; j++) { // 2nd loop - time j
-      //Rcout << "invade3_pre_core r          ";
-      if (j % 10 == 0){
-        Rcpp::checkUserInterrupt();
-      }
-      
-      List errcheck_mpm_reps_time_vmt (var_mat_length); // Could remove later
-      
-      for (int l = 0; l < var_mat_length; l++) { // 3rd loop - permutes l
-        //Rcout << "invade3_pre_core s          ";
-        List errcheck_mpm_reps_time_vmt_var(var_per_run); // Could remove later
-        //Rcout << "current_permutation (l): " << l << "          ";
-        if (j == 0) {
-          List var_popvecs_to_start (var_per_run);
-          for (int n = 0; n < var_per_run; n++) {
-            var_popvecs_to_start(n) = as<arma::vec>(start_list(static_cast<int>(var_run_mat(l, n))));
-          }
-          running_popvecs = var_popvecs_to_start;
-          running_popvecs_startonly = clone(var_popvecs_to_start);
-        }
-        
-        for (int m = 0; m < var_per_run; m++) {
-          if (j == entry_time_vec(m)) {
-            arma::vec running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
-            
-            double N_current = accu(running_popvec_mpm);
-            N_mpm(m, j, l) = N_current; // Used to be (k, j)
-          }
-        }
-        
-        List all_pops_per_run = as<List>(comm_out_pre(l));
-        for (int m = 0; m < var_per_run; m++) { // 4th loop - var per run m
-          //Rcout << "invade3_pre_core t          ";
-          int current_variant_index = var_run_mat(l, m); // Equivalent to index integer k
-          
-          DataFrame sge_current = as<DataFrame>(new_stageexpansion_list(current_variant_index));
-          
-          List pop_reps = as<List>(all_pops_per_run(m));
-          arma::mat pops_out = as<arma::mat>(pop_reps(i));
-          
-          if (j > (entry_time_vec(m) - 1)) {
-            //Rcout << "invade3_pre_core u          ";
-            List used_times_per_run = as<List>(used_times(l));
-            List used_times_current_var = as<List>(used_times_per_run(m));
-            IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(i));
-            
-            arma::vec running_popvec_mpm;
-            if (j == entry_time_vec(m)) {
-              running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
-              pops_out.col(j) = running_popvec_mpm;
-              
-            } else {
-              running_popvec_mpm = pops_out.col(j);
-            }
-            
-            //Rcout << "invade3_pre_core v          ";
-            if (!dens_yn_bool) {
-              if (!sparse_bool) {
-                arma::mat current_A = as<arma::mat>(A_list(current_times_vec(j)));
-
-                if (A_only) {
-                  AdaptUtils::Amat_alter(current_A, sge_current); 
-                } else {
-                  arma::mat current_U_unaltered = as<arma::mat>(U_list(current_times_vec(j)));
-                  arma::mat current_F_unaltered = as<arma::mat>(F_list(current_times_vec(j)));
-                  AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
-                }
-                
-                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
-                running_popvec_mpm = current_A * running_popvec_mpm; 
-              } else {
-                arma::sp_mat current_A = as<arma::sp_mat>(A_list(current_times_vec(j)));
-                
-                if (A_only) {
-                  AdaptUtils::sp_Amat_alter(current_A, sge_current);
-                } else {
-                  arma::sp_mat current_U_unaltered = as<arma::sp_mat>(U_list(current_times_vec(j)));
-                  arma::sp_mat current_F_unaltered = as<arma::sp_mat>(F_list(current_times_vec(j)));
-                  AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
-                }
-                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
-                running_popvec_mpm = current_A * running_popvec_mpm;
-              }
-            } else {
-              DataFrame used_density_input = density_df;
-              DataFrame used_density_index_input = as<DataFrame>(dens_index_df);
-              
-              IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
-              int used_delay = max(ud_delay_vec);
-              
-              if (j >= (used_delay - 1 )) { // Change to allow different delay Ns for different entries
-                if (!stages_not_equal) {
-                  arma::mat di_mat = N_mpm.slice(l);
-                  arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
-                  
-                  double delay_N_sum = arma::sum(delay_issue);
-                  arma::vec new_popvec;
-                  arma::mat new_projmat;
-                  arma::sp_mat new_projsp;
-                  
-                  AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
-                    running_popvec_mpm, sge_current, A_list, delay_N_sum,
-                    static_cast<int>(current_times_vec(j)), integeronly,
-                    substoch, used_density_input, used_density_index_input,
-                    false, sparse_bool, sparse_bool, false, err_check);
-                  
-                  running_popvec_mpm = new_popvec;
-                  if (err_check_extreme) { // Could remove later
-                    if (!sparse_bool) {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
-                    } else {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
-                    }
-                  } // Could remove later
-                } else {
-                  double delay_N_sum {0.0};
-                  
-                  if (j > 0) {
-                    for (int p = 0; p < var_per_run; p++) {
-                      int current_variant_index_agg = var_run_mat(l, p);
-                      
-                      List current_pop_list = as<List>(comm_out_pre(l));
-                      List pop_rep_list = as<List>(current_pop_list(p)); // Changed from m to p
-                      arma::mat delay_pop = as<arma::mat>(pop_rep_list(i));
-                      
-                      arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
-                      arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
-                      arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
-                      double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
-                      
-                      delay_N_sum += delay_pop_N;
-                    }
-                  }
-                  
-                  arma::vec new_popvec;
-                  arma::mat new_projmat;
-                  arma::sp_mat new_projsp;
-                  
-                  AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
-                    running_popvec_mpm, sge_current, A_list, delay_N_sum,
-                    static_cast<int>(current_times_vec(j)), integeronly,
-                    substoch, used_density_input, used_density_index_input,
-                    false, sparse_bool, sparse_bool, false, err_check);
-                  
-                  running_popvec_mpm = new_popvec;
-                  if (err_check_extreme) { // Could remove later
-                    if (!sparse_bool) {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
-                    } else {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
-                    }
-                  } // Could remove later
-                }
-                //Rcout << "invade3_pre_core aa          ";
-              } else {
-                //Rcout << "invade3_pre_core ab          ";
-                arma::vec new_popvec;
-                arma::mat new_projmat;
-                arma::sp_mat new_projsp;
-                
-                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
-                  running_popvec_mpm, sge_current, A_list, 0.0,
-                  static_cast<int>(current_times_vec(j)), integeronly, substoch,
-                  used_density_input, used_density_index_input, false,
-                  sparse_bool, sparse_bool, false, err_check);
-                
-                running_popvec_mpm = new_popvec;
-                if (err_check_extreme) { // Could remove later
-                  if (!sparse_bool) {
-                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
-                  } else {
-                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
-                  }
-                } // Could remove later
-                //Rcout << "invade3_pre_core ac          ";
-              }
-            }
-            
-            //Rcout << "invade3_pre_core ad          ";
-            if (integeronly) running_popvec_mpm = floor(running_popvec_mpm);
-            double N_current = arma::sum(running_popvec_mpm);
-            N_mpm(m, (j + 1), l) = N_current; // Used to be (k, (j + 1))
-            
-            running_popvecs(m) = running_popvec_mpm;
-            pops_out.col(j + 1) = running_popvec_mpm;
-            //Rcout << "invade3_pre_core ae          ";
-          } else {
-            //Rcout << "invade3_pre_core af          ";
-            arma::vec current_zero_vec = as<arma::vec>(zero_stage_vec_list(current_variant_index));
-            pops_out.col(j + 1) = current_zero_vec;
-          }
-          pop_reps(i) = pops_out;
-        } // m loop - var_per_run
-        if (err_check_extreme) errcheck_mpm_reps_time_vmt(l) = errcheck_mpm_reps_time_vmt_var;
-      } // l loop - var_mat_length
-      if (err_check_extreme) errcheck_mpm_reps_time(j) = errcheck_mpm_reps_time_vmt;
-      
-    } // j loop - time
-    if (err_check_extreme) errcheck_mpm_reps(i) = errcheck_mpm_reps_time; // Could remove later
-    N_out_pre(i) = N_mpm;
+    if (optima) {
+      invpre_optim(N_out_pre_optim, comm_out_pre_optim, new_stageexpansion_list_optima,
+        errcheck_mpm_reps_optima, used_times, zero_stage_vec_list, start_list,
+        equivalence_list, A_list, U_list, F_list, density_df, dens_index_df,
+        entry_time_vec, var_per_run, times, var_mat_length, format_int, i,
+        firstage_int, finalage_int, substoch, opt_res_true, exp_tol, theta_tol, err_check,
+        err_check_extreme, sparse_bool, A_only, stages_not_equal, integeronly,
+        dens_yn_bool);
+    }
   } // i loop - reps
   comm_out = comm_out_pre;
-  if (err_check_extreme) errcheck_mpms = errcheck_mpm_reps;
-  N_out = N_out_pre;
+  comm_out_optim = comm_out_pre_optim;
   
-  //Rcout << "invade3_pre_core ag     ";
+  N_out = N_out_pre;
+  N_out_optim = N_out_pre_optim;
+  
+  if (err_check_extreme) {
+    errcheck_mpms = errcheck_mpm_reps;
+    errcheck_mpms_optima = errcheck_mpm_reps_optima;
+  }
+  
+  //Rcout << "invade3_pre_core u     ";
   
   IntegerVector Lyap_rows = seq(1, nreps * var_mat_length);
   CharacterVector Lyap_df_names ((3 * var_per_run) + 2);
@@ -9976,7 +11536,7 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   List output ((3 * var_per_run) + 2);
   output(0) = Lyap_rows;
   
-  //Rcout << "invade3_pre_core ah     ";
+  //Rcout << "invade3_pre_core v     ";
   
   int Lyap_counter {0};
   for (int m = 0; m < var_per_run; m++) {
@@ -10017,6 +11577,7 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
         AdaptUtils::fastLm_sl(Lyap_regr, running_fitness, xmat);
         
         double Lyapunov_estimate = Lyap_regr(1);
+        if (abs(Lyapunov_estimate) <= threshold) Lyapunov_estimate = 0.;
         
         Lyap_var(Lyap_counter) = Lyap_var_orig(l);
         Lyap_rep(Lyap_counter) = i+1;
@@ -10053,7 +11614,2094 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   Lyapunov = output;
 }
 
-//' Engine Running Invasion Analyses of Function-based MPMs
+//' Core Function-Based Projection Engine
+//' 
+//' Function \code{invfb_project} runs the projections in function
+//' \code{invade3_fb_core}.
+//' 
+//' @name invfb_project
+//' 
+//' @param var_run_mat A matrix giving the the variants to be run in each
+//' projection, with rows giving the projections and columns giving the
+//' variants.
+//' @param surv_dev_nta The survival column in the reassessed trait axis.
+//' @param obs_dev_nta The observation status column in the reassessed trait
+//' axis.
+//' @param size_dev_nta The primary size column in the reassessed trait axis.
+//' @param sizeb_dev_nta The secondary size column in the reassessed trait axis.
+//' @param sizec_dev_nta The tertiary size column in the reassessed trait axis.
+//' @param repst_dev_nta The reproductive status column in the reassessed trait
+//' axis.
+//' @param fec_dev_nta The fecundity column in the reassessed trait axis.
+//' @param jsurv_dev_nta The juvenile survival column in the reassessed trait
+//' axis.
+//' @param jobs_dev_nta The juvenile observation status column in the reassessed
+//' trait axis.
+//' @param jsize_dev_nta The juvenile primary size column in the reassessed
+//' trait axis.
+//' @param jsizeb_dev_nta The juvenile secondary size column in the reassessed
+//' trait axis.
+//' @param jsizec_dev_nta The juvenile tertiary size column in the reassessed
+//' trait axis.
+//' @param jrepst_dev_nta The juvenile reproductive status column in the
+//' reassessed trait axis.
+//' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
+//' trait axis.
+//' @param variant_nta The variant column in the reassessed trait axis.
+//' @param N_out_pre The main list of final population sizes, supplied as a
+//' reference and altered by this function.
+//' @param comm_out_pre The main list of full projection results for the community,
+//' supplied as a pointer and altered by this function.
+//' @param new_stageexpansion_list A list with stage expansions for all trait
+//' axis data leading to matrix element changes with each list element
+//' corresponding to each respective variant.
+//' @param new_stageexpansion_list_optima A list with stage expansions for all
+//' variant data used in ESS evaluation.
+//' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+//' output if \code{err_check = "extreme"}.
+//' @param errcheck_mpmout_reps An optional list of all mpm_out matrices from MPM
+//' processing. Only output if \code{err_check = "extreme"}.
+//' @param mdtl The modified dev terms list.
+//' @param used_times A list of year numbers for each time per run.
+//' @param allmodels_all A list of extracted vrm inputs for all MPMs.
+//' @param vrm_list A list of \code{vrm_input} objects.
+//' @param allstages_all The allstages indexing data frame used to produce MPMs.
+//' @param dev_terms_list List of deviations for vital rate models.
+//' @param ind_terms_num_list List of data frames giving values of numeric
+//' individual covariates.
+//' @param ind_terms_cat_list List of data frames giving values of factor
+//' individual covariates.
+//' @param stageexpansion_ta_devterms_by_variant A list giving trait axis info
+//' by variant, with each variant given a list element.
+//' @param sp_density_list A list of values of spatial density for all MPMs.
+//' @param start_list A list of starting information, supplied in \code{lefkoSV}
+//' format.
+//' @param equivalence_list A list giving the effect of each individual in each
+//' stage relative to a reference individual.
+//' @param density_vr_list Data frame of \code{lefkoDensVR} objects holding
+//' density relationships for all 14 vital rate models.
+//' @param current_stageframe The main stageframe, including extra stages.
+//' @param current_supplement A supplement in \code{lefkoSD} format.
+//' @param density_df A data frame of class \code{lefkoDens}.
+//' @param dens_index_df A data frame giving indices for density dependent
+//' transitions.
+//' @param entry_time_vec An IntegerVector containing the entry time of each
+//' mutant, population, or species, as given by each MPM.
+//' @param sp_density_num_vec A vector giving the number of spatial density
+//' terms.
+//' @param inda_terms_num_vec A vector giving the number of numeric terms given
+//' in individual covariate a.
+//' @param indb_terms_num_vec A vector giving the number of numeric terms given
+//' in individual covariate b.
+//' @param indc_terms_num_vec A vector giving the number of numeric terms given
+//' in individual covariate c.
+//' @param inda_terms_cat_vec A vector giving the number of factor terms given
+//' in individual covariate a.
+//' @param indb_terms_cat_vec A vector giving the number of factor terms given
+//' in individual covariate b.
+//' @param indc_terms_cat_vec A vector giving the number of factor terms given
+//' in individual covariate c.
+//' @param dens_vr_yn_vec A vector stating whether density dependence is used,
+//' given through \code{lefkoDensVR} objects.
+//' @param sp_density_counter A vector giving the number of spatial density
+//' estimates used.
+//' @param inda_num_terms_previous A vector with numeric individual covariate a
+//' terms for time t-1.
+//' @param indb_num_terms_previous A vector with numeric individual covariate b
+//' terms for time t-1.
+//' @param indc_num_terms_previous A vector with numeric individual covariate c
+//' terms for time t-1.
+//' @param inda_cat_terms_previous A vector with categorical individual
+//' covariate a terms for time t-1.
+//' @param indb_cat_terms_previous A vector with categorical individual
+//' covariate b terms for time t-1.
+//' @param indc_cat_terms_previous A vector with categorical individual
+//' covariate c terms for time t-1.
+//' @param inda_num_terms_counter A vector with numeric individual covariate a
+//' terms for time t.
+//' @param indb_num_terms_counter A vector with numeric individual covariate b
+//' terms for time t.
+//' @param indc_num_terms_counter A vector with numeric individual covariate c
+//' terms for time t.
+//' @param inda_cat_terms_counter A vector with categorical individual covariate
+//' a terms for time t.
+//' @param indb_cat_terms_counter A vector with categorical individual covariate
+//' b terms for time t.
+//' @param indc_cat_terms_counter A vector with categorical individual covariate
+//' c terms for time t.
+//' @param dev_num_counter A vector giving the number of vital rate deviations
+//' in each MPM.
+//' @param fecmod_vec A numeric vector giving the fecmod values.
+//' @param year_vec A vector giving the main years used.
+//' @param patch_vec A vector giving the name of each patch used in projection.
+//' @param var_per_run An integer giving the number of variants per run.
+//' @param times An integer giving the number of occasions to project.
+//' @param var_mat_length An integer giving the number of rows in the variant
+//' matrix.
+//' @param format_int An integer giving the MPM format.
+//' @param current_rep The integer giving the current replicate.
+//' @param firstage_int An integer giving the first age in a Leslie or
+//' age-by-stage MPM.
+//' @param finalage_int  An integer giving the final age in a Leslie or
+//' age-by-stage MPM.
+//' @param dev_terms_times_int A vector giving ....
+//' @param substoch An integer giving the level of sustochasticity to enforce.
+//' @param year_counter An integer for year counts during projection.
+//' @param exp_tol The maximum tolerated exponent.
+//' @param theta_tol The maximum tolerated limit for theta, in non-linear
+//' models such as those using the negative binomial.
+//' @param err_check A logical value indicating whether to include an extra list
+//' of output objects for error checking.
+//' @param err_check_extreme A logical value indicating whether to include an
+//' extra list of all matrices projected in the \code{err_check} object.
+//' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+//' matrix format.
+//' @param A_only A Boolean value indicating whether to export U and F matrices
+//' for alteration, or only A matrices.
+//' @param stages_not_equal A Boolean value indicating whether equivalence
+//' info is supplied suggesting even stages within MPMs are not equal.
+//' @param integeronly A Boolean value indicating whether to allow only whole
+//' values of individuals or not.
+//' @param dens_yn_bool A Boolean value stating whether density dependence is
+//' used, given through \code{lefkoDens} objects.
+//' 
+//' @return The first four arguments are directly manipulated without any
+//' values returned.
+//' 
+//' @keywords internal
+//' @noRd
+inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
+  arma::vec& obs_dev_nta, arma::vec& size_dev_nta, arma::vec& sizeb_dev_nta,
+  arma::vec& sizec_dev_nta, arma::vec& repst_dev_nta, arma::vec& fec_dev_nta,
+  arma::vec& jsurv_dev_nta, arma::vec& jobs_dev_nta, arma::vec& jsize_dev_nta,
+  arma::vec& jsizeb_dev_nta, arma::vec& jsizec_dev_nta, arma::vec& jrepst_dev_nta,
+  arma::vec& jmatst_dev_nta, arma::ivec& variant_nta, List& N_out_pre,
+  List& comm_out_pre, List& new_stageexpansion_list, List& errcheck_mpm_reps,
+  List& errcheck_mpmout_reps, List& mdtl, List& used_times,
+  const List allmodels_all, const List vrm_list, const List allstages_all,
+  const List dev_terms_list, const List ind_terms_num_list,
+  const List ind_terms_cat_list, List& stageexpansion_ta_devterms_by_variant,
+  const List sp_density_list, const List start_list, const List equivalence_list,
+  const DataFrame density_vr_list, DataFrame& current_stageframe,
+  const DataFrame current_supplement, const DataFrame density_df,
+  const DataFrame dens_index_df, const IntegerVector entry_time_vec,
+  const IntegerVector sp_density_num_vec, const IntegerVector inda_terms_num_vec,
+  const IntegerVector indb_terms_num_vec, const IntegerVector indc_terms_num_vec,
+  const IntegerVector inda_terms_cat_vec, const IntegerVector indb_terms_cat_vec,
+  const IntegerVector indc_terms_cat_vec, const IntegerVector dens_vr_yn_vec,
+  IntegerMatrix& sp_density_counter, IntegerMatrix& inda_num_terms_previous,
+  IntegerMatrix& indb_num_terms_previous, IntegerMatrix& indc_num_terms_previous,
+  IntegerMatrix& inda_cat_terms_previous, IntegerMatrix& indb_cat_terms_previous,
+  IntegerMatrix& indc_cat_terms_previous, IntegerMatrix& inda_num_terms_counter,
+  IntegerMatrix& indb_num_terms_counter, IntegerMatrix& indc_num_terms_counter,
+  IntegerMatrix& inda_cat_terms_counter, IntegerMatrix& indb_cat_terms_counter,
+  IntegerMatrix& indc_cat_terms_counter, IntegerMatrix& dev_num_counter,
+  const NumericVector fecmod_vec, const CharacterVector year_vec,
+  const CharacterVector patch_vec, const int var_per_run, const int times,
+  const int var_mat_length, const int format_int, const int current_rep,
+  const int firstage_int, const int finalage_int, const int dev_terms_times_int,
+  const int substoch, int& year_counter, const double exp_tol,
+  const double theta_tol, const bool err_check, const bool err_check_extreme,
+  const bool sparse_bool, const bool A_only, const bool stages_not_equal,
+  const bool integeronly, const bool dens_yn_bool) {
+  
+  //Rcout << "invfb_project A" << endl;
+  
+  List running_popvecs; // = clone(start_list);
+  List running_popvecs_startonly;
+  arma::cube N_mpm (var_per_run, (times + 1), var_mat_length);
+  
+  List errcheck_mpm_reps_time (times); 
+  List errcheck_mpmout_reps_time (times); 
+  
+  for (int j = 0; j < times; j++) { // 2nd loop - time j
+    if (j % 10 == 0){
+      Rcpp::checkUserInterrupt();
+    }
+    
+    //Rcout << "invfb_project A1          ";
+    List errcheck_mpm_reps_time_vmt (var_mat_length); 
+    List errcheck_mpmout_reps_time_vmt (var_mat_length); 
+    
+    for (int i = 0; i < var_mat_length; i++) { // 3rd loop - permutes i
+      List errcheck_mpm_reps_time_vmt_var(var_per_run); 
+      List errcheck_mpmout_reps_time_vmt_var(var_per_run); 
+      
+      if (j == 0) {
+        List var_popvecs_to_start (var_per_run);
+        for (int n = 0; n < var_per_run; n++) {
+          var_popvecs_to_start(n) = as<arma::vec>(start_list(static_cast<int>(var_run_mat(i, n))));
+        }
+        running_popvecs = var_popvecs_to_start;
+        running_popvecs_startonly = clone(var_popvecs_to_start);
+      }
+      
+      for (int m = 0; m < var_per_run; m++) { // 4th loop - var per run m
+        if (j == entry_time_vec(m)) {
+          arma::vec running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+          
+          double N_current = accu(running_popvec_mpm);
+          N_mpm(m, j, i) = N_current; // Used to be (k, j)
+        }
+      }
+      
+      List all_pops_per_run = as<List>(comm_out_pre(i));
+      List mdtl_1 (var_per_run);
+      for (int m = 0; m < var_per_run; m++) { // 4th loop - var per run m
+        int current_variant_index = var_run_mat(i, m); // Equivalent to index integer k
+        
+        DataFrame sge_current = as<DataFrame>(new_stageexpansion_list(current_variant_index));
+        
+        //Rcout << "invfb_project A2          ";
+        List pop_reps = as<List>(all_pops_per_run(m));
+        arma::mat pops_out = as<arma::mat>(pop_reps(current_rep));
+        
+        //Rcout << "invfb_project A3          ";
+        if (j > (entry_time_vec(m) - 1)) {
+          //Rcout << "invfb_project A4          ";
+          List used_times_per_run = as<List>(used_times(i));
+          List used_times_current_var = as<List>(used_times_per_run(m));
+          IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(current_rep));
+          
+          arma::vec running_popvec_vrm;
+          if (j == entry_time_vec(m)) {
+            running_popvec_vrm = as<arma::vec>(running_popvecs_startonly(m));
+            pops_out.col(j) = running_popvec_vrm;
+          } else {
+            running_popvec_vrm = pops_out.col(j);
+          }
+          //Rcout << "invfb_project A5          ";
+          
+          List current_vrm_extract = allmodels_all; // (i)
+          List current_vrm_unextract = vrm_list; // (i)
+          int ehrlen_format {1}; // This will need to be dealt with differently later
+          
+          //Rcout << "invfb_project A6          ";
+          int mpm_style {1};
+          if (format_int < 3) {
+            mpm_style = 0;
+            if (format_int == 2) ehrlen_format = 2;
+          } else if (format_int == 4) {
+            mpm_style = 2;
+          }
+          
+          //Rcout << "invfb_project A7          ";
+          DataFrame current_mpm_allstages = allstages_all; // (i)
+          
+          //Rcout << "invfb_project A8          ";
+          List surv_proxy = as<List>(current_vrm_extract(0));
+          List obs_proxy = as<List>(current_vrm_extract(1));
+          List size_proxy = as<List>(current_vrm_extract(2));
+          List sizeb_proxy = as<List>(current_vrm_extract(3));
+          List sizec_proxy = as<List>(current_vrm_extract(4));
+          List repst_proxy = as<List>(current_vrm_extract(5));
+          List fec_proxy = as<List>(current_vrm_extract(6));
+          List jsurv_proxy = as<List>(current_vrm_extract(7));
+          List jobs_proxy = as<List>(current_vrm_extract(8));
+          List jsize_proxy = as<List>(current_vrm_extract(9));
+          List jsizeb_proxy = as<List>(current_vrm_extract(10));
+          List jsizec_proxy = as<List>(current_vrm_extract(11));
+          List jrepst_proxy = as<List>(current_vrm_extract(12));
+          List jmatst_proxy = as<List>(current_vrm_extract(13));
+          DataFrame current_paramnames = as<DataFrame>(current_vrm_extract(14));
+          
+          //Rcout << "invfb_project A9          ";
+          CharacterVector current_mainyears = year_vec;
+          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          
+          StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
+          
+          DataFrame group2_frame = as<DataFrame>(current_vrm_unextract["group2_frame"]);
+          CharacterVector current_maingroups = as<CharacterVector>(group2_frame["groups"]);
+          
+          DataFrame patch_frame = as<DataFrame>(current_vrm_unextract["patch_frame"]);
+          CharacterVector current_mainpatches = as<CharacterVector>(patch_frame["patches"]);
+          
+          int patchnumber = 0;
+          for (int ptl = 0; ptl < static_cast<int>(current_mainpatches.length()); ptl++) {
+            if (LefkoUtils::stringcompare_simple(String(patch_vec(0)),
+                String(current_mainpatches(ptl)), false)) patchnumber = ptl;
+          }
+          
+          //Rcout << "invfb_project A10          ";
+          
+          // Not sure if we need the next bit
+          DataFrame indcova2_frame = as<DataFrame>(current_vrm_unextract["indcova2_frame"]);
+          DataFrame indcovb2_frame = as<DataFrame>(current_vrm_unextract["indcovb2_frame"]);
+          DataFrame indcovc2_frame = as<DataFrame>(current_vrm_unextract["indcovc2_frame"]);
+          CharacterVector current_mainindcova = as<CharacterVector>(indcova2_frame["indcova"]);
+          CharacterVector current_mainindcovb = as<CharacterVector>(indcovb2_frame["indcovb"]);
+          CharacterVector current_mainindcovc = as<CharacterVector>(indcovc2_frame["indcovc"]);
+          
+          //Rcout << "invfb_project A11          ";
+          // Counter resets
+          int yearnumber = current_times_vec(j); // year_counter
+          //Rcout << "invfb_project A12          ";
+          
+          //Rcout << "current_mainyears: " << current_mainyears << "               ";
+          //Rcout << "yearnumber: " << yearnumber << "               ";
+          CharacterVector current_year = as<CharacterVector>(current_mainyears(yearnumber));
+          //Rcout << "invfb_project A13          ";
+          
+          if (inda_num_terms_counter(i, m) >= inda_terms_num_vec(0)) inda_num_terms_counter(i, m) = 0;
+          if (indb_num_terms_counter(i, m) >= indb_terms_num_vec(0)) indb_num_terms_counter(i, m) = 0;
+          if (indc_num_terms_counter(i, m) >= indc_terms_num_vec(0)) indc_num_terms_counter(i, m) = 0;
+          if (inda_cat_terms_counter(i, m) >= inda_terms_cat_vec(0)) inda_cat_terms_counter(i, m) = 0;
+          if (indb_cat_terms_counter(i, m) >= indb_terms_cat_vec(0)) indb_cat_terms_counter(i, m) = 0;
+          if (indc_cat_terms_counter(i, m) >= indc_terms_cat_vec(0)) indc_cat_terms_counter(i, m) = 0;
+          
+          List current_ind_terms_num = ind_terms_num_list(0);
+          List current_ind_terms_cat = ind_terms_cat_list(0);
+          
+          //Rcout << "invfb_project A14          ";
+          NumericVector f_inda_full = as<NumericVector>(current_ind_terms_num(0));
+          NumericVector f_indb_full = as<NumericVector>(current_ind_terms_num(1));
+          NumericVector f_indc_full = as<NumericVector>(current_ind_terms_num(2));
+          CharacterVector r_inda_full = as<CharacterVector>(current_ind_terms_cat(0));
+          CharacterVector r_indb_full = as<CharacterVector>(current_ind_terms_cat(1));
+          CharacterVector r_indc_full = as<CharacterVector>(current_ind_terms_cat(2));
+          
+          //Rcout << "invfb_project A15          ";
+          NumericVector f2_inda = {f_inda_full(inda_num_terms_counter(i, m))}; // i
+          NumericVector f1_inda = {f_inda_full(inda_num_terms_previous(i, m))};
+          NumericVector f2_indb = {f_indb_full(indb_num_terms_counter(i, m))};
+          NumericVector f1_indb = {f_indb_full(indb_num_terms_previous(i, m))};
+          NumericVector f2_indc = {f_indc_full(indc_num_terms_counter(i, m))};
+          NumericVector f1_indc = {f_indc_full(indc_num_terms_previous(i, m))};
+          CharacterVector r2_inda = as<CharacterVector>(r_inda_full(inda_cat_terms_counter(i, m)));
+          CharacterVector r1_inda = 
+            as<CharacterVector>(r_inda_full(inda_cat_terms_previous(i, m)));
+          CharacterVector r2_indb = as<CharacterVector>
+            (r_indb_full(indb_cat_terms_counter(i, m)));
+          CharacterVector r1_indb = as<CharacterVector>
+            (r_indb_full(indb_cat_terms_previous(i, m)));
+          CharacterVector r2_indc = as<CharacterVector>
+            (r_indc_full(indc_cat_terms_counter(i, m)));
+          CharacterVector r1_indc = 
+            as<CharacterVector>(r_indc_full(indc_cat_terms_previous(i, m)));
+          
+          // dev_terms and vrm trait axis processing
+          //Rcout << "invfb_project A16          ";
+          NumericVector dv_terms (14);
+          if (dev_terms_times_int > 0) {
+            NumericMatrix used_dv_df = as<NumericMatrix>(dev_terms_list(current_variant_index));
+            if (dev_num_counter(i, m) >= dev_terms_times_int) dev_num_counter(i, m) = 0;
+            dv_terms = used_dv_df(_, dev_num_counter(i, m));
+            
+            arma::uvec var_corresponding_elems = find(variant_nta == (i + 1));
+            int vce_found = static_cast<int>(var_corresponding_elems.n_elem);
+            
+            //Rcout << "invfb_project A17          ";
+            if (vce_found > 0) {
+            //Rcout << "invfb_project A18          ";
+            arma::vec surv_dev_nta_sub = surv_dev_nta.elem(var_corresponding_elems);
+              arma::vec obs_dev_nta_sub = obs_dev_nta.elem(var_corresponding_elems);
+              arma::vec size_dev_nta_sub = size_dev_nta.elem(var_corresponding_elems);
+              arma::vec sizeb_dev_nta_sub = sizeb_dev_nta.elem(var_corresponding_elems);
+              arma::vec sizec_dev_nta_sub = sizec_dev_nta.elem(var_corresponding_elems);
+              arma::vec repst_dev_nta_sub = repst_dev_nta.elem(var_corresponding_elems);
+              arma::vec fec_dev_nta_sub = fec_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsurv_dev_nta_sub = jsurv_dev_nta.elem(var_corresponding_elems);
+              arma::vec jobs_dev_nta_sub = jobs_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsize_dev_nta_sub = jsize_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsizeb_dev_nta_sub = jsizeb_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsizec_dev_nta_sub = jsizec_dev_nta.elem(var_corresponding_elems);
+              arma::vec jrepst_dev_nta_sub = jrepst_dev_nta.elem(var_corresponding_elems);
+              arma::vec jmatst_dev_nta_sub = jmatst_dev_nta.elem(var_corresponding_elems);
+              
+              //Rcout << "invfb_project A19          ";
+              for (int vce_track = 0; vce_track < vce_found; vce_track++) {
+                if(!NumericVector::is_na(surv_dev_nta_sub(vce_track))) dv_terms(0) =
+                    dv_terms(0) + surv_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(obs_dev_nta_sub(vce_track))) dv_terms(1) =
+                    dv_terms(1) + obs_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(size_dev_nta_sub(vce_track))) dv_terms(2) =
+                    dv_terms(2) + size_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(sizeb_dev_nta_sub(vce_track))) dv_terms(3) =
+                    dv_terms(3) + sizeb_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(sizec_dev_nta_sub(vce_track))) dv_terms(4) =
+                    dv_terms(4) + sizec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(repst_dev_nta_sub(vce_track))) dv_terms(5) =
+                    dv_terms(5) + repst_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(fec_dev_nta_sub(vce_track))) dv_terms(6) =
+                    dv_terms(6) + fec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsurv_dev_nta_sub(vce_track))) dv_terms(7) =
+                    dv_terms(7) + jsurv_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jobs_dev_nta_sub(vce_track))) dv_terms(8) =
+                    dv_terms(8) + jobs_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsize_dev_nta_sub(vce_track))) dv_terms(9) =
+                    dv_terms(9) + jsize_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsizeb_dev_nta_sub(vce_track))) dv_terms(10) =
+                    dv_terms(10) + jsizeb_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsizec_dev_nta_sub(vce_track))) dv_terms(11) =
+                    dv_terms(11) + jsizec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jrepst_dev_nta_sub(vce_track))) dv_terms(12) =
+                    dv_terms(12) + jrepst_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jmatst_dev_nta_sub(vce_track))) dv_terms(13) =
+                    dv_terms(13) + jmatst_dev_nta_sub(vce_track);
+              }
+            }
+          dev_num_counter(i, m) = dev_num_counter(i, m) + 1;
+          }
+          
+          NumericVector stdbv = as<NumericVector>(stageexpansion_ta_devterms_by_variant(current_variant_index));
+          
+          for (int z = 0; z < 14; z++) {
+            dv_terms(z) = dv_terms(z) + stdbv(z);
+          }
+          //Rcout << "invfb_project A20          ";
+          
+          if (err_check) {
+            mdtl(i) = mdtl_1;
+          }
+          bool dvr_bool {false};
+          
+          LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+          IntegerVector dvr_style (14);
+          IntegerVector dvr_time_delay (14);
+          NumericVector dvr_alpha (14);
+          NumericVector dvr_beta (14);
+          NumericVector dens_n (14);
+          
+          //Rcout << "invfb_project A21          ";
+          
+          if (dens_vr_yn_vec(0) > 0) {
+            dvr_bool = true;
+            
+            DataFrame current_dvr = density_vr_list;
+            LogicalVector true_dvr_yn = as<LogicalVector>(current_dvr(1));
+            IntegerVector true_dvr_style = as<IntegerVector>(current_dvr(2));
+            IntegerVector true_dvr_time_delay = as<IntegerVector>(current_dvr(3));
+            NumericVector true_dvr_alpha = as<NumericVector>(current_dvr(4));
+            NumericVector true_dvr_beta = as<NumericVector>(current_dvr(5));
+            
+            dvr_yn = true_dvr_yn;
+            dvr_style = true_dvr_style;
+            dvr_time_delay = true_dvr_time_delay;
+            dvr_alpha = true_dvr_alpha;
+            dvr_beta = true_dvr_beta;
+            
+            int used_delay = max(true_dvr_time_delay);
+              
+            if (j >= (used_delay - 1)) {
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(i);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                double delay_N_sum = arma::sum(delay_issue);
+                
+                for (int xc = 0; xc < 14; xc++) {
+                  dens_n(xc) = delay_N_sum;
+                }
+              }
+            }
+          }
+          
+          double maxsize {0.0};
+          double maxsizeb {0.0};
+          double maxsizec {0.0};
+          
+          if (format_int < 5) {
+            DataFrame current_allstages = allstages_all; // (i)
+            
+            NumericVector size3 = as<NumericVector>(current_allstages["size3"]);
+            NumericVector size2n = as<NumericVector>(current_allstages["size2n"]);
+            NumericVector size2o = as<NumericVector>(current_allstages["size2o"]);
+            NumericVector sizeb3 = as<NumericVector>(current_allstages["sizeb3"]);
+            NumericVector sizeb2n = as<NumericVector>(current_allstages["sizeb2n"]);
+            NumericVector sizeb2o = as<NumericVector>(current_allstages["sizeb2o"]);
+            NumericVector sizec3 = as<NumericVector>(current_allstages["sizec3"]);
+            NumericVector sizec2n = as<NumericVector>(current_allstages["sizec2n"]);
+            NumericVector sizec2o = as<NumericVector>(current_allstages["sizec2o"]);
+            
+            NumericVector maxveca = {max(size3), max(size2n), max(size2o)};
+            NumericVector maxvecb = {max(sizeb3), max(sizeb2n), max(sizeb2o)};
+            NumericVector maxvecc = {max(sizec3), max(sizec2n), max(sizec2o)};
+            
+            maxsize = max(maxveca);
+            maxsizeb = max(maxvecb);
+            maxsizec = max(maxvecc);
+          }
+          
+          //Rcout << "invfb_project A22          ";
+          
+          double dens_sp {1.0};
+          
+          if (sp_density_num_vec(0) > 0) {
+            if (sp_density_counter(i, m) >= sp_density_num_vec(0)) sp_density_counter(i, m) = 0;
+            
+            NumericVector current_sp_density = as<NumericVector>(sp_density_list(0));
+            dens_sp = current_sp_density(sp_density_counter(i, m));
+            
+            sp_density_counter(i, m) = sp_density_counter(i, m) + 1;
+          }
+          
+          List current_mpm;
+          if (format_int < 5) {
+            //Rcout << "invfb_project A23          ";
+            current_mpm = AdaptMats::mazurekd(current_mpm_allstages,
+              current_stageframe, format_int, surv_proxy, obs_proxy,
+              size_proxy, sizeb_proxy, sizec_proxy, repst_proxy, fec_proxy,
+              jsurv_proxy, jobs_proxy, jsize_proxy, jsizeb_proxy,
+              jsizec_proxy, jrepst_proxy, jmatst_proxy, f2_inda, f1_inda,
+              f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+              r1_indb, r2_indc, r1_indc, dv_terms, dvr_bool, dvr_yn,
+              dvr_style, dvr_alpha, dvr_beta, dens_n, dens_sp, fecmod_vec(0),
+              maxsize, maxsizeb, maxsizec, firstage_int, finalage_int, true,
+              yearnumber, patchnumber, exp_tol, theta_tol, true, err_check,
+              sparse_bool, A_only);
+            
+            if (err_check_extreme) {
+              NumericMatrix mpm_out = as<NumericMatrix>(current_mpm["out"]);
+              errcheck_mpmout_reps_time_vmt_var(m) = mpm_out; 
+            }
+            
+            //Rcout << "invfb_project A24          ";
+          } else {
+            IntegerVector all_ages = seq(firstage_int, finalage_int);
+            //DataFrame current_supplement;
+            if (!(current_supplement.length() > 1)) {
+              //Rcout << "invfb_project A25          ";
+              current_mpm = AdaptMats::mdabrowskiego(all_ages,
+                current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
+                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+                r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
+                fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
+                dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
+                exp_tol, theta_tol, sparse_bool);
+              //Rcout << "invfb_project A26          ";
+              
+            } else {
+              //current_supplement = as<DataFrame>(supplement_list(0));
+              
+              //Rcout << "invfb_project A27          ";
+              current_mpm = AdaptMats::mdabrowskiego(all_ages,
+                current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
+                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+                r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
+                fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
+                dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
+                exp_tol, theta_tol, sparse_bool, current_supplement);
+              //Rcout << "invfb_project A28          ";
+            }
+          }
+          //Rcout << "invfb_project A29          ";
+          
+          if (!dens_yn_bool) {
+            if (A_only) {
+              if (!sparse_bool) {
+                arma::mat current_A = as<arma::mat>(current_mpm["A"]);
+                Amat_alter(current_A, sge_current); 
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
+                
+                running_popvec_vrm = current_A * running_popvec_vrm; 
+              } else {
+                arma::sp_mat current_A = as<arma::sp_mat>(current_mpm["A"]);
+                AdaptUtils::sp_Amat_alter(current_A, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              }
+            } else {
+              if (!sparse_bool) {
+                arma::mat current_A = as<arma::mat>(current_mpm["A"]);
+                arma::mat current_U_unaltered = as<arma::mat>(current_mpm["U"]);
+                arma::mat current_F_unaltered = as<arma::mat>(current_mpm["F"]);
+                AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              } else {
+                arma::sp_mat current_A = as<arma::sp_mat>(current_mpm("A"));
+                arma::sp_mat current_U_unaltered = as<arma::sp_mat>(current_mpm["U"]);
+                arma::sp_mat current_F_unaltered = as<arma::sp_mat>(current_mpm["F"]);
+                AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              }
+            }
+          } else {
+            ///// dens_bool = true
+            DataFrame used_density_input = density_df;
+            DataFrame used_density_index_input = dens_index_df;
+            
+            IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
+            int used_delay = max(ud_delay_vec);
+            
+            if (j >= (used_delay - 1)) {
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(i);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                double delay_N_sum = arma::sum(delay_issue);
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
+                  0, integeronly, substoch, used_density_input,
+                  used_density_index_input, false, sparse_bool, sparse_bool,
+                  false, err_check);
+                
+                running_popvec_vrm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              } else {
+                double delay_N_sum {0.0};
+                
+                if (j > 0) {
+                  for (int l = 0; l < var_per_run; l++) {
+                    int current_variant_index_agg = var_run_mat(i, l);
+                    List current_pop_list = as<List>(comm_out_pre(i));
+                    List pop_rep_list = as<List>(current_pop_list(l));
+                    arma::mat delay_pop = as<arma::mat>(current_pop_list(current_rep));
+                    
+                    arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
+                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
+                    arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
+                    double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
+                    
+                    delay_N_sum += delay_pop_N;
+                  }
+                }
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
+                  0, integeronly, substoch, used_density_input,
+                  used_density_index_input, false, sparse_bool, sparse_bool,
+                  false, err_check);
+                
+                running_popvec_vrm = new_popvec;
+                if (err_check_extreme) {
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                }
+              }
+            } else {
+              arma::vec new_popvec;
+              arma::mat new_projmat;
+              arma::sp_mat new_projsp;
+              
+              AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                running_popvec_vrm, sge_current, current_mpm, 0.0, 0,
+                integeronly, substoch, used_density_input,
+                used_density_index_input, false, sparse_bool, sparse_bool,
+                false, err_check);
+              
+              running_popvec_vrm = new_popvec;
+              if (err_check_extreme) {
+                if (!sparse_bool) {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                } else {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                }
+              }
+            }
+          }
+          
+          //Rcout << "invfb_project A30          ";
+          
+          if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
+          double N_current = arma::sum(running_popvec_vrm);
+          N_mpm(m, (j + 1), i) = N_current;
+          
+          inda_num_terms_previous(i, m) = static_cast<int>(inda_num_terms_counter(i, m));
+          indb_num_terms_previous(i, m) = static_cast<int>(indb_num_terms_counter(i, m));
+          indc_num_terms_previous(i, m) = static_cast<int>(indc_num_terms_counter(i, m));
+          inda_cat_terms_previous(i, m) = static_cast<int>(inda_cat_terms_counter(i, m));
+          indb_cat_terms_previous(i, m) = static_cast<int>(indb_cat_terms_counter(i, m));
+          indc_cat_terms_previous(i, m) = static_cast<int>(indc_cat_terms_counter(i, m));
+          
+          inda_num_terms_counter(i, m) = inda_num_terms_counter(i, m) + 1;
+          indb_num_terms_counter(i, m) = indb_num_terms_counter(i, m) + 1;
+          indc_num_terms_counter(i, m) = indc_num_terms_counter(i, m) + 1;
+          inda_cat_terms_counter(i, m) = inda_cat_terms_counter(i, m) + 1;
+          indb_cat_terms_counter(i, m) = indb_cat_terms_counter(i, m) + 1;
+          indc_cat_terms_counter(i, m) = indc_cat_terms_counter(i, m) + 1;
+          
+          running_popvecs(m) = running_popvec_vrm;
+          pops_out.col(j + 1) = running_popvec_vrm;
+          
+        } // if (j > (entry_time_vec(i) - 1))
+        
+        pop_reps(current_rep) = pops_out;
+        // comm_out_pre(i) = reps_out;
+      } // vrm loop
+      if (err_check_extreme) {
+        errcheck_mpmout_reps_time_vmt(i) = errcheck_mpmout_reps_time_vmt_var;
+        errcheck_mpm_reps_time_vmt(i) = errcheck_mpm_reps_time_vmt_var;
+      }
+    }
+    
+    if (err_check_extreme) {
+      errcheck_mpmout_reps_time(j) = errcheck_mpmout_reps_time_vmt;
+      errcheck_mpm_reps_time(j) = errcheck_mpm_reps_time_vmt;
+    }
+    
+    year_counter++;
+  } // j loop
+  if (err_check_extreme) {
+    errcheck_mpmout_reps(current_rep) = errcheck_mpmout_reps_time;
+    errcheck_mpm_reps(current_rep) = errcheck_mpm_reps_time;
+  }
+  N_out_pre(current_rep) = N_mpm;
+}
+
+//' Core Function-Based Projection Engine for ESS Evaluation
+//' 
+//' Function \code{invfb_optim} runs the optimization projections in
+//' function \code{invade3_fb_core}. These are responsible for the estimation of
+//' ESS values.
+//' 
+//' @name invfb_optim
+//' 
+//' @param surv_dev_nta The survival column in the reassessed trait axis.
+//' @param obs_dev_nta The observation status column in the reassessed trait
+//' axis.
+//' @param size_dev_nta The primary size column in the reassessed trait axis.
+//' @param sizeb_dev_nta The secondary size column in the reassessed trait axis.
+//' @param sizec_dev_nta The tertiary size column in the reassessed trait axis.
+//' @param repst_dev_nta The reproductive status column in the reassessed trait
+//' axis.
+//' @param fec_dev_nta The fecundity column in the reassessed trait axis.
+//' @param jsurv_dev_nta The juvenile survival column in the reassessed trait
+//' axis.
+//' @param jobs_dev_nta The juvenile observation status column in the reassessed
+//' trait axis.
+//' @param jsize_dev_nta The juvenile primary size column in the reassessed
+//' trait axis.
+//' @param jsizeb_dev_nta The juvenile secondary size column in the reassessed
+//' trait axis.
+//' @param jsizec_dev_nta The juvenile tertiary size column in the reassessed
+//' trait axis.
+//' @param jrepst_dev_nta The juvenile reproductive status column in the
+//' reassessed trait axis.
+//' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
+//' trait axis.
+//' @param variant_nta The variant column in the reassessed 995 trait axis.
+//' @param surv_dev_nta_995 The survival column in the reassessed 995 trait
+//' axis.
+//' @param obs_dev_nta_995 The observation status column in the reassessed 995
+//' trait axis.
+//' @param size_dev_nta_995 The primary size column in the reassessed 995 trait
+//' axis.
+//' @param sizeb_dev_nta_995 The secondary size column in the reassessed 995
+//' trait axis.
+//' @param sizec_dev_nta_995 The tertiary size column in the reassessed 995
+//' trait axis.
+//' @param repst_dev_nta_995 The reproductive status column in the reassessed
+//' 995 trait axis.
+//' @param fec_dev_nta_995 The fecundity column in the reassessed 995 trait
+//' axis.
+//' @param jsurv_dev_nta_995 The juvenile survival column in the reassessed 995
+//' trait axis.
+//' @param jobs_dev_nta_995 The juvenile observation status column in the
+//' reassessed 995 trait axis.
+//' @param jsize_dev_nta_995 The juvenile primary size column in the reassessed
+//' 995 trait axis.
+//' @param jsizeb_dev_nta_995 The juvenile secondary size column in the
+//' reassessed 995 trait axis.
+//' @param jsizec_dev_nta_995 The juvenile tertiary size column in the
+//' reassessed 995 trait axis.
+//' @param jrepst_dev_nta_995 The juvenile reproductive status column in the
+//' reassessed 995 trait axis.
+//' @param jmatst_dev_nta_995 The juvenile maturity status column in the
+//' reassessed 995 trait axis.
+//' @param variant_nta_995 The variant column in the reassessed 995 trait axis.
+//' @param N_out_pre The main list of final population sizes, supplied as a
+//' reference and altered by this function.
+//' @param comm_out_pre The main list of full projection results for the community,
+//' supplied as a pointer and altered by this function.
+//' @param new_stageexpansion_list A list with stage expansions for all
+//' variant data used in ESS evaluation. This list includes an extra layer of
+//' list elements, corresponding to the optim_ta and optim_ta_995 data.
+//' @param errcheck_mpm_reps An optional list of all MPMs post-processing. Only
+//' output if \code{err_check = "extreme"}.
+//' @param errcheck_mpmout_reps An optional list of all mpm_out matrices from MPM
+//' processing. Only output if \code{err_check = "extreme"}.
+//' @param mdtl The modified dev terms list.
+//' @param used_times A list of year numbers for each time per run.
+//' @param allmodels_all A list of extracted vrm inputs for all MPMs.
+//' @param vrm_list A list of \code{vrm_input} objects.
+//' @param allstages_all The allstages indexing data frame used to produce MPMs.
+//' @param dev_terms_list List of deviations for vital rate models.
+//' @param ind_terms_num_list List of data frames giving values of numeric
+//' individual covariates.
+//' @param ind_terms_cat_list List of data frames giving values of factor
+//' individual covariates.
+//' @param stageexpansion_ta_devterms_by_variant A list giving trait axis info
+//' by variant, with each variant given a list element.
+//' @param sp_density_list A list of values of spatial density for all MPMs.
+//' @param start_list A list of starting information, supplied in \code{lefkoSV}
+//' format.
+//' @param equivalence_list A list giving the effect of each individual in each
+//' stage relative to a reference individual.
+//' @param density_vr_list Data frame of \code{lefkoDensVR} objects holding
+//' density relationships for all 14 vital rate models.
+//' @param current_stageframe The main stageframe, including extra stages.
+//' @param current_supplement A supplement in \code{lefkoSD} format.
+//' @param density_df A data frame of class \code{lefkoDens}.
+//' @param dens_index_df A data frame giving indices for density dependent
+//' transitions.
+//' @param entry_time_vec An IntegerVector containing the entry time of each
+//' mutant, population, or species, as given by each MPM.
+//' @param sp_density_num_vec A vector giving the number of spatial density
+//' terms.
+//' @param inda_terms_num_vec A vector giving the number of numeric terms given
+//' in individual covariate a.
+//' @param indb_terms_num_vec A vector giving the number of numeric terms given
+//' in individual covariate b.
+//' @param indc_terms_num_vec A vector giving the number of numeric terms given
+//' in individual covariate c.
+//' @param inda_terms_cat_vec A vector giving the number of factor terms given
+//' in individual covariate a.
+//' @param indb_terms_cat_vec A vector giving the number of factor terms given
+//' in individual covariate b.
+//' @param indc_terms_cat_vec A vector giving the number of factor terms given
+//' in individual covariate c.
+//' @param dens_vr_yn_vec A vector stating whether density dependence is used,
+//' given through \code{lefkoDensVR} objects.
+//' @param sp_density_counter A vector giving the number of spatial density
+//' estimates used.
+//' @param inda_num_terms_previous A vector with numeric individual covariate a
+//' terms for time t-1.
+//' @param indb_num_terms_previous A vector with numeric individual covariate b
+//' terms for time t-1.
+//' @param indc_num_terms_previous A vector with numeric individual covariate c
+//' terms for time t-1.
+//' @param inda_cat_terms_previous A vector with categorical individual
+//' covariate a terms for time t-1.
+//' @param indb_cat_terms_previous A vector with categorical individual
+//' covariate b terms for time t-1.
+//' @param indc_cat_terms_previous A vector with categorical individual
+//' covariate c terms for time t-1.
+//' @param inda_num_terms_counter A vector with numeric individual covariate a
+//' terms for time t.
+//' @param indb_num_terms_counter A vector with numeric individual covariate b
+//' terms for time t.
+//' @param indc_num_terms_counter A vector with numeric individual covariate c
+//' terms for time t.
+//' @param inda_cat_terms_counter A vector with categorical individual covariate
+//' a terms for time t.
+//' @param indb_cat_terms_counter A vector with categorical individual covariate
+//' b terms for time t.
+//' @param indc_cat_terms_counter A vector with categorical individual covariate
+//' c terms for time t.
+//' @param dev_num_counter A vector giving the number of vital rate deviations
+//' in each MPM.
+//' @param fecmod_vec A numeric vector giving the fecmod values.
+//' @param year_vec A vector giving the main years used.
+//' @param patch_vec A vector giving the name of each patch used in projection.
+//' @param var_per_run An integer giving the number of variants per run.
+//' @param times An integer giving the number of occasions to project.
+//' @param var_mat_length An integer giving the number of rows in the variant
+//' matrix.
+//' @param format_int An integer giving the MPM format.
+//' @param current_rep The integer giving the current replicate.
+//' @param firstage_int An integer giving the first age in a Leslie or
+//' age-by-stage MPM.
+//' @param finalage_int  An integer giving the final age in a Leslie or
+//' age-by-stage MPM.
+//' @param dev_terms_times_int A vector giving ....
+//' @param substoch An integer giving the level of sustochasticity to enforce.
+//' @param opt_res If evaluating optima, then this integer gives the number
+//' of variants to create between each minimum and maximum for each trait found
+//' to be variable in the input trait axis. Defaults to \code{100}.
+//' @param year_counter An integer for year counts during projection.
+//' @param exp_tol The maximum tolerated exponent.
+//' @param theta_tol The maximum tolerated limit for theta, in non-linear
+//' models such as those using the negative binomial.
+//' @param err_check A logical value indicating whether to include an extra list
+//' of output objects for error checking.
+//' @param err_check_extreme A logical value indicating whether to include an
+//' extra list of all matrices projected in the \code{err_check} object.
+//' @param sparse_bool A Boolean value indiating whether the MPM is in sparse
+//' matrix format.
+//' @param A_only A Boolean value indicating whether to export U and F matrices
+//' for alteration, or only A matrices.
+//' @param stages_not_equal A Boolean value indicating whether equivalence
+//' info is supplied suggesting even stages within MPMs are not equal.
+//' @param integeronly A Boolean value indicating whether to allow only whole
+//' values of individuals or not.
+//' @param dens_yn_bool A Boolean value stating whether density dependence is
+//' used, given through \code{lefkoDens} objects.
+//' 
+//' @return The first four arguments are directly manipulated without any
+//' values returned.
+//' 
+//' @keywords internal
+//' @noRd
+inline void invfb_optim (arma::vec& surv_dev_nta,
+  arma::vec& obs_dev_nta, arma::vec& size_dev_nta, arma::vec& sizeb_dev_nta,
+  arma::vec& sizec_dev_nta, arma::vec& repst_dev_nta, arma::vec& fec_dev_nta,
+  arma::vec& jsurv_dev_nta, arma::vec& jobs_dev_nta, arma::vec& jsize_dev_nta,
+  arma::vec& jsizeb_dev_nta, arma::vec& jsizec_dev_nta, arma::vec& jrepst_dev_nta,
+  arma::vec& jmatst_dev_nta, arma::ivec& variant_nta, arma::vec& surv_dev_nta_995,
+  arma::vec& obs_dev_nta_995, arma::vec& size_dev_nta_995,
+  arma::vec& sizeb_dev_nta_995, arma::vec& sizec_dev_nta_995,
+  arma::vec& repst_dev_nta_995, arma::vec& fec_dev_nta_995,
+  arma::vec& jsurv_dev_nta_995, arma::vec& jobs_dev_nta_995,
+  arma::vec& jsize_dev_nta_995, arma::vec& jsizeb_dev_nta_995,
+  arma::vec& jsizec_dev_nta_995, arma::vec& jrepst_dev_nta_995,
+  arma::vec& jmatst_dev_nta_995, arma::ivec& variant_nta_995, List& N_out_pre,
+  List& comm_out_pre, List& new_stageexpansion_list, List& errcheck_mpm_reps,
+  List& errcheck_mpmout_reps, List& mdtl, List& used_times,
+  const List allmodels_all, const List vrm_list, const List allstages_all,
+  const List dev_terms_list, const List ind_terms_num_list,
+  const List ind_terms_cat_list, List& stageexpansion_ta_devterms_by_variant,
+  const List sp_density_list, const List start_list, const List equivalence_list,
+  const DataFrame density_vr_list, DataFrame& current_stageframe,
+  const DataFrame current_supplement, const DataFrame density_df,
+  const DataFrame dens_index_df, const IntegerVector entry_time_vec,
+  const IntegerVector sp_density_num_vec, const IntegerVector inda_terms_num_vec,
+  const IntegerVector indb_terms_num_vec, const IntegerVector indc_terms_num_vec,
+  const IntegerVector inda_terms_cat_vec, const IntegerVector indb_terms_cat_vec,
+  const IntegerVector indc_terms_cat_vec, const IntegerVector dens_vr_yn_vec,
+  IntegerMatrix& sp_density_counter, IntegerMatrix& inda_num_terms_previous,
+  IntegerMatrix& indb_num_terms_previous, IntegerMatrix& indc_num_terms_previous,
+  IntegerMatrix& inda_cat_terms_previous, IntegerMatrix& indb_cat_terms_previous,
+  IntegerMatrix& indc_cat_terms_previous, IntegerMatrix& inda_num_terms_counter,
+  IntegerMatrix& indb_num_terms_counter, IntegerMatrix& indc_num_terms_counter,
+  IntegerMatrix& inda_cat_terms_counter, IntegerMatrix& indb_cat_terms_counter,
+  IntegerMatrix& indc_cat_terms_counter, IntegerMatrix& dev_num_counter,
+  const NumericVector fecmod_vec, const CharacterVector year_vec,
+  const CharacterVector patch_vec, const int var_per_run, const int times,
+  const int var_mat_length, const int format_int, const int current_rep,
+  const int firstage_int, const int finalage_int, const int dev_terms_times_int,
+  const int substoch, const int opt_res, int& year_counter, const double exp_tol,
+  const double theta_tol, const bool err_check, const bool err_check_extreme,
+  const bool sparse_bool, const bool A_only, const bool stages_not_equal,
+  const bool integeronly, const bool dens_yn_bool) {
+  
+  //Rcout << "invfb_optim A" << endl;
+  
+  List running_popvecs; // = clone(start_list);
+  List running_popvecs_startonly;
+  arma::cube N_mpm (2, (times + 1), opt_res);
+  
+  List errcheck_mpm_reps_time (times); 
+  List errcheck_mpmout_reps_time (times); 
+  
+  
+  
+  
+  
+  /////
+  
+  
+  
+  
+  
+  for (int j = 0; j < times; j++) { // 2nd loop - time j
+    //Rcout << "invfb_optim A1          ";
+    List errcheck_mpm_reps_time_vmt (opt_res); 
+    List errcheck_mpmout_reps_time_vmt (opt_res); 
+    
+    
+    
+    for (int i = 0; i < opt_res; i++) { // 3rd loop - permutes i
+      if (i % 10 == 0){
+        Rcpp::checkUserInterrupt();
+      }
+      
+      List errcheck_mpm_reps_time_vmt_var(2); 
+      List errcheck_mpmout_reps_time_vmt_var(2); 
+      
+      if (j == 0) {
+        List var_popvecs_to_start (2);
+        for (int n = 0; n < 2; n++) {
+          var_popvecs_to_start(n) = as<arma::vec>(start_list(0));
+        }
+        running_popvecs = var_popvecs_to_start;
+        running_popvecs_startonly = clone(var_popvecs_to_start);
+      }
+      
+      for (int m = 0; m < 2; m++) { // 4th loop - var per run m
+        if (j == entry_time_vec(m)) {
+          arma::vec running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
+          
+          double N_current = accu(running_popvec_mpm);
+          N_mpm(m, j, i) = N_current; // Used to be (k, j)
+        }
+      }
+      
+      List all_pops_per_run = as<List>(comm_out_pre(i));
+      List mdtl_1 (var_per_run);
+     
+     
+     
+     
+     
+      { // Main variant section
+        //Rcout << "invfb_optim A2          ";
+        int m = 0;
+        int current_variant_index = i; // Equivalent to index integer k
+        
+        List sgec = as<List> (new_stageexpansion_list(current_variant_index));
+        DataFrame sge_current = as<DataFrame>(sgec(m));
+        
+        //Rcout << "invfb_optim A3          ";
+        List pop_reps = as<List>(all_pops_per_run(m));
+        arma::mat pops_out = as<arma::mat>(pop_reps(current_rep));
+        
+        //Rcout << "invfb_optim A4          ";
+        //Rcout << "entry_time_vec: " << entry_time_vec << endl;
+        if (j > (entry_time_vec(m) - 1)) {
+          //Rcout << "invfb_optim A5          ";
+          List used_times_per_run = as<List>(used_times(0));
+          List used_times_current_var = as<List>(used_times_per_run(m));
+          IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(current_rep));
+          
+          arma::vec running_popvec_vrm;
+          if (j == entry_time_vec(m)) {
+            running_popvec_vrm = as<arma::vec>(running_popvecs_startonly(m));
+            pops_out.col(j) = running_popvec_vrm;
+          } else {
+            running_popvec_vrm = pops_out.col(j);
+          }
+          //Rcout << "invfb_optim A6 current_rep: " << current_rep << "      ";
+            
+          List current_vrm_extract = allmodels_all; // (i)
+          List current_vrm_unextract = vrm_list; // (i)
+          int ehrlen_format {1}; // This will need to be dealt with differently later
+          
+          //Rcout << "invfb_optim A7       ";
+          int mpm_style {1};
+          if (format_int < 3) {
+            mpm_style = 0;
+            if (format_int == 2) ehrlen_format = 2;
+          } else if (format_int == 4) {
+            mpm_style = 2;
+          }
+          
+          //Rcout << "invfb_optim A8       ";
+          DataFrame current_mpm_allstages = allstages_all; // (i)
+          
+          //Rcout << "invfb_optim A9       ";
+          List surv_proxy = as<List>(current_vrm_extract(0));
+          List obs_proxy = as<List>(current_vrm_extract(1));
+          List size_proxy = as<List>(current_vrm_extract(2));
+          List sizeb_proxy = as<List>(current_vrm_extract(3));
+          List sizec_proxy = as<List>(current_vrm_extract(4));
+          List repst_proxy = as<List>(current_vrm_extract(5));
+          List fec_proxy = as<List>(current_vrm_extract(6));
+          List jsurv_proxy = as<List>(current_vrm_extract(7));
+          List jobs_proxy = as<List>(current_vrm_extract(8));
+          List jsize_proxy = as<List>(current_vrm_extract(9));
+          List jsizeb_proxy = as<List>(current_vrm_extract(10));
+          List jsizec_proxy = as<List>(current_vrm_extract(11));
+          List jrepst_proxy = as<List>(current_vrm_extract(12));
+          List jmatst_proxy = as<List>(current_vrm_extract(13));
+          DataFrame current_paramnames = as<DataFrame>(current_vrm_extract(14));
+          
+          //Rcout << "invfb_optim A10       ";
+          CharacterVector current_mainyears = year_vec;
+          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          
+          StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
+          
+          DataFrame group2_frame = as<DataFrame>(current_vrm_unextract["group2_frame"]);
+          CharacterVector current_maingroups = as<CharacterVector>(group2_frame["groups"]);
+          
+          DataFrame patch_frame = as<DataFrame>(current_vrm_unextract["patch_frame"]);
+          CharacterVector current_mainpatches = as<CharacterVector>(patch_frame["patches"]);
+          
+          int patchnumber = 0;
+          for (int ptl = 0; ptl < static_cast<int>(current_mainpatches.length()); ptl++) {
+            if (LefkoUtils::stringcompare_simple(String(patch_vec(0)),
+                String(current_mainpatches(ptl)), false)) patchnumber = ptl;
+          }
+          
+          //Rcout << "invfb_optim A11        ";
+          
+          // Not sure if we need the next bit
+          DataFrame indcova2_frame = as<DataFrame>(current_vrm_unextract["indcova2_frame"]);
+          DataFrame indcovb2_frame = as<DataFrame>(current_vrm_unextract["indcovb2_frame"]);
+          DataFrame indcovc2_frame = as<DataFrame>(current_vrm_unextract["indcovc2_frame"]);
+          CharacterVector current_mainindcova = as<CharacterVector>(indcova2_frame["indcova"]);
+          CharacterVector current_mainindcovb = as<CharacterVector>(indcovb2_frame["indcovb"]);
+          CharacterVector current_mainindcovc = as<CharacterVector>(indcovc2_frame["indcovc"]);
+          
+          //Rcout << "invfb_optim A12        ";
+          // Counter resets
+          int yearnumber = current_times_vec(j); // year_counter
+          //Rcout << "invfb_optim A13        ";
+          
+          //Rcout << "current_mainyears: " << current_mainyears << "               ";
+          //Rcout << "yearnumber: " << yearnumber << "               ";
+          CharacterVector current_year = as<CharacterVector>(current_mainyears(yearnumber));
+          //Rcout << "invfb_optim A14        ";
+          
+          if (inda_num_terms_counter(i, m) >= inda_terms_num_vec(0)) inda_num_terms_counter(i, m) = 0;
+          if (indb_num_terms_counter(i, m) >= indb_terms_num_vec(0)) indb_num_terms_counter(i, m) = 0;
+          if (indc_num_terms_counter(i, m) >= indc_terms_num_vec(0)) indc_num_terms_counter(i, m) = 0;
+          if (inda_cat_terms_counter(i, m) >= inda_terms_cat_vec(0)) inda_cat_terms_counter(i, m) = 0;
+          if (indb_cat_terms_counter(i, m) >= indb_terms_cat_vec(0)) indb_cat_terms_counter(i, m) = 0;
+          if (indc_cat_terms_counter(i, m) >= indc_terms_cat_vec(0)) indc_cat_terms_counter(i, m) = 0;
+          
+          List current_ind_terms_num = ind_terms_num_list(0);
+          List current_ind_terms_cat = ind_terms_cat_list(0);
+          
+          //Rcout << "invfb_optim A15        ";
+          NumericVector f_inda_full = as<NumericVector>(current_ind_terms_num(0));
+          NumericVector f_indb_full = as<NumericVector>(current_ind_terms_num(1));
+          NumericVector f_indc_full = as<NumericVector>(current_ind_terms_num(2));
+          CharacterVector r_inda_full = as<CharacterVector>(current_ind_terms_cat(0));
+          CharacterVector r_indb_full = as<CharacterVector>(current_ind_terms_cat(1));
+          CharacterVector r_indc_full = as<CharacterVector>(current_ind_terms_cat(2));
+          
+          //Rcout << "invfb_optim A16        ";
+          NumericVector f2_inda = {f_inda_full(inda_num_terms_counter(i, m))}; // i
+          NumericVector f1_inda = {f_inda_full(inda_num_terms_previous(i, m))};
+          NumericVector f2_indb = {f_indb_full(indb_num_terms_counter(i, m))};
+          NumericVector f1_indb = {f_indb_full(indb_num_terms_previous(i, m))};
+          NumericVector f2_indc = {f_indc_full(indc_num_terms_counter(i, m))};
+          NumericVector f1_indc = {f_indc_full(indc_num_terms_previous(i, m))};
+          CharacterVector r2_inda = as<CharacterVector>(r_inda_full(inda_cat_terms_counter(i, m)));
+          CharacterVector r1_inda = 
+            as<CharacterVector>(r_inda_full(inda_cat_terms_previous(i, m)));
+          CharacterVector r2_indb = as<CharacterVector>
+            (r_indb_full(indb_cat_terms_counter(i, m)));
+          CharacterVector r1_indb = as<CharacterVector>
+            (r_indb_full(indb_cat_terms_previous(i, m)));
+          CharacterVector r2_indc = as<CharacterVector>
+            (r_indc_full(indc_cat_terms_counter(i, m)));
+          CharacterVector r1_indc = 
+            as<CharacterVector>(r_indc_full(indc_cat_terms_previous(i, m)));
+          
+          //Rcout << "invfb_optim A17        ";
+          // dev_terms and vrm trait axis processing
+          NumericVector dv_terms (14);
+          if (dev_terms_times_int > 0) {
+            //Rcout << "invfb_optim A18        ";
+            NumericMatrix used_dv_df = clone(as<NumericMatrix>(dev_terms_list(current_variant_index)));
+            if (dev_num_counter(i, 0) >= dev_terms_times_int) dev_num_counter(i, 0) = 0;
+            dv_terms = used_dv_df(_, dev_num_counter(i, 0));
+            
+            arma::uvec var_corresponding_elems = find(variant_nta == (i + 1));
+            int vce_found = static_cast<int>(var_corresponding_elems.n_elem);
+            
+            //Rcout << "invfb_optim A19        ";
+            if (vce_found > 0) {
+            //Rcout << "invfb_optim A20        ";
+              arma::vec surv_dev_nta_sub = surv_dev_nta.elem(var_corresponding_elems);
+              arma::vec obs_dev_nta_sub = obs_dev_nta.elem(var_corresponding_elems);
+              arma::vec size_dev_nta_sub = size_dev_nta.elem(var_corresponding_elems);
+              arma::vec sizeb_dev_nta_sub = sizeb_dev_nta.elem(var_corresponding_elems);
+              arma::vec sizec_dev_nta_sub = sizec_dev_nta.elem(var_corresponding_elems);
+              arma::vec repst_dev_nta_sub = repst_dev_nta.elem(var_corresponding_elems);
+              arma::vec fec_dev_nta_sub = fec_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsurv_dev_nta_sub = jsurv_dev_nta.elem(var_corresponding_elems);
+              arma::vec jobs_dev_nta_sub = jobs_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsize_dev_nta_sub = jsize_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsizeb_dev_nta_sub = jsizeb_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsizec_dev_nta_sub = jsizec_dev_nta.elem(var_corresponding_elems);
+              arma::vec jrepst_dev_nta_sub = jrepst_dev_nta.elem(var_corresponding_elems);
+              arma::vec jmatst_dev_nta_sub = jmatst_dev_nta.elem(var_corresponding_elems);
+              
+              //Rcout << "invfb_optim A21        ";
+              for (int vce_track = 0; vce_track < vce_found; vce_track++) {
+                if(!NumericVector::is_na(surv_dev_nta_sub(vce_track))) dv_terms(0) =
+                    dv_terms(0) + surv_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(obs_dev_nta_sub(vce_track))) dv_terms(1) =
+                    dv_terms(1) + obs_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(size_dev_nta_sub(vce_track))) dv_terms(2) =
+                    dv_terms(2) + size_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(sizeb_dev_nta_sub(vce_track))) dv_terms(3) =
+                    dv_terms(3) + sizeb_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(sizec_dev_nta_sub(vce_track))) dv_terms(4) =
+                    dv_terms(4) + sizec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(repst_dev_nta_sub(vce_track))) dv_terms(5) =
+                    dv_terms(5) + repst_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(fec_dev_nta_sub(vce_track))) dv_terms(6) =
+                    dv_terms(6) + fec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsurv_dev_nta_sub(vce_track))) dv_terms(7) =
+                    dv_terms(7) + jsurv_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jobs_dev_nta_sub(vce_track))) dv_terms(8) =
+                    dv_terms(8) + jobs_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsize_dev_nta_sub(vce_track))) dv_terms(9) =
+                    dv_terms(9) + jsize_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsizeb_dev_nta_sub(vce_track))) dv_terms(10) =
+                    dv_terms(10) + jsizeb_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsizec_dev_nta_sub(vce_track))) dv_terms(11) =
+                    dv_terms(11) + jsizec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jrepst_dev_nta_sub(vce_track))) dv_terms(12) =
+                    dv_terms(12) + jrepst_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jmatst_dev_nta_sub(vce_track))) dv_terms(13) =
+                    dv_terms(13) + jmatst_dev_nta_sub(vce_track);
+              }
+            }
+            dev_num_counter(i, 0) = dev_num_counter(i, 0) + 1;
+          }
+          
+          //Rcout << "invfb_optim A22        ";
+          List stdbv1 = as<List>(stageexpansion_ta_devterms_by_variant(current_variant_index));
+          NumericVector stdbv = as<NumericVector>(stdbv1(0));
+          //Rcout << "invfb_optim A23        ";
+          
+          for (int z = 0; z < 14; z++) {
+            dv_terms(z) = dv_terms(z) + stdbv(z);
+          }
+          //Rcout << "invfb_optim A24        ";
+          
+          if (err_check) {
+            mdtl(i) = mdtl_1;
+          }
+          bool dvr_bool {false};
+          
+          //Rcout << "invfb_optim A25        ";
+          LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+          IntegerVector dvr_style (14);
+          IntegerVector dvr_time_delay (14);
+          NumericVector dvr_alpha (14);
+          NumericVector dvr_beta (14);
+          NumericVector dens_n (14);
+          
+          //Rcout << "invfb_optim A26        ";
+          
+          if (dens_vr_yn_vec(0) > 0) {
+            dvr_bool = true;
+            
+            DataFrame current_dvr = density_vr_list;
+            LogicalVector true_dvr_yn = as<LogicalVector>(current_dvr(1));
+            IntegerVector true_dvr_style = as<IntegerVector>(current_dvr(2));
+            IntegerVector true_dvr_time_delay = as<IntegerVector>(current_dvr(3));
+            NumericVector true_dvr_alpha = as<NumericVector>(current_dvr(4));
+            NumericVector true_dvr_beta = as<NumericVector>(current_dvr(5));
+            
+            dvr_yn = true_dvr_yn;
+            dvr_style = true_dvr_style;
+            dvr_time_delay = true_dvr_time_delay;
+            dvr_alpha = true_dvr_alpha;
+            dvr_beta = true_dvr_beta;
+            
+            int used_delay = max(true_dvr_time_delay);
+            
+            if (j >= (used_delay - 1)) {
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(i);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                double delay_N_sum = arma::sum(delay_issue);
+                
+                for (int xc = 0; xc < 14; xc++) {
+                  dens_n(xc) = delay_N_sum;
+                }
+              }
+            }
+          }
+          
+          double maxsize {0.0};
+          double maxsizeb {0.0};
+          double maxsizec {0.0};
+          
+          if (format_int < 5) {
+            DataFrame current_allstages = allstages_all; // (i)
+            
+            NumericVector size3 = as<NumericVector>(current_allstages["size3"]);
+            NumericVector size2n = as<NumericVector>(current_allstages["size2n"]);
+            NumericVector size2o = as<NumericVector>(current_allstages["size2o"]);
+            NumericVector sizeb3 = as<NumericVector>(current_allstages["sizeb3"]);
+            NumericVector sizeb2n = as<NumericVector>(current_allstages["sizeb2n"]);
+            NumericVector sizeb2o = as<NumericVector>(current_allstages["sizeb2o"]);
+            NumericVector sizec3 = as<NumericVector>(current_allstages["sizec3"]);
+            NumericVector sizec2n = as<NumericVector>(current_allstages["sizec2n"]);
+            NumericVector sizec2o = as<NumericVector>(current_allstages["sizec2o"]);
+            
+            NumericVector maxveca = {max(size3), max(size2n), max(size2o)};
+            NumericVector maxvecb = {max(sizeb3), max(sizeb2n), max(sizeb2o)};
+            NumericVector maxvecc = {max(sizec3), max(sizec2n), max(sizec2o)};
+            
+            maxsize = max(maxveca);
+            maxsizeb = max(maxvecb);
+            maxsizec = max(maxvecc);
+          }
+          
+          //Rcout << "invfb_optim A27        ";
+          
+          double dens_sp {1.0};
+          
+          if (sp_density_num_vec(0) > 0) {
+            if (sp_density_counter(i, m) >= sp_density_num_vec(0)) sp_density_counter(i, m) = 0;
+            
+            NumericVector current_sp_density = as<NumericVector>(sp_density_list(0));
+            dens_sp = current_sp_density(sp_density_counter(i, m));
+            
+            sp_density_counter(i, m) = sp_density_counter(i, m) + 1;
+          }
+          
+          List current_mpm;
+          if (format_int < 5) {
+            //Rcout << "invfb_optim A28        ";
+            //Rcout << "dv_terms: " << dv_terms << endl;
+            
+            current_mpm = AdaptMats::mazurekd(current_mpm_allstages,
+              current_stageframe, format_int, surv_proxy, obs_proxy,
+              size_proxy, sizeb_proxy, sizec_proxy, repst_proxy, fec_proxy,
+              jsurv_proxy, jobs_proxy, jsize_proxy, jsizeb_proxy,
+              jsizec_proxy, jrepst_proxy, jmatst_proxy, f2_inda, f1_inda,
+              f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+              r1_indb, r2_indc, r1_indc, dv_terms, dvr_bool, dvr_yn,
+              dvr_style, dvr_alpha, dvr_beta, dens_n, dens_sp, fecmod_vec(0),
+              maxsize, maxsizeb, maxsizec, firstage_int, finalage_int, true,
+              yearnumber, patchnumber, exp_tol, theta_tol, true, err_check,
+              sparse_bool, A_only);
+            
+            if (err_check_extreme) {
+              NumericMatrix mpm_out = as<NumericMatrix>(current_mpm["out"]);
+              errcheck_mpmout_reps_time_vmt_var(m) = mpm_out; 
+            }
+            
+          //Rcout << "invfb_optim A29        ";
+          } else {
+            IntegerVector all_ages = seq(firstage_int, finalage_int);
+            //DataFrame current_supplement;
+            if (!(current_supplement.length() > 1)) {
+              //Rcout << "invade3_fb_core g3        ";
+              current_mpm = AdaptMats::mdabrowskiego(all_ages,
+                current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
+                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+                r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
+                fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
+                dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
+                exp_tol, theta_tol, sparse_bool);
+              //Rcout << "invfb_optim A30        ";
+              
+            } else {
+              //current_supplement = as<DataFrame>(supplement_list(0));
+              
+              //Rcout << "invfb_optim A31        ";
+              current_mpm = AdaptMats::mdabrowskiego(all_ages,
+                current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
+                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+                r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
+                fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
+                dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
+                exp_tol, theta_tol, sparse_bool, current_supplement);
+              //Rcout << "invfb_optim A32        ";
+            }
+          }
+          //Rcout << "invfb_optim A33        ";
+          
+          if (!dens_yn_bool) {
+            
+            if (A_only) {
+              if (!sparse_bool) {
+                arma::mat current_A = as<arma::mat>(current_mpm["A"]);
+                Amat_alter(current_A, sge_current); 
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
+                
+                running_popvec_vrm = current_A * running_popvec_vrm; 
+              } else {
+                arma::sp_mat current_A = as<arma::sp_mat>(current_mpm["A"]);
+                AdaptUtils::sp_Amat_alter(current_A, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              }
+            } else {
+              if (!sparse_bool) {
+                arma::mat current_A = as<arma::mat>(current_mpm["A"]);
+                arma::mat current_U_unaltered = as<arma::mat>(current_mpm["U"]);
+                arma::mat current_F_unaltered = as<arma::mat>(current_mpm["F"]);
+                AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              } else {
+                arma::sp_mat current_A = as<arma::sp_mat>(current_mpm("A"));
+                arma::sp_mat current_U_unaltered = as<arma::sp_mat>(current_mpm["U"]);
+                arma::sp_mat current_F_unaltered = as<arma::sp_mat>(current_mpm["F"]);
+                AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              }
+            }
+          } else {
+            ///// dens_bool = true
+            DataFrame used_density_input = density_df;
+            DataFrame used_density_index_input = dens_index_df;
+            
+            IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
+            int used_delay = max(ud_delay_vec);
+            
+            if (j >= (used_delay - 1)) {
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(i);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                double delay_N_sum = arma::sum(delay_issue);
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
+                  0, integeronly, substoch, used_density_input,
+                  used_density_index_input, false, sparse_bool, sparse_bool,
+                  false, err_check);
+                
+                running_popvec_vrm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              } else {
+                double delay_N_sum {0.0};
+                
+                if (j > 0) {
+                  for (int l = 0; l < 2; l++) {
+                    int current_variant_index_agg = i;
+                    List current_pop_list = as<List>(comm_out_pre(i));
+                    List pop_rep_list = as<List>(current_pop_list(l));
+                    arma::mat delay_pop = as<arma::mat>(current_pop_list(current_rep));
+                    
+                    arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
+                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
+                    arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
+                    double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
+                    
+                    delay_N_sum += delay_pop_N;
+                  }
+                }
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
+                  0, integeronly, substoch, used_density_input,
+                  used_density_index_input, false, sparse_bool, sparse_bool,
+                  false, err_check);
+                
+                running_popvec_vrm = new_popvec;
+                if (err_check_extreme) {
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                }
+              }
+            } else {
+              arma::vec new_popvec;
+              arma::mat new_projmat;
+              arma::sp_mat new_projsp;
+              
+              AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                running_popvec_vrm, sge_current, current_mpm, 0.0, 0,
+                integeronly, substoch, used_density_input,
+                used_density_index_input, false, sparse_bool, sparse_bool,
+                false, err_check);
+              
+              running_popvec_vrm = new_popvec;
+              if (err_check_extreme) {
+                if (!sparse_bool) {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                } else {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                }
+              }
+            }
+          }
+          
+          //Rcout << "invfb_optim A34        ";
+          
+          if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
+          double N_current = arma::sum(running_popvec_vrm);
+          N_mpm(m, (j + 1), i) = N_current;
+          
+          inda_num_terms_previous(i, m) = static_cast<int>(inda_num_terms_counter(i, m));
+          indb_num_terms_previous(i, m) = static_cast<int>(indb_num_terms_counter(i, m));
+          indc_num_terms_previous(i, m) = static_cast<int>(indc_num_terms_counter(i, m));
+          inda_cat_terms_previous(i, m) = static_cast<int>(inda_cat_terms_counter(i, m));
+          indb_cat_terms_previous(i, m) = static_cast<int>(indb_cat_terms_counter(i, m));
+          indc_cat_terms_previous(i, m) = static_cast<int>(indc_cat_terms_counter(i, m));
+          
+          inda_num_terms_counter(i, m) = inda_num_terms_counter(i, m) + 1;
+          indb_num_terms_counter(i, m) = indb_num_terms_counter(i, m) + 1;
+          indc_num_terms_counter(i, m) = indc_num_terms_counter(i, m) + 1;
+          inda_cat_terms_counter(i, m) = inda_cat_terms_counter(i, m) + 1;
+          indb_cat_terms_counter(i, m) = indb_cat_terms_counter(i, m) + 1;
+          indc_cat_terms_counter(i, m) = indc_cat_terms_counter(i, m) + 1;
+          
+          running_popvecs(m) = running_popvec_vrm;
+          pops_out.col(j + 1) = running_popvec_vrm;
+          
+        } // if (j > (entry_time_vec(i) - 1))
+        
+        //Rcout << "invfb_optim A100           ";
+        
+        pop_reps(current_rep) = pops_out;
+        //Rcout << "invfb_optim A101           ";
+        // comm_out_pre(i) = reps_out;
+      } // main variant section
+      
+      
+      
+      
+      
+      /////
+      
+      
+      
+      
+      
+      //Rcout << "invfb_optim B1          ";
+      { // e995 variant section
+        int m = 1;
+        int current_variant_index = i; // Equivalent to index integer k
+        
+        //Rcout << "invfb_optim B2          ";
+        List sgec = as<List> (new_stageexpansion_list(current_variant_index));
+        DataFrame sge_current = as<DataFrame>(sgec(m));
+        
+        List pop_reps = as<List>(all_pops_per_run(m));
+        arma::mat pops_out = as<arma::mat>(pop_reps(current_rep));
+        
+        //Rcout << "invfb_optim B3          ";
+        //Rcout << "entry_time_vec: " << entry_time_vec << endl;
+        if (j > (entry_time_vec(m) - 1)) {
+          //Rcout << "invfb_optim B4          ";
+          List used_times_per_run = as<List>(used_times(0));
+          List used_times_current_var = as<List>(used_times_per_run(m));
+          IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(current_rep));
+            
+          //Rcout << "invfb_optim B5          ";
+          
+          arma::vec running_popvec_vrm;
+          if (j == entry_time_vec(m)) {
+            running_popvec_vrm = as<arma::vec>(running_popvecs_startonly(m));
+            pops_out.col(j) = running_popvec_vrm;
+          } else {
+            running_popvec_vrm = pops_out.col(j);
+          }
+          //Rcout << "invfb_optim B6 current_rep: " << current_rep << "      ";
+          
+          List current_vrm_extract = allmodels_all; // (i)
+          List current_vrm_unextract = vrm_list; // (i)
+          int ehrlen_format {1}; // This will need to be dealt with differently later
+          
+          //Rcout << "invfb_optim B7       ";
+          int mpm_style {1};
+          if (format_int < 3) {
+            mpm_style = 0;
+            if (format_int == 2) ehrlen_format = 2;
+          } else if (format_int == 4) {
+            mpm_style = 2;
+          }
+          
+          //Rcout << "invfb_optim B8       ";
+          DataFrame current_mpm_allstages = allstages_all; // (i)
+          
+          //Rcout << "invfb_optim B9       ";
+          List surv_proxy = as<List>(current_vrm_extract(0));
+          List obs_proxy = as<List>(current_vrm_extract(1));
+          List size_proxy = as<List>(current_vrm_extract(2));
+          List sizeb_proxy = as<List>(current_vrm_extract(3));
+          List sizec_proxy = as<List>(current_vrm_extract(4));
+          List repst_proxy = as<List>(current_vrm_extract(5));
+          List fec_proxy = as<List>(current_vrm_extract(6));
+          List jsurv_proxy = as<List>(current_vrm_extract(7));
+          List jobs_proxy = as<List>(current_vrm_extract(8));
+          List jsize_proxy = as<List>(current_vrm_extract(9));
+          List jsizeb_proxy = as<List>(current_vrm_extract(10));
+          List jsizec_proxy = as<List>(current_vrm_extract(11));
+          List jrepst_proxy = as<List>(current_vrm_extract(12));
+          List jmatst_proxy = as<List>(current_vrm_extract(13));
+          DataFrame current_paramnames = as<DataFrame>(current_vrm_extract(14));
+          
+          //Rcout << "invfb_optim B10       ";
+          CharacterVector current_mainyears = year_vec;
+          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          
+          StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
+          
+          DataFrame group2_frame = as<DataFrame>(current_vrm_unextract["group2_frame"]);
+          CharacterVector current_maingroups = as<CharacterVector>(group2_frame["groups"]);
+          
+          DataFrame patch_frame = as<DataFrame>(current_vrm_unextract["patch_frame"]);
+          CharacterVector current_mainpatches = as<CharacterVector>(patch_frame["patches"]);
+          
+          int patchnumber = 0;
+          for (int ptl = 0; ptl < static_cast<int>(current_mainpatches.length()); ptl++) {
+            if (LefkoUtils::stringcompare_simple(String(patch_vec(0)),
+                String(current_mainpatches(ptl)), false)) patchnumber = ptl;
+          }
+          
+          //Rcout << "invfb_optim B11        ";
+          
+          // Not sure if we need the next bit
+          DataFrame indcova2_frame = as<DataFrame>(current_vrm_unextract["indcova2_frame"]);
+          DataFrame indcovb2_frame = as<DataFrame>(current_vrm_unextract["indcovb2_frame"]);
+          DataFrame indcovc2_frame = as<DataFrame>(current_vrm_unextract["indcovc2_frame"]);
+          CharacterVector current_mainindcova = as<CharacterVector>(indcova2_frame["indcova"]);
+          CharacterVector current_mainindcovb = as<CharacterVector>(indcovb2_frame["indcovb"]);
+          CharacterVector current_mainindcovc = as<CharacterVector>(indcovc2_frame["indcovc"]);
+          
+          //Rcout << "invfb_optim B12        ";
+          // Counter resets
+          int yearnumber = current_times_vec(j); // year_counter
+          //Rcout << "invfb_optim B13        ";
+          
+          //Rcout << "current_mainyears: " << current_mainyears << "               ";
+          //Rcout << "yearnumber: " << yearnumber << "               ";
+          CharacterVector current_year = as<CharacterVector>(current_mainyears(yearnumber));
+          //Rcout << "invfb_optim B14        ";
+          
+          if (inda_num_terms_counter(i, 0) >= inda_terms_num_vec(0)) inda_num_terms_counter(i, 0) = 0;
+          if (indb_num_terms_counter(i, 0) >= indb_terms_num_vec(0)) indb_num_terms_counter(i, 0) = 0;
+          if (indc_num_terms_counter(i, 0) >= indc_terms_num_vec(0)) indc_num_terms_counter(i, 0) = 0;
+          if (inda_cat_terms_counter(i, 0) >= inda_terms_cat_vec(0)) inda_cat_terms_counter(i, 0) = 0;
+          if (indb_cat_terms_counter(i, 0) >= indb_terms_cat_vec(0)) indb_cat_terms_counter(i, 0) = 0;
+          if (indc_cat_terms_counter(i, 0) >= indc_terms_cat_vec(0)) indc_cat_terms_counter(i, 0) = 0;
+          
+          List current_ind_terms_num = ind_terms_num_list(0);
+          List current_ind_terms_cat = ind_terms_cat_list(0);
+          
+          //Rcout << "invfb_optim B15        ";
+          NumericVector f_inda_full = as<NumericVector>(current_ind_terms_num(0));
+          NumericVector f_indb_full = as<NumericVector>(current_ind_terms_num(1));
+          NumericVector f_indc_full = as<NumericVector>(current_ind_terms_num(2));
+          CharacterVector r_inda_full = as<CharacterVector>(current_ind_terms_cat(0));
+          CharacterVector r_indb_full = as<CharacterVector>(current_ind_terms_cat(1));
+          CharacterVector r_indc_full = as<CharacterVector>(current_ind_terms_cat(2));
+          
+          //Rcout << "invfb_optim B16        ";
+          NumericVector f2_inda = {f_inda_full(inda_num_terms_counter(i, 0))}; // i
+          NumericVector f1_inda = {f_inda_full(inda_num_terms_previous(i, 0))};
+          NumericVector f2_indb = {f_indb_full(indb_num_terms_counter(i, 0))};
+          NumericVector f1_indb = {f_indb_full(indb_num_terms_previous(i, 0))};
+          NumericVector f2_indc = {f_indc_full(indc_num_terms_counter(i, 0))};
+          NumericVector f1_indc = {f_indc_full(indc_num_terms_previous(i, 0))};
+          CharacterVector r2_inda = as<CharacterVector>(r_inda_full(inda_cat_terms_counter(i, 0)));
+          CharacterVector r1_inda = 
+            as<CharacterVector>(r_inda_full(inda_cat_terms_previous(i, 0)));
+          CharacterVector r2_indb = as<CharacterVector>
+            (r_indb_full(indb_cat_terms_counter(i, 0)));
+          CharacterVector r1_indb = as<CharacterVector>
+            (r_indb_full(indb_cat_terms_previous(i, 0)));
+          CharacterVector r2_indc = as<CharacterVector>
+            (r_indc_full(indc_cat_terms_counter(i, 0)));
+          CharacterVector r1_indc = 
+            as<CharacterVector>(r_indc_full(indc_cat_terms_previous(i, 0)));
+          
+          //Rcout << "invfb_optim B17        ";
+          // dev_terms and vrm trait axis processing
+          NumericVector dv_terms (14);
+          if (dev_terms_times_int > 0) {
+            //Rcout << "invfb_optim B18        ";
+            NumericMatrix used_dv_df = clone(as<NumericMatrix>(dev_terms_list(current_variant_index)));
+            if (dev_num_counter(i, 0) >= dev_terms_times_int) dev_num_counter(i, 0) = 0;
+            dv_terms = used_dv_df(_, dev_num_counter(i, 0));
+            
+            arma::uvec var_corresponding_elems = find(variant_nta == (i + 1));
+            int vce_found = static_cast<int>(var_corresponding_elems.n_elem);
+            
+            //Rcout << "invfb_optim B19        ";
+            if (vce_found > 0) {
+              //Rcout << "invfb_optim B20        ";
+              arma::vec surv_dev_nta_sub = surv_dev_nta.elem(var_corresponding_elems);
+              arma::vec obs_dev_nta_sub = obs_dev_nta.elem(var_corresponding_elems);
+              arma::vec size_dev_nta_sub = size_dev_nta.elem(var_corresponding_elems);
+              arma::vec sizeb_dev_nta_sub = sizeb_dev_nta.elem(var_corresponding_elems);
+              arma::vec sizec_dev_nta_sub = sizec_dev_nta.elem(var_corresponding_elems);
+              arma::vec repst_dev_nta_sub = repst_dev_nta.elem(var_corresponding_elems);
+              arma::vec fec_dev_nta_sub = fec_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsurv_dev_nta_sub = jsurv_dev_nta.elem(var_corresponding_elems);
+              arma::vec jobs_dev_nta_sub = jobs_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsize_dev_nta_sub = jsize_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsizeb_dev_nta_sub = jsizeb_dev_nta.elem(var_corresponding_elems);
+              arma::vec jsizec_dev_nta_sub = jsizec_dev_nta.elem(var_corresponding_elems);
+              arma::vec jrepst_dev_nta_sub = jrepst_dev_nta.elem(var_corresponding_elems);
+              arma::vec jmatst_dev_nta_sub = jmatst_dev_nta.elem(var_corresponding_elems);
+              
+              //Rcout << "invfb_optim B21        ";
+              for (int vce_track = 0; vce_track < vce_found; vce_track++) {
+                if(!NumericVector::is_na(surv_dev_nta_sub(vce_track))) dv_terms(0) =
+                    dv_terms(0) + surv_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(obs_dev_nta_sub(vce_track))) dv_terms(1) =
+                    dv_terms(1) + obs_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(size_dev_nta_sub(vce_track))) dv_terms(2) =
+                    dv_terms(2) + size_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(sizeb_dev_nta_sub(vce_track))) dv_terms(3) =
+                    dv_terms(3) + sizeb_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(sizec_dev_nta_sub(vce_track))) dv_terms(4) =
+                    dv_terms(4) + sizec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(repst_dev_nta_sub(vce_track))) dv_terms(5) =
+                    dv_terms(5) + repst_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(fec_dev_nta_sub(vce_track))) dv_terms(6) =
+                    dv_terms(6) + fec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsurv_dev_nta_sub(vce_track))) dv_terms(7) =
+                    dv_terms(7) + jsurv_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jobs_dev_nta_sub(vce_track))) dv_terms(8) =
+                    dv_terms(8) + jobs_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsize_dev_nta_sub(vce_track))) dv_terms(9) =
+                    dv_terms(9) + jsize_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsizeb_dev_nta_sub(vce_track))) dv_terms(10) =
+                    dv_terms(10) + jsizeb_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jsizec_dev_nta_sub(vce_track))) dv_terms(11) =
+                  dv_terms(11) + jsizec_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jrepst_dev_nta_sub(vce_track))) dv_terms(12) =
+                    dv_terms(12) + jrepst_dev_nta_sub(vce_track);
+                if(!NumericVector::is_na(jmatst_dev_nta_sub(vce_track))) dv_terms(13) =
+                    dv_terms(13) + jmatst_dev_nta_sub(vce_track);
+              }
+            }
+            dev_num_counter(i, 0) = dev_num_counter(i, 0) + 1;
+          }
+          
+          //Rcout << "invfb_optim B22        ";
+          List stdbv2 = as<List>(stageexpansion_ta_devterms_by_variant(current_variant_index));
+          NumericVector stdbv = as<NumericVector>(stdbv2(1));
+          //Rcout << "invfb_optim B23        ";
+          
+          for (int z = 0; z < 14; z++) {
+            dv_terms(z) = dv_terms(z) + stdbv(z);
+          }
+          //Rcout << "invfb_optim B24        ";
+          
+          if (err_check) {
+            mdtl(i) = mdtl_1;
+          }
+          bool dvr_bool {false};
+          
+          //Rcout << "invfb_optim B25        ";
+          LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+          IntegerVector dvr_style (14);
+          IntegerVector dvr_time_delay (14);
+          NumericVector dvr_alpha (14);
+          NumericVector dvr_beta (14);
+          NumericVector dens_n (14);
+          
+          //Rcout << "invfb_optim B26        ";
+          
+          if (dens_vr_yn_vec(0) > 0) {
+            dvr_bool = true;
+            
+            DataFrame current_dvr = density_vr_list;
+            LogicalVector true_dvr_yn = as<LogicalVector>(current_dvr(1));
+            IntegerVector true_dvr_style = as<IntegerVector>(current_dvr(2));
+            IntegerVector true_dvr_time_delay = as<IntegerVector>(current_dvr(3));
+            NumericVector true_dvr_alpha = as<NumericVector>(current_dvr(4));
+            NumericVector true_dvr_beta = as<NumericVector>(current_dvr(5));
+            
+            dvr_yn = true_dvr_yn;
+            dvr_style = true_dvr_style;
+            dvr_time_delay = true_dvr_time_delay;
+            dvr_alpha = true_dvr_alpha;
+            dvr_beta = true_dvr_beta;
+            
+            int used_delay = max(true_dvr_time_delay);
+            
+            if (j >= (used_delay - 1)) {
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(i);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                double delay_N_sum = arma::sum(delay_issue);
+                
+                for (int xc = 0; xc < 14; xc++) {
+                  dens_n(xc) = delay_N_sum;
+                }
+              }
+            }
+          }
+          
+          double maxsize {0.0};
+          double maxsizeb {0.0};
+          double maxsizec {0.0};
+          
+          if (format_int < 5) {
+            DataFrame current_allstages = allstages_all; // (i)
+            
+            NumericVector size3 = as<NumericVector>(current_allstages["size3"]);
+            NumericVector size2n = as<NumericVector>(current_allstages["size2n"]);
+            NumericVector size2o = as<NumericVector>(current_allstages["size2o"]);
+            NumericVector sizeb3 = as<NumericVector>(current_allstages["sizeb3"]);
+            NumericVector sizeb2n = as<NumericVector>(current_allstages["sizeb2n"]);
+            NumericVector sizeb2o = as<NumericVector>(current_allstages["sizeb2o"]);
+            NumericVector sizec3 = as<NumericVector>(current_allstages["sizec3"]);
+            NumericVector sizec2n = as<NumericVector>(current_allstages["sizec2n"]);
+            NumericVector sizec2o = as<NumericVector>(current_allstages["sizec2o"]);
+            
+            NumericVector maxveca = {max(size3), max(size2n), max(size2o)};
+            NumericVector maxvecb = {max(sizeb3), max(sizeb2n), max(sizeb2o)};
+            NumericVector maxvecc = {max(sizec3), max(sizec2n), max(sizec2o)};
+            
+            maxsize = max(maxveca);
+            maxsizeb = max(maxvecb);
+            maxsizec = max(maxvecc);
+          }
+          
+          //Rcout << "invfb_optim B27        ";
+          
+          double dens_sp {1.0};
+          
+          if (sp_density_num_vec(0) > 0) {
+            if (sp_density_counter(i, m) >= sp_density_num_vec(0)) sp_density_counter(i, m) = 0;
+            
+            NumericVector current_sp_density = as<NumericVector>(sp_density_list(0));
+            dens_sp = current_sp_density(sp_density_counter(i, m));
+            
+            sp_density_counter(i, m) = sp_density_counter(i, m) + 1;
+          }
+          
+          List current_mpm;
+          if (format_int < 5) {
+            //Rcout << "invfb_optim B28        ";
+            //Rcout << "dv_terms: " << dv_terms << endl;
+            
+            current_mpm = AdaptMats::mazurekd(current_mpm_allstages,
+              current_stageframe, format_int, surv_proxy, obs_proxy,
+              size_proxy, sizeb_proxy, sizec_proxy, repst_proxy, fec_proxy,
+              jsurv_proxy, jobs_proxy, jsize_proxy, jsizeb_proxy,
+              jsizec_proxy, jrepst_proxy, jmatst_proxy, f2_inda, f1_inda,
+              f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+              r1_indb, r2_indc, r1_indc, dv_terms, dvr_bool, dvr_yn,
+              dvr_style, dvr_alpha, dvr_beta, dens_n, dens_sp, fecmod_vec(0),
+              maxsize, maxsizeb, maxsizec, firstage_int, finalage_int, true,
+              yearnumber, patchnumber, exp_tol, theta_tol, true, err_check,
+              sparse_bool, A_only);
+            
+            if (err_check_extreme) {
+              NumericMatrix mpm_out = as<NumericMatrix>(current_mpm["out"]);
+              errcheck_mpmout_reps_time_vmt_var(m) = mpm_out; 
+            }
+            
+            //Rcout << "invfb_optim B29        ";
+          } else {
+            IntegerVector all_ages = seq(firstage_int, finalage_int);
+            //DataFrame current_supplement;
+            if (!(current_supplement.length() > 1)) {
+              //Rcout << "invfb_optim B30        ";
+              current_mpm = AdaptMats::mdabrowskiego(all_ages,
+                current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
+                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+                r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
+                fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
+                dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
+                exp_tol, theta_tol, sparse_bool);
+              //Rcout << "invfb_optim B31        ";
+              
+            } else {
+              //current_supplement = as<DataFrame>(supplement_list(0));
+              
+              //Rcout << "invfb_optim B32        ";
+              current_mpm = AdaptMats::mdabrowskiego(all_ages,
+                current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
+                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
+                r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
+                fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
+                dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
+                exp_tol, theta_tol, sparse_bool, current_supplement);
+              //Rcout << "invfb_optim B33        ";
+            }
+          }
+          //Rcout << "invfb_optim B34        ";
+          
+          if (!dens_yn_bool) {
+            
+            if (A_only) {
+              if (!sparse_bool) {
+                arma::mat current_A = as<arma::mat>(current_mpm["A"]);
+                Amat_alter(current_A, sge_current); 
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
+                
+                running_popvec_vrm = current_A * running_popvec_vrm; 
+              } else {
+                arma::sp_mat current_A = as<arma::sp_mat>(current_mpm["A"]);
+                AdaptUtils::sp_Amat_alter(current_A, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              }
+            } else {
+              if (!sparse_bool) {
+                arma::mat current_A = as<arma::mat>(current_mpm["A"]);
+                arma::mat current_U_unaltered = as<arma::mat>(current_mpm["U"]);
+                arma::mat current_F_unaltered = as<arma::mat>(current_mpm["F"]);
+                AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              } else {
+                arma::sp_mat current_A = as<arma::sp_mat>(current_mpm("A"));
+                arma::sp_mat current_U_unaltered = as<arma::sp_mat>(current_mpm["U"]);
+                arma::sp_mat current_F_unaltered = as<arma::sp_mat>(current_mpm["F"]);
+                AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
+                if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
+                
+                running_popvec_vrm = current_A * running_popvec_vrm;
+              }
+            }
+          } else {
+            ///// dens_bool = true
+            DataFrame used_density_input = density_df;
+            DataFrame used_density_index_input = dens_index_df;
+            
+            IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
+            int used_delay = max(ud_delay_vec);
+            
+            if (j >= (used_delay - 1)) {
+              if (!stages_not_equal) {
+                arma::mat di_mat = N_mpm.slice(i);
+                arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
+                double delay_N_sum = arma::sum(delay_issue);
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
+                  0, integeronly, substoch, used_density_input,
+                  used_density_index_input, false, sparse_bool, sparse_bool,
+                  false, err_check);
+                
+                running_popvec_vrm = new_popvec;
+                if (err_check_extreme) { // Could remove later
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                } // Could remove later
+              } else {
+                double delay_N_sum {0.0};
+                
+                if (j > 0) {
+                  for (int l = 0; l < 2; l++) {
+                    int current_variant_index_agg = i;
+                    List current_pop_list = as<List>(comm_out_pre(i));
+                    List pop_rep_list = as<List>(current_pop_list(l));
+                    arma::mat delay_pop = as<arma::mat>(current_pop_list(current_rep));
+                    
+                    arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
+                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
+                    arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
+                    double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
+                    
+                    delay_N_sum += delay_pop_N;
+                  }
+                }
+                
+                arma::vec new_popvec;
+                arma::mat new_projmat;
+                arma::sp_mat new_projsp;
+                
+                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                  running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
+                  0, integeronly, substoch, used_density_input,
+                  used_density_index_input, false, sparse_bool, sparse_bool,
+                  false, err_check);
+                
+                running_popvec_vrm = new_popvec;
+                if (err_check_extreme) {
+                  if (!sparse_bool) {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                  } else {
+                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                  }
+                }
+              }
+            } else {
+              arma::vec new_popvec;
+              arma::mat new_projmat;
+              arma::sp_mat new_projsp;
+              
+              AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
+                running_popvec_vrm, sge_current, current_mpm, 0.0, 0,
+                integeronly, substoch, used_density_input,
+                used_density_index_input, false, sparse_bool, sparse_bool,
+                false, err_check);
+              
+              running_popvec_vrm = new_popvec;
+              if (err_check_extreme) {
+                if (!sparse_bool) {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
+                } else {
+                  errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
+                }
+              }
+            }
+          }
+          
+          //Rcout << "invfb_optim B33        ";
+          
+          if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
+          double N_current = arma::sum(running_popvec_vrm);
+          N_mpm(m, (j + 1), i) = N_current;
+          
+          inda_num_terms_previous(i, m) = static_cast<int>(inda_num_terms_counter(i, m));
+          indb_num_terms_previous(i, m) = static_cast<int>(indb_num_terms_counter(i, m));
+          indc_num_terms_previous(i, m) = static_cast<int>(indc_num_terms_counter(i, m));
+          inda_cat_terms_previous(i, m) = static_cast<int>(inda_cat_terms_counter(i, m));
+          indb_cat_terms_previous(i, m) = static_cast<int>(indb_cat_terms_counter(i, m));
+          indc_cat_terms_previous(i, m) = static_cast<int>(indc_cat_terms_counter(i, m));
+          
+          inda_num_terms_counter(i, m) = inda_num_terms_counter(i, m) + 1;
+          indb_num_terms_counter(i, m) = indb_num_terms_counter(i, m) + 1;
+          indc_num_terms_counter(i, m) = indc_num_terms_counter(i, m) + 1;
+          inda_cat_terms_counter(i, m) = inda_cat_terms_counter(i, m) + 1;
+          indb_cat_terms_counter(i, m) = indb_cat_terms_counter(i, m) + 1;
+          indc_cat_terms_counter(i, m) = indc_cat_terms_counter(i, m) + 1;
+          
+          running_popvecs(m) = running_popvec_vrm;
+          pops_out.col(j + 1) = running_popvec_vrm;
+          
+        } // if (j > (entry_time_vec(i) - 1))
+        //Rcout << "invfb_optim B100              ";
+        
+        pop_reps(current_rep) = pops_out;
+        //Rcout << "invfb_optim B101              ";
+        
+        // comm_out_pre(i) = reps_out;
+      }
+        
+      //Rcout << "invfb_optim C1              ";
+      if (err_check_extreme) {
+        errcheck_mpmout_reps_time_vmt(i) = errcheck_mpmout_reps_time_vmt_var;
+        errcheck_mpm_reps_time_vmt(i) = errcheck_mpm_reps_time_vmt_var;
+      }
+      //Rcout << "invfb_optim C2              ";
+    }
+    
+    //Rcout << "invfb_optim C3              ";
+    if (err_check_extreme) {
+      errcheck_mpmout_reps_time(j) = errcheck_mpmout_reps_time_vmt;
+      errcheck_mpm_reps_time(j) = errcheck_mpm_reps_time_vmt;
+    }
+    //Rcout << "invfb_optim C4              ";
+    
+    year_counter++;
+  } // j loop
+  //Rcout << "invfb_optim C5              ";
+  if (err_check_extreme) {
+    errcheck_mpmout_reps(current_rep) = errcheck_mpmout_reps_time;
+    errcheck_mpm_reps(current_rep) = errcheck_mpm_reps_time;
+  }
+  //Rcout << "invfb_optim C6              ";
+  N_out_pre(current_rep) = N_mpm;
+}
+
+//' Set-Up Function Running Invasion Analyses of Function-based MPMs
 //' 
 //' Function \code{invade3_fb_core} is the main function running invasion
 //' analyses in which matrices must be created at each time step.
@@ -10067,15 +13715,26 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' reference and altered by this function.
 //' @param comm_out The main list of full projection results for the community,
 //' supplied as a pointer and altered by this function.
+//' @param N_out_optim The main list of final population sizes from ESS
+//' optimization, supplied as a reference and altered by this function.
+//' @param comm_out_optim The main list of full projection results for the
+//' community resulting from ESS optimization, supplied as a pointer and altered
+//' by this function.
 //' @param zero_stage_vec_list A list of vectors giving zero stage vectors for
 //' each MPM, if entry times are staggered.
 //' @param trait_axis A data frame of class \code{adaptAxis} holding the trait
 //' data to test.
 //' @param new_trait_axis A data frame giving trait axis data post-processing
 //' with function \code{ta_reassess()}.
+//' @param optim_trait_axis A data frame giving trait axis data processed for
+//' ESS optimization.
+//' @param optim_trait_axis_995 A data frame giving trait axis data processed
+//' for ESS optimization for variants 99.5% the values of the core frame.
 //' @param new_stageexpansion_list A list with stage expansions for all trait
 //' axis data leading to matrix element changes with each list element
 //' corresponding to each respective variant.
+//' @param new_stageexpansion_list_optima A list with stage expansions for all
+//' variant data used in ESS evaluation.
 //' @param modified_dev_terms_list An optional list giving the vital rate
 //' y-intercept deviations by variant once data from the \code{trait_axis} data
 //' frame has been allocated.
@@ -10143,6 +13802,9 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' @param finalage_int  An integer giving the final age in a Leslie or
 //' age-by-stage MPM.
 //' @param dev_terms_times_int An integer giving ??? /////.
+//' @param opt_res If evaluating optima, then this integer gives the number
+//' of variants to create between each minimum and maximum for each trait found
+//' to be variable in the input trait axis. Defaults to \code{100}.
 //' @param exp_tol The maximum tolerated exponent.
 //' @param theta_tol The maximum tolerated limit for theta, in non-linear
 //' models such as those using the negative binomial.
@@ -10164,6 +13826,15 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' of output objects for error checking.
 //' @param err_check_extreme A logical value indicating whether to include an
 //' extra list of all matrices projected in the \code{err_check} object.
+//' @param threshold The lower limit for the absolute value of fitness, below
+//' which fitness is rounded to 0. Defaults to 0.00000001.
+//' @param fitness_table A Boolean value dictating whether to include a data
+//' frame giving Lyapunov coefficients for all combinations of variants tested.
+//' Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+//' to \code{TRUE}.
+//' @param optima A Boolean value indicating whether to assess the values of ESS
+//' optima for traits that vary among variants in the given \code{adaptAxis}
+//' table. Defaults to \code{TRUE}.
 //' 
 //' @return The first four arguments are directly manipulated without any
 //' values returned.
@@ -10171,16 +13842,19 @@ void invade3_pre_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' @keywords internal
 //' @noRd
 void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
-  List& N_out, List& comm_out, List& zero_stage_vec_list, DataFrame& trait_axis,
-  DataFrame& new_trait_axis, List& new_stageexpansion_list,
-  List& modified_dev_terms_list, List& errcheck_mpms, List& errcheck_mpmouts,
-  const List tweights_list, const List start_list, const List vrm_list,
-  DataFrame current_stageframe, const List allmodels_all, const List allstages_all,
-  const DataFrame current_supplement, const CharacterVector year_vec,
-  const List ind_terms_num_list, const List ind_terms_cat_list,
-  const List dev_terms_list, const DataFrame density_vr_list,
-  const List sp_density_list, const DataFrame density_df,
-  const DataFrame dens_index_df, const List equivalence_list,
+  List& N_out, List& comm_out, List& N_out_optim, List& comm_out_optim,
+  List& zero_stage_vec_list, DataFrame& trait_axis,
+  DataFrame& new_trait_axis, DataFrame& optim_trait_axis,
+  DataFrame& optim_trait_axis_995, List& new_stageexpansion_list,
+  List& new_stageexpansion_list_optim, List& modified_dev_terms_list,
+  List& errcheck_mpms, List& errcheck_mpms_optima, List& errcheck_mpmouts,
+  List& errcheck_mpmouts_optima, const List tweights_list, const List start_list,
+  const List vrm_list, DataFrame current_stageframe, const List allmodels_all,
+  const List allstages_all, const DataFrame current_supplement,
+  const CharacterVector year_vec, const List ind_terms_num_list,
+  const List ind_terms_cat_list, const List dev_terms_list,
+  const DataFrame density_vr_list, const List sp_density_list,
+  const DataFrame density_df, const DataFrame dens_index_df, const List equivalence_list,
   const IntegerVector sp_density_num_vec, const IntegerVector entry_time_vec,
   const IntegerVector inda_terms_num_vec, const IntegerVector indb_terms_num_vec,
   const IntegerVector indc_terms_num_vec, const IntegerVector inda_terms_cat_vec,
@@ -10190,13 +13864,52 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   const int variant_count, const int var_per_run, const int nreps,
   const int times, const int fitness_times, const int stagecounts,
   const int substoch, const int format_int, const int firstage_int,
-  const int finalage_int, const int dev_terms_times_int, const double exp_tol,
+  const int finalage_int, const int dev_terms_times_int, const int opt_res, const double exp_tol,
   const double theta_tol, const bool integeronly, const bool stochastic,
   const bool dens_yn_bool, const bool stages_not_equal, const bool sparse_bool,
   const bool historical, const bool pure_leslie, const bool A_only,
-  const bool err_check, const bool err_check_extreme) {
+  const bool err_check, const bool err_check_extreme, const double threshold,
+  const bool fitness_table, const bool optima) {
   
-  //Rcout << "invade3_fb_core:" << endl;
+  // Structures for optim
+  arma::ivec variant_nta_optim;
+  arma::vec surv_dev_nta_optim;
+  arma::vec obs_dev_nta_optim;
+  arma::vec size_dev_nta_optim;
+  arma::vec sizeb_dev_nta_optim;
+  arma::vec sizec_dev_nta_optim;
+  arma::vec repst_dev_nta_optim;
+  arma::vec fec_dev_nta_optim;
+  arma::vec jsurv_dev_nta_optim;
+  arma::vec jobs_dev_nta_optim;
+  arma::vec jsize_dev_nta_optim;
+  arma::vec jsizeb_dev_nta_optim;
+  arma::vec jsizec_dev_nta_optim;
+  arma::vec jrepst_dev_nta_optim;
+  arma::vec jmatst_dev_nta_optim;
+  
+  arma::ivec variant_nta_optim_995;
+  arma::vec surv_dev_nta_optim_995;
+  arma::vec obs_dev_nta_optim_995;
+  arma::vec size_dev_nta_optim_995;
+  arma::vec sizeb_dev_nta_optim_995;
+  arma::vec sizec_dev_nta_optim_995;
+  arma::vec repst_dev_nta_optim_995;
+  arma::vec fec_dev_nta_optim_995;
+  arma::vec jsurv_dev_nta_optim_995;
+  arma::vec jobs_dev_nta_optim_995;
+  arma::vec jsize_dev_nta_optim_995;
+  arma::vec jsizeb_dev_nta_optim_995;
+  arma::vec jsizec_dev_nta_optim_995;
+  arma::vec jrepst_dev_nta_optim_995;
+  arma::vec jmatst_dev_nta_optim_995;
+  
+  List N_out_pre_optim (nreps);
+  
+  int opt_res_true = opt_res;
+  bool opt_res_squared {false};
+  
+  //Rcout << "invade3_fb_core A" << endl;
   
   // patch_vec???
   // density_vr_list
@@ -10209,8 +13922,10 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   int var_mat_length = static_cast<int>(var_run_mat.n_rows);
   
   DataFrame trait_axis_clone = clone(trait_axis);
-  new_trait_axis = AdaptUtils::ta_reassess(current_stageframe, trait_axis_clone, firstage_int,
-    historical, true, pure_leslie);
+  new_trait_axis = AdaptUtils::ta_reassess(current_stageframe, trait_axis_clone,
+    firstage_int, historical, true, pure_leslie);
+  //Rcout << "invade3_fb_core B" << endl;
+  
   arma::ivec variant_nta = as<arma::ivec>(new_trait_axis["variant"]);
   arma::vec surv_dev_nta = as<arma::vec>(new_trait_axis["surv_dev"]);
   arma::vec obs_dev_nta = as<arma::vec>(new_trait_axis["obs_dev"]);
@@ -10227,6 +13942,344 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   arma::vec jrepst_dev_nta = as<arma::vec>(new_trait_axis["jrepst_dev"]);
   arma::vec jmatst_dev_nta = as<arma::vec>(new_trait_axis["jmatst_dev"]);
   
+  //Rcout << "invade3_fb_core C" << endl;
+  
+  if (optima) {
+    //Rcout << "invade3_fb_core D" << endl;
+    
+    optim_ta_setup(new_trait_axis, optim_trait_axis, optim_trait_axis_995,
+      opt_res, opt_res_squared);
+    //Rcout << "invade3_fb_core E" << endl;
+    
+    if (opt_res_squared) opt_res_true = opt_res * opt_res; /////
+    
+    if (opt_res < 1) {
+      throw Rcpp::exception("Argument opt_res must be an integer no smaller than 1.", false);
+    }
+  }
+  
+  List comm_out_pre_optim (opt_res_true);
+  List trait_axis_by_variant_optima (opt_res_true); // Might wish to remove this later
+  List stageexpansion_by_variant_optima (opt_res_true); // Might wish to remove this later
+  List stageexpansion_ta_devterms_by_variant_optima (opt_res_true);
+  
+  if (optima) {
+    variant_nta_optim = as<arma::ivec>(optim_trait_axis["variant"]);
+    surv_dev_nta_optim = as<arma::vec>(optim_trait_axis["surv_dev"]);
+    obs_dev_nta_optim = as<arma::vec>(optim_trait_axis["obs_dev"]);
+    size_dev_nta_optim = as<arma::vec>(optim_trait_axis["size_dev"]);
+    sizeb_dev_nta_optim = as<arma::vec>(optim_trait_axis["sizeb_dev"]);
+    sizec_dev_nta_optim = as<arma::vec>(optim_trait_axis["sizec_dev"]);
+    repst_dev_nta_optim = as<arma::vec>(optim_trait_axis["repst_dev"]);
+    fec_dev_nta_optim = as<arma::vec>(optim_trait_axis["fec_dev"]);
+    jsurv_dev_nta_optim = as<arma::vec>(optim_trait_axis["jsurv_dev"]);
+    jobs_dev_nta_optim = as<arma::vec>(optim_trait_axis["jobs_dev"]);
+    jsize_dev_nta_optim = as<arma::vec>(optim_trait_axis["jsize_dev"]);
+    jsizeb_dev_nta_optim = as<arma::vec>(optim_trait_axis["jsizeb_dev"]);
+    jsizec_dev_nta_optim = as<arma::vec>(optim_trait_axis["jsizec_dev"]);
+    jrepst_dev_nta_optim = as<arma::vec>(optim_trait_axis["jrepst_dev"]);
+    jmatst_dev_nta_optim = as<arma::vec>(optim_trait_axis["jmatst_dev"]);
+    //Rcout << "invade3_fb_core F" << endl;
+    
+    variant_nta_optim_995 = as<arma::ivec>(optim_trait_axis_995["variant"]);
+    surv_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["surv_dev"]);
+    obs_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["obs_dev"]);
+    size_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["size_dev"]);
+    sizeb_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["sizeb_dev"]);
+    sizec_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["sizec_dev"]);
+    repst_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["repst_dev"]);
+    fec_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["fec_dev"]);
+    jsurv_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jsurv_dev"]);
+    jobs_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jobs_dev"]);
+    jsize_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jsize_dev"]);
+    jsizeb_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jsizeb_dev"]);
+    jsizec_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jsizec_dev"]);
+    jrepst_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jrepst_dev"]);
+    jmatst_dev_nta_optim_995 = as<arma::vec>(optim_trait_axis_995["jmatst_dev"]);
+    //Rcout << "invade3_fb_core G" << endl;
+    
+    //Rcout << "variant_nta_optim: " << variant_nta_optim.t() << endl;
+    
+    // This next loop sets up the structure for comm_out_pre_optim
+    for (int i = 0; i < opt_res_true; i++) {
+      int year_length = static_cast<int>(year_vec.length());
+      //IntegerVector year_int_vec = seq(0, (year_length - 1));
+      
+      List all_pops_per_run (var_per_run);
+      List all_used_times_per_run (var_per_run);
+      for (int m = 0; m < var_per_run; m++) {
+        //int current_variant_index = var_run_mat(i, m);
+        
+        List pop_reps (nreps);
+        List used_times_reps (nreps);
+        for (int j = 0; j < nreps; j++) {
+          arma::mat pops_out_pre (stagecounts, (times + 1), fill::zeros);
+          
+          /*
+          IntegerVector years_topull;
+          
+          if (!stochastic) {
+            IntegerVector years_topull_pre (times);
+            
+            int mat_tracker {0};
+            for (int k = 0; k < times; k++) {
+              if (mat_tracker >= year_length) mat_tracker = 0;
+              
+              years_topull_pre(k) = mat_tracker;
+              mat_tracker++;
+            }
+            years_topull = years_topull_pre;
+          } else {
+            if (tweights_type_vec(0) == 0) {
+              NumericVector twinput (year_length,
+                (1.0 / static_cast<double>(year_length)));
+              years_topull = Rcpp::RcppArmadillo::sample(year_int_vec, times, true,
+                twinput);
+            } else if (tweights_type_vec(0) == 1) {
+              NumericVector twinput = as<NumericVector>(tweights_list(0));
+              NumericVector twinput_st = twinput / sum(twinput);
+              
+              years_topull = Rcpp::RcppArmadillo::sample(year_int_vec, times, true,
+                twinput_st);
+            } else if (tweights_type_vec(0) == 2) {
+              arma::ivec year_arma = as<arma::ivec>(year_int_vec);
+              arma::mat twinput_mat = as<arma::mat>(tweights_list(0));
+              arma::vec twinput = twinput_mat.col(0);
+              twinput = twinput / sum(twinput);
+              
+              IntegerVector years_topull_pre (times);
+              NumericVector twinput_setup (year_length, (1.0 / 
+                static_cast<double>(year_length)));
+              arma::ivec first_choice = Rcpp::RcppArmadillo::sample(year_arma,
+                times, true, twinput_setup);
+              years_topull_pre(0) = year_int_vec(first_choice(0));
+              
+              for (int k = 1; k < times; k++) {
+                arma::ivec theprophecy_piecemeal = Rcpp::RcppArmadillo::sample(year_arma,
+                  1, true, twinput);
+                years_topull_pre(k) = theprophecy_piecemeal(0);
+                
+                arma::uvec tnotb_preassigned = 
+                  find(year_arma == theprophecy_piecemeal(0));
+                twinput = twinput_mat.col(static_cast<int>(tnotb_preassigned(0)));
+                twinput = twinput / sum(twinput);
+              }
+              years_topull = years_topull_pre;
+            } else {
+              throw Rcpp::exception("tweights_type_vec error.", false);
+            }
+          }
+          used_times_reps(j) = years_topull;
+          */
+          pop_reps(j) = pops_out_pre;
+        }
+        //all_used_times_per_run(m) = used_times_reps;
+        all_pops_per_run(m) = pop_reps;
+      }
+      //used_times(i) = all_used_times_per_run;
+      comm_out_pre_optim(i) = all_pops_per_run;
+    }
+    
+    //Rcout << "invade3_fb_core H" << endl;
+    
+  
+  
+  
+  
+  /////
+  
+  
+  
+  
+  
+    // Stage expansions for ESS optimization
+    for (int i = 0; i < opt_res_true; i++) {
+      IntegerVector used_i = {i + 1};
+      StringVector focused_var = {"variant"};
+      //Rcout << "invade3_fb_core I" << endl;
+      
+      DataFrame current_optim_trait_axis = LefkoUtils::df_subset(optim_trait_axis,
+        as<RObject>(used_i), false, true, false, false, true, as<RObject>(focused_var));
+      //Rcout << "invade3_fb_core J" << endl;
+      
+      DataFrame current_optim_trait_axis_995 = LefkoUtils::df_subset(optim_trait_axis_995,
+        as<RObject>(used_i), false, true, false, false, true, as<RObject>(focused_var));
+      //Rcout << "invade3_fb_core K" << endl;
+      
+      List tabvo = Rcpp::List::create(_["main"] = current_optim_trait_axis,
+        _["e995"] = current_optim_trait_axis_995);
+      trait_axis_by_variant_optima(i) = tabvo;
+      
+      int ehrlen {1};
+      int style {0};
+      int filter {1};
+      
+      if (format_int == 2) ehrlen = 2;
+      if (format_int == 3 || format_int == 5) style = 1;
+      if (format_int == 4) {
+        //agemat = true;
+        style = 2;
+        filter = 2;
+      }
+      
+      DataFrame new_sf;
+      if (format_int == 1 || format_int == 2 || format_int == 4) {
+        DataFrame cloned_sf = clone (current_stageframe);
+        
+        StringVector csf_stages = as<StringVector>(cloned_sf["stage"]);
+        IntegerVector csf_stage_id = as<IntegerVector>(cloned_sf["stage_id"]);
+        
+        int csf_rows = static_cast<int>(cloned_sf.nrows());
+        IntegerVector chosen_rows = {(csf_rows - 1)};
+        new_sf = LefkoUtils::df_shedrows(cloned_sf, chosen_rows);
+      } else new_sf = current_stageframe;
+      
+      StringVector nsf_stages = as<StringVector>(new_sf["stage"]);
+      IntegerVector nsf_stage_id = as<IntegerVector>(new_sf["stage_id"]);
+      
+      //Rcout << "invade3_fb_core L" << endl;
+      
+      DataFrame stageexpansion = AdaptMats::thenewpizzle(new_sf,
+        current_optim_trait_axis, firstage_int, finalage_int, ehrlen, style,
+        filter);
+      //Rcout << "invade3_fb_core M" << endl;
+      
+      DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(new_sf,
+        current_optim_trait_axis_995, firstage_int, finalage_int, ehrlen, style,
+        filter);
+      //Rcout << "invade3_fb_core N" << endl;
+      
+      focused_var = {"mpm_altered"};
+      IntegerVector chosen_int = {1};
+      DataFrame stageexpansion_red_mpm = LefkoUtils::df_subset(stageexpansion,
+        as<RObject>(chosen_int), false, true, false, false, true,
+        as<RObject>(focused_var));
+      //Rcout << "invade3_fb_core O" << endl;
+      
+      DataFrame stageexpansion_red_mpm_995 = LefkoUtils::df_subset(stageexpansion_995,
+        as<RObject>(chosen_int), false, true, false, false, true,
+        as<RObject>(focused_var));
+      //Rcout << "invade3_fb_core P" << endl;
+      
+      List sbvo = Rcpp::List::create(_["main"] = stageexpansion_red_mpm,
+        _["e995"] = stageexpansion_red_mpm_995);
+      stageexpansion_by_variant_optima(i) = sbvo;
+      
+      NumericVector variant_ta_devterms (14);
+      NumericVector variant_ta_devterms_995 (14);
+      int current_variant_rows = current_optim_trait_axis.nrows();
+      
+      for (int j = 0; j < current_variant_rows; j++) {
+        NumericVector cv_vt_survdev = as<NumericVector>(current_optim_trait_axis["surv_dev"]);
+        NumericVector cv_vt_obsdev = as<NumericVector>(current_optim_trait_axis["obs_dev"]);
+        NumericVector cv_vt_sizedev = as<NumericVector>(current_optim_trait_axis["size_dev"]);
+        NumericVector cv_vt_sizebdev = as<NumericVector>(current_optim_trait_axis["sizeb_dev"]);
+        NumericVector cv_vt_sizecdev = as<NumericVector>(current_optim_trait_axis["sizec_dev"]);
+        NumericVector cv_vt_repstdev = as<NumericVector>(current_optim_trait_axis["repst_dev"]);
+        NumericVector cv_vt_fecdev = as<NumericVector>(current_optim_trait_axis["fec_dev"]);
+        
+        NumericVector cv_vt_jsurvdev = as<NumericVector>(current_optim_trait_axis["jsurv_dev"]);
+        NumericVector cv_vt_jobsdev = as<NumericVector>(current_optim_trait_axis["jobs_dev"]);
+        NumericVector cv_vt_jsizedev = as<NumericVector>(current_optim_trait_axis["jsize_dev"]);
+        NumericVector cv_vt_jsizebdev = as<NumericVector>(current_optim_trait_axis["jsizeb_dev"]);
+        NumericVector cv_vt_jsizecdev = as<NumericVector>(current_optim_trait_axis["jsizec_dev"]);
+        NumericVector cv_vt_jrepstdev = as<NumericVector>(current_optim_trait_axis["jrepst_dev"]);
+        NumericVector cv_vt_jmatstdev = as<NumericVector>(current_optim_trait_axis["jmatst_dev"]);
+        
+        NumericVector cv_vt_survdev_995 = as<NumericVector>(current_optim_trait_axis_995["surv_dev"]);
+        NumericVector cv_vt_obsdev_995 = as<NumericVector>(current_optim_trait_axis_995["obs_dev"]);
+        NumericVector cv_vt_sizedev_995 = as<NumericVector>(current_optim_trait_axis_995["size_dev"]);
+        NumericVector cv_vt_sizebdev_995 = as<NumericVector>(current_optim_trait_axis_995["sizeb_dev"]);
+        NumericVector cv_vt_sizecdev_995 = as<NumericVector>(current_optim_trait_axis_995["sizec_dev"]);
+        NumericVector cv_vt_repstdev_995 = as<NumericVector>(current_optim_trait_axis_995["repst_dev"]);
+        NumericVector cv_vt_fecdev_995 = as<NumericVector>(current_optim_trait_axis_995["fec_dev"]);
+        
+        NumericVector cv_vt_jsurvdev_995 = as<NumericVector>(current_optim_trait_axis_995["jsurv_dev"]);
+        NumericVector cv_vt_jobsdev_995 = as<NumericVector>(current_optim_trait_axis_995["jobs_dev"]);
+        NumericVector cv_vt_jsizedev_995 = as<NumericVector>(current_optim_trait_axis_995["jsize_dev"]);
+        NumericVector cv_vt_jsizebdev_995 = as<NumericVector>(current_optim_trait_axis_995["jsizeb_dev"]);
+        NumericVector cv_vt_jsizecdev_995 = as<NumericVector>(current_optim_trait_axis_995["jsizec_dev"]);
+        NumericVector cv_vt_jrepstdev_995 = as<NumericVector>(current_optim_trait_axis_995["jrepst_dev"]);
+        NumericVector cv_vt_jmatstdev_995 = as<NumericVector>(current_optim_trait_axis_995["jmatst_dev"]);
+        
+        if (!NumericVector::is_na(cv_vt_survdev(j))) variant_ta_devterms(0) =
+          variant_ta_devterms(0) + cv_vt_survdev(j);
+        if (!NumericVector::is_na(cv_vt_obsdev(j))) variant_ta_devterms(1) =
+          variant_ta_devterms(1) + cv_vt_obsdev(j);
+        if (!NumericVector::is_na(cv_vt_sizedev(j))) variant_ta_devterms(2) =
+          variant_ta_devterms(2) + cv_vt_sizedev(j);
+        if (!NumericVector::is_na(cv_vt_sizebdev(j))) variant_ta_devterms(3) =
+          variant_ta_devterms(3) + cv_vt_sizebdev(j);
+        if (!NumericVector::is_na(cv_vt_sizecdev(j))) variant_ta_devterms(4) =
+          variant_ta_devterms(4) + cv_vt_sizecdev(j);
+        if (!NumericVector::is_na(cv_vt_repstdev(j))) variant_ta_devterms(5) =
+          variant_ta_devterms(5) + cv_vt_repstdev(j);
+        if (!NumericVector::is_na(cv_vt_fecdev(j))) variant_ta_devterms(6) =
+          variant_ta_devterms(6) + cv_vt_fecdev(j);
+        
+        if (!NumericVector::is_na(cv_vt_jsurvdev(j))) variant_ta_devterms(7) =
+          variant_ta_devterms(7) + cv_vt_jsurvdev(j);
+        if (!NumericVector::is_na(cv_vt_jobsdev(j))) variant_ta_devterms(8) =
+          variant_ta_devterms(8) + cv_vt_jobsdev(j);
+        if (!NumericVector::is_na(cv_vt_jsizedev(j))) variant_ta_devterms(9) =
+          variant_ta_devterms(9) + cv_vt_jsizedev(j);
+        if (!NumericVector::is_na(cv_vt_jsizebdev(j))) variant_ta_devterms(10) =
+          variant_ta_devterms(10) + cv_vt_jsizebdev(j);
+        if (!NumericVector::is_na(cv_vt_jsizecdev(j))) variant_ta_devterms(11) =
+          variant_ta_devterms(11) + cv_vt_jsizecdev(j);
+        if (!NumericVector::is_na(cv_vt_jrepstdev(j))) variant_ta_devterms(12) =
+          variant_ta_devterms(12) + cv_vt_jrepstdev(j);
+        if (!NumericVector::is_na(cv_vt_jmatstdev(j))) variant_ta_devterms(13) =
+          variant_ta_devterms(13) + cv_vt_jmatstdev(j);
+        
+        if (!NumericVector::is_na(cv_vt_survdev_995(j))) variant_ta_devterms_995(0) =
+          variant_ta_devterms_995(0) + cv_vt_survdev_995(j);
+        if (!NumericVector::is_na(cv_vt_obsdev_995(j))) variant_ta_devterms_995(1) =
+          variant_ta_devterms_995(1) + cv_vt_obsdev_995(j);
+        if (!NumericVector::is_na(cv_vt_sizedev_995(j))) variant_ta_devterms_995(2) =
+          variant_ta_devterms_995(2) + cv_vt_sizedev_995(j);
+        if (!NumericVector::is_na(cv_vt_sizebdev_995(j))) variant_ta_devterms_995(3) =
+          variant_ta_devterms_995(3) + cv_vt_sizebdev_995(j);
+        if (!NumericVector::is_na(cv_vt_sizecdev_995(j))) variant_ta_devterms_995(4) =
+          variant_ta_devterms_995(4) + cv_vt_sizecdev_995(j);
+        if (!NumericVector::is_na(cv_vt_repstdev_995(j))) variant_ta_devterms_995(5) =
+          variant_ta_devterms_995(5) + cv_vt_repstdev_995(j);
+        if (!NumericVector::is_na(cv_vt_fecdev_995(j))) variant_ta_devterms_995(6) =
+          variant_ta_devterms_995(6) + cv_vt_fecdev_995(j);
+        
+        if (!NumericVector::is_na(cv_vt_jsurvdev_995(j))) variant_ta_devterms_995(7) =
+          variant_ta_devterms_995(7) + cv_vt_jsurvdev_995(j);
+        if (!NumericVector::is_na(cv_vt_jobsdev_995(j))) variant_ta_devterms_995(8) =
+          variant_ta_devterms_995(8) + cv_vt_jobsdev_995(j);
+        if (!NumericVector::is_na(cv_vt_jsizedev_995(j))) variant_ta_devterms_995(9) =
+          variant_ta_devterms_995(9) + cv_vt_jsizedev_995(j);
+        if (!NumericVector::is_na(cv_vt_jsizebdev_995(j))) variant_ta_devterms_995(10) =
+          variant_ta_devterms_995(10) + cv_vt_jsizebdev_995(j);
+        if (!NumericVector::is_na(cv_vt_jsizecdev_995(j))) variant_ta_devterms_995(11) =
+          variant_ta_devterms_995(11) + cv_vt_jsizecdev_995(j);
+        if (!NumericVector::is_na(cv_vt_jrepstdev_995(j))) variant_ta_devterms_995(12) =
+          variant_ta_devterms_995(12) + cv_vt_jrepstdev_995(j);
+        if (!NumericVector::is_na(cv_vt_jmatstdev_995(j))) variant_ta_devterms_995(13) =
+          variant_ta_devterms_995(13) + cv_vt_jmatstdev_995(j);
+      }
+      
+      List stdbvo = Rcpp::List::create(_["main"] = variant_ta_devterms,
+        _["e995"] = variant_ta_devterms_995);
+      stageexpansion_ta_devterms_by_variant_optima(i) = stdbvo;
+    }
+    new_stageexpansion_list_optim = stageexpansion_by_variant_optima;
+  }
+  
+  
+  
+  
+  
+  /////
+  
+  
+  
+  
+  
   int year_counter {0};
   IntegerMatrix inda_num_terms_counter (var_mat_length, var_per_run);
   IntegerMatrix indb_num_terms_counter (var_mat_length, var_per_run);
@@ -10242,6 +14295,21 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   IntegerMatrix indc_cat_terms_previous (var_mat_length, var_per_run);
   IntegerMatrix dev_num_counter (var_mat_length, var_per_run);
   IntegerMatrix sp_density_counter (var_mat_length, var_per_run);
+  
+  IntegerMatrix inda_num_terms_counter_optim (opt_res_true, 2);
+  IntegerMatrix indb_num_terms_counter_optim (opt_res_true, 2);
+  IntegerMatrix indc_num_terms_counter_optim (opt_res_true, 2);
+  IntegerMatrix inda_cat_terms_counter_optim (opt_res_true, 2);
+  IntegerMatrix indb_cat_terms_counter_optim (opt_res_true, 2);
+  IntegerMatrix indc_cat_terms_counter_optim (opt_res_true, 2);
+  IntegerMatrix inda_num_terms_previous_optim (opt_res_true, 2);
+  IntegerMatrix indb_num_terms_previous_optim (opt_res_true, 2);
+  IntegerMatrix indc_num_terms_previous_optim (opt_res_true, 2);
+  IntegerMatrix inda_cat_terms_previous_optim (opt_res_true, 2);
+  IntegerMatrix indb_cat_terms_previous_optim (opt_res_true, 2);
+  IntegerMatrix indc_cat_terms_previous_optim (opt_res_true, 2);
+  IntegerMatrix dev_num_counter_optim (opt_res_true, 2);
+  IntegerMatrix sp_density_counter_optim (opt_res_true, 2);
   
   // Year order determination
   List comm_out_pre (var_mat_length);
@@ -10420,578 +14488,78 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
   // Main projection
   List N_out_pre (nreps);
   List mdtl (var_mat_length);
+  List mdtl_optim (opt_res_true);
   List errcheck_mpm_reps (nreps);
+  List errcheck_mpm_reps_optima (nreps);
   List errcheck_mpmout_reps (nreps);
+  List errcheck_mpmout_reps_optima (nreps);
     
   for (int current_rep = 0; current_rep < nreps; current_rep++) { // 1st loop - reps current_rep
     
-    //Rcout << "invade3_fb_core d current_rep: " << current_rep << "      ";
+    invfb_project(var_run_mat, surv_dev_nta, obs_dev_nta, size_dev_nta,
+      sizeb_dev_nta, sizec_dev_nta, repst_dev_nta, fec_dev_nta, jsurv_dev_nta,
+      jobs_dev_nta, jsize_dev_nta, jsizeb_dev_nta, jsizec_dev_nta, jrepst_dev_nta,
+      jmatst_dev_nta, variant_nta, N_out_pre, comm_out_pre, new_stageexpansion_list,
+      errcheck_mpm_reps, errcheck_mpmout_reps, mdtl, used_times, allmodels_all,
+      vrm_list, allstages_all, dev_terms_list, ind_terms_num_list, ind_terms_cat_list,
+      stageexpansion_ta_devterms_by_variant, sp_density_list, start_list,
+      equivalence_list, density_vr_list, current_stageframe, current_supplement,
+      density_df, dens_index_df, entry_time_vec, sp_density_num_vec,
+      inda_terms_num_vec, indb_terms_num_vec, indc_terms_num_vec, inda_terms_cat_vec,
+      indb_terms_cat_vec, indc_terms_cat_vec, dens_vr_yn_vec, sp_density_counter,
+      inda_num_terms_previous, indb_num_terms_previous, indc_num_terms_previous,
+      inda_cat_terms_previous, indb_cat_terms_previous, indc_cat_terms_previous,
+      inda_num_terms_counter, indb_num_terms_counter, indc_num_terms_counter,
+      inda_cat_terms_counter, indb_cat_terms_counter, indc_cat_terms_counter,
+      dev_num_counter, fecmod_vec, year_vec, patch_vec, var_per_run, times,
+      var_mat_length, format_int, current_rep, firstage_int, finalage_int,
+      dev_terms_times_int, substoch, year_counter, exp_tol, theta_tol,
+      err_check, err_check_extreme, sparse_bool, A_only, stages_not_equal,
+      integeronly, dens_yn_bool);
     
-    List running_popvecs; // = clone(start_list);
-    List running_popvecs_startonly;
-    arma::cube N_mpm (var_per_run, (times + 1), var_mat_length);
-    
-    List errcheck_mpm_reps_time (times); 
-    List errcheck_mpmout_reps_time (times); 
-    
-    for (int j = 0; j < times; j++) { // 2nd loop - time j
-      if (j % 10 == 0){
-        Rcpp::checkUserInterrupt();
-      }
-      
-      //Rcout << "invade3_fb_core d2 j: " << j << "      ";
-      List errcheck_mpm_reps_time_vmt (var_mat_length); 
-      List errcheck_mpmout_reps_time_vmt (var_mat_length); 
-      
-      for (int i = 0; i < var_mat_length; i++) { // 3rd loop - permutes i
-        List errcheck_mpm_reps_time_vmt_var(var_per_run); 
-        List errcheck_mpmout_reps_time_vmt_var(var_per_run); 
-        
-        //Rcout << "current_permutation (i): " << i << "          ";
-        if (j == 0) {
-          List var_popvecs_to_start (var_per_run);
-          for (int n = 0; n < var_per_run; n++) {
-            var_popvecs_to_start(n) = as<arma::vec>(start_list(static_cast<int>(var_run_mat(i, n))));
-          }
-          running_popvecs = var_popvecs_to_start;
-          running_popvecs_startonly = clone(var_popvecs_to_start);
-        }
-        
-        for (int m = 0; m < var_per_run; m++) { // 4th loop - var per run m
-          if (j == entry_time_vec(m)) {
-            arma::vec running_popvec_mpm = as<arma::vec>(running_popvecs_startonly(m));
-            
-            double N_current = accu(running_popvec_mpm);
-            N_mpm(m, j, i) = N_current; // Used to be (k, j)
-          }
-        }
-        
-        List all_pops_per_run = as<List>(comm_out_pre(i));
-        List mdtl_1 (var_per_run);
-        for (int m = 0; m < var_per_run; m++) { // 4th loop - var per run m
-          int current_variant_index = var_run_mat(i, m); // Equivalent to index integer k
-          
-          DataFrame sge_current = as<DataFrame>(new_stageexpansion_list(current_variant_index));
-          
-          //Rcout << "invade3_fb_core d3 i: " << i << "      ";
-          List pop_reps = as<List>(all_pops_per_run(m));
-          arma::mat pops_out = as<arma::mat>(pop_reps(current_rep));
-          
-          //Rcout << "invade3_fb_core d4 m: " << m << "      ";
-          //Rcout << "entry_time_vec: " << entry_time_vec << endl;
-          if (j > (entry_time_vec(m) - 1)) {
-            //Rcout << "invade3_fb_core d5 current_rep: " << current_rep << "      ";
-            List used_times_per_run = as<List>(used_times(i));
-            List used_times_current_var = as<List>(used_times_per_run(m));
-            IntegerVector current_times_vec = as<IntegerVector>(used_times_current_var(current_rep));
-            
-            
-            
-            
-            
-            arma::vec running_popvec_vrm;
-            if (j == entry_time_vec(m)) {
-              running_popvec_vrm = as<arma::vec>(running_popvecs_startonly(m));
-              pops_out.col(j) = running_popvec_vrm;
-            } else {
-              running_popvec_vrm = pops_out.col(j);
-            }
-            //Rcout << "invade3_fb_core d6 current_rep: " << current_rep << "      ";
-            
-            List current_vrm_extract = allmodels_all; // (i)
-            List current_vrm_unextract = vrm_list; // (i)
-            int ehrlen_format {1}; // This will need to be dealt with differently later
-            
-            //Rcout << "invade3_fb_core d7 current_rep: " << current_rep << "      ";
-            int mpm_style {1};
-            if (format_int < 3) {
-              mpm_style = 0;
-              if (format_int == 2) ehrlen_format = 2;
-            } else if (format_int == 4) {
-              mpm_style = 2;
-            }
-            
-            //Rcout << "invade3_fb_core d8 current_rep: " << current_rep << "      ";
-            DataFrame current_mpm_allstages = allstages_all; // (i)
-            
-            //Rcout << "invade3_fb_core d9 current_rep: " << current_rep << "      ";
-            List surv_proxy = as<List>(current_vrm_extract(0));
-            List obs_proxy = as<List>(current_vrm_extract(1));
-            List size_proxy = as<List>(current_vrm_extract(2));
-            List sizeb_proxy = as<List>(current_vrm_extract(3));
-            List sizec_proxy = as<List>(current_vrm_extract(4));
-            List repst_proxy = as<List>(current_vrm_extract(5));
-            List fec_proxy = as<List>(current_vrm_extract(6));
-            List jsurv_proxy = as<List>(current_vrm_extract(7));
-            List jobs_proxy = as<List>(current_vrm_extract(8));
-            List jsize_proxy = as<List>(current_vrm_extract(9));
-            List jsizeb_proxy = as<List>(current_vrm_extract(10));
-            List jsizec_proxy = as<List>(current_vrm_extract(11));
-            List jrepst_proxy = as<List>(current_vrm_extract(12));
-            List jmatst_proxy = as<List>(current_vrm_extract(13));
-            DataFrame current_paramnames = as<DataFrame>(current_vrm_extract(14));
-            
-            //Rcout << "invade3_fb_core d10 current_rep: " << current_rep << "      ";
-            CharacterVector current_mainyears = year_vec;
-            unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
-            
-            StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
-            
-            DataFrame group2_frame = as<DataFrame>(current_vrm_unextract["group2_frame"]);
-            CharacterVector current_maingroups = as<CharacterVector>(group2_frame["groups"]);
-  
-            DataFrame patch_frame = as<DataFrame>(current_vrm_unextract["patch_frame"]);
-            CharacterVector current_mainpatches = as<CharacterVector>(patch_frame["patches"]);
-            
-            int patchnumber = 0;
-            for (int ptl = 0; ptl < static_cast<int>(current_mainpatches.length()); ptl++) {
-              if (LefkoUtils::stringcompare_simple(String(patch_vec(0)),
-                  String(current_mainpatches(ptl)), false)) patchnumber = ptl;
-            }
-            
-            //Rcout << "invade3_fb_core e        ";
-            
-            // Not sure if we need the next bit
-            DataFrame indcova2_frame = as<DataFrame>(current_vrm_unextract["indcova2_frame"]);
-            DataFrame indcovb2_frame = as<DataFrame>(current_vrm_unextract["indcovb2_frame"]);
-            DataFrame indcovc2_frame = as<DataFrame>(current_vrm_unextract["indcovc2_frame"]);
-            CharacterVector current_mainindcova = as<CharacterVector>(indcova2_frame["indcova"]);
-            CharacterVector current_mainindcovb = as<CharacterVector>(indcovb2_frame["indcovb"]);
-            CharacterVector current_mainindcovc = as<CharacterVector>(indcovc2_frame["indcovc"]);
-            
-            //Rcout << "invade3_fb_core e1        ";
-            // Counter resets
-            int yearnumber = current_times_vec(j); // year_counter
-            //Rcout << "invade3_fb_core e2        ";
-            
-            //Rcout << "current_mainyears: " << current_mainyears << "               ";
-            //Rcout << "yearnumber: " << yearnumber << "               ";
-            CharacterVector current_year = as<CharacterVector>(current_mainyears(yearnumber));
-            //Rcout << "invade3_fb_core e3        ";
-            
-            if (inda_num_terms_counter(i, m) >= inda_terms_num_vec(0)) inda_num_terms_counter(i, m) = 0;
-            if (indb_num_terms_counter(i, m) >= indb_terms_num_vec(0)) indb_num_terms_counter(i, m) = 0;
-            if (indc_num_terms_counter(i, m) >= indc_terms_num_vec(0)) indc_num_terms_counter(i, m) = 0;
-            if (inda_cat_terms_counter(i, m) >= inda_terms_cat_vec(0)) inda_cat_terms_counter(i, m) = 0;
-            if (indb_cat_terms_counter(i, m) >= indb_terms_cat_vec(0)) indb_cat_terms_counter(i, m) = 0;
-            if (indc_cat_terms_counter(i, m) >= indc_terms_cat_vec(0)) indc_cat_terms_counter(i, m) = 0;
-            
-            List current_ind_terms_num = ind_terms_num_list(0);
-            List current_ind_terms_cat = ind_terms_cat_list(0);
-            
-            //Rcout << "invade3_fb_core e4        ";
-            NumericVector f_inda_full = as<NumericVector>(current_ind_terms_num(0));
-            NumericVector f_indb_full = as<NumericVector>(current_ind_terms_num(1));
-            NumericVector f_indc_full = as<NumericVector>(current_ind_terms_num(2));
-            CharacterVector r_inda_full = as<CharacterVector>(current_ind_terms_cat(0));
-            CharacterVector r_indb_full = as<CharacterVector>(current_ind_terms_cat(1));
-            CharacterVector r_indc_full = as<CharacterVector>(current_ind_terms_cat(2));
-            
-            //Rcout << "invade3_fb_core e5        ";
-            NumericVector f2_inda = {f_inda_full(inda_num_terms_counter(i, m))}; // i
-            NumericVector f1_inda = {f_inda_full(inda_num_terms_previous(i, m))};
-            NumericVector f2_indb = {f_indb_full(indb_num_terms_counter(i, m))};
-            NumericVector f1_indb = {f_indb_full(indb_num_terms_previous(i, m))};
-            NumericVector f2_indc = {f_indc_full(indc_num_terms_counter(i, m))};
-            NumericVector f1_indc = {f_indc_full(indc_num_terms_previous(i, m))};
-            CharacterVector r2_inda = as<CharacterVector>(r_inda_full(inda_cat_terms_counter(i, m)));
-            CharacterVector r1_inda = 
-              as<CharacterVector>(r_inda_full(inda_cat_terms_previous(i, m)));
-            CharacterVector r2_indb = as<CharacterVector>
-              (r_indb_full(indb_cat_terms_counter(i, m)));
-            CharacterVector r1_indb = as<CharacterVector>
-              (r_indb_full(indb_cat_terms_previous(i, m)));
-            CharacterVector r2_indc = as<CharacterVector>
-              (r_indc_full(indc_cat_terms_counter(i, m)));
-            CharacterVector r1_indc = 
-              as<CharacterVector>(r_indc_full(indc_cat_terms_previous(i, m)));
-            
-            // dev_terms and vrm trait axis processing
-            //Rcout << "invade3_fb_core e6        ";
-            NumericVector dv_terms (14);
-            if (dev_terms_times_int > 0) {
-              NumericMatrix used_dv_df = as<NumericMatrix>(dev_terms_list(current_variant_index));
-              if (dev_num_counter(i, m) >= dev_terms_times_int) dev_num_counter(i, m) = 0;
-              dv_terms = used_dv_df(_, dev_num_counter(i, m));
-              
-              arma::uvec var_corresponding_elems = find(variant_nta == (i + 1));
-              int vce_found = static_cast<int>(var_corresponding_elems.n_elem);
-              
-              //Rcout << "invade3_fb_core e11        ";
-              if (vce_found > 0) {
-                //Rcout << "invade3_fb_core e12        ";
-                arma::vec surv_dev_nta_sub = surv_dev_nta.elem(var_corresponding_elems);
-                arma::vec obs_dev_nta_sub = obs_dev_nta.elem(var_corresponding_elems);
-                arma::vec size_dev_nta_sub = size_dev_nta.elem(var_corresponding_elems);
-                arma::vec sizeb_dev_nta_sub = sizeb_dev_nta.elem(var_corresponding_elems);
-                arma::vec sizec_dev_nta_sub = sizec_dev_nta.elem(var_corresponding_elems);
-                arma::vec repst_dev_nta_sub = repst_dev_nta.elem(var_corresponding_elems);
-                arma::vec fec_dev_nta_sub = fec_dev_nta.elem(var_corresponding_elems);
-                arma::vec jsurv_dev_nta_sub = jsurv_dev_nta.elem(var_corresponding_elems);
-                arma::vec jobs_dev_nta_sub = jobs_dev_nta.elem(var_corresponding_elems);
-                arma::vec jsize_dev_nta_sub = jsize_dev_nta.elem(var_corresponding_elems);
-                arma::vec jsizeb_dev_nta_sub = jsizeb_dev_nta.elem(var_corresponding_elems);
-                arma::vec jsizec_dev_nta_sub = jsizec_dev_nta.elem(var_corresponding_elems);
-                arma::vec jrepst_dev_nta_sub = jrepst_dev_nta.elem(var_corresponding_elems);
-                arma::vec jmatst_dev_nta_sub = jmatst_dev_nta.elem(var_corresponding_elems);
-                
-                //Rcout << "invade3_fb_core e13        ";
-                for (int vce_track = 0; vce_track < vce_found; vce_track++) {
-                  if(!NumericVector::is_na(surv_dev_nta_sub(vce_track))) dv_terms(0) =
-                      dv_terms(0) + surv_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(obs_dev_nta_sub(vce_track))) dv_terms(1) =
-                      dv_terms(1) + obs_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(size_dev_nta_sub(vce_track))) dv_terms(2) =
-                      dv_terms(2) + size_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(sizeb_dev_nta_sub(vce_track))) dv_terms(3) =
-                      dv_terms(3) + sizeb_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(sizec_dev_nta_sub(vce_track))) dv_terms(4) =
-                      dv_terms(4) + sizec_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(repst_dev_nta_sub(vce_track))) dv_terms(5) =
-                      dv_terms(5) + repst_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(fec_dev_nta_sub(vce_track))) dv_terms(6) =
-                      dv_terms(6) + fec_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jsurv_dev_nta_sub(vce_track))) dv_terms(7) =
-                      dv_terms(7) + jsurv_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jobs_dev_nta_sub(vce_track))) dv_terms(8) =
-                      dv_terms(8) + jobs_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jsize_dev_nta_sub(vce_track))) dv_terms(9) =
-                      dv_terms(9) + jsize_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jsizeb_dev_nta_sub(vce_track))) dv_terms(10) =
-                      dv_terms(10) + jsizeb_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jsizec_dev_nta_sub(vce_track))) dv_terms(11) =
-                      dv_terms(11) + jsizec_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jrepst_dev_nta_sub(vce_track))) dv_terms(12) =
-                      dv_terms(12) + jrepst_dev_nta_sub(vce_track);
-                  if(!NumericVector::is_na(jmatst_dev_nta_sub(vce_track))) dv_terms(13) =
-                      dv_terms(13) + jmatst_dev_nta_sub(vce_track);
-                }
-              }
-            dev_num_counter(i, m) = dev_num_counter(i, m) + 1;
-            }
-            
-            NumericVector stdbv = as<NumericVector>(stageexpansion_ta_devterms_by_variant(current_variant_index));
-            
-            for (int z = 0; z < 14; z++) {
-              dv_terms(z) = dv_terms(z) + stdbv(z);
-            }
-            //Rcout << "invade3_fb_core e14        ";
-            
-            if (err_check) {
-              mdtl(i) = mdtl_1;
-            }
-            bool dvr_bool {false};
-            
-            LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            IntegerVector dvr_style (14);
-            IntegerVector dvr_time_delay (14);
-            NumericVector dvr_alpha (14);
-            NumericVector dvr_beta (14);
-            NumericVector dens_n (14);
-            
-            //Rcout << "invade3_fb_core f        ";
-            
-            if (dens_vr_yn_vec(0) > 0) {
-              dvr_bool = true;
-              
-              DataFrame current_dvr = density_vr_list;
-              LogicalVector true_dvr_yn = as<LogicalVector>(current_dvr(1));
-              IntegerVector true_dvr_style = as<IntegerVector>(current_dvr(2));
-              IntegerVector true_dvr_time_delay = as<IntegerVector>(current_dvr(3));
-              NumericVector true_dvr_alpha = as<NumericVector>(current_dvr(4));
-              NumericVector true_dvr_beta = as<NumericVector>(current_dvr(5));
-              
-              dvr_yn = true_dvr_yn;
-              dvr_style = true_dvr_style;
-              dvr_time_delay = true_dvr_time_delay;
-              dvr_alpha = true_dvr_alpha;
-              dvr_beta = true_dvr_beta;
-              
-              int used_delay = max(true_dvr_time_delay);
-                
-              if (j >= (used_delay - 1)) {
-                if (!stages_not_equal) {
-                  arma::mat di_mat = N_mpm.slice(i);
-                  arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
-                  double delay_N_sum = arma::sum(delay_issue);
-                  
-                  for (int xc = 0; xc < 14; xc++) {
-                    dens_n(xc) = delay_N_sum;
-                  }
-                }
-              }
-            }
-            
-            double maxsize {0.0};
-            double maxsizeb {0.0};
-            double maxsizec {0.0};
-            
-            if (format_int < 5) {
-              DataFrame current_allstages = allstages_all; // (i)
-              
-              NumericVector size3 = as<NumericVector>(current_allstages["size3"]);
-              NumericVector size2n = as<NumericVector>(current_allstages["size2n"]);
-              NumericVector size2o = as<NumericVector>(current_allstages["size2o"]);
-              NumericVector sizeb3 = as<NumericVector>(current_allstages["sizeb3"]);
-              NumericVector sizeb2n = as<NumericVector>(current_allstages["sizeb2n"]);
-              NumericVector sizeb2o = as<NumericVector>(current_allstages["sizeb2o"]);
-              NumericVector sizec3 = as<NumericVector>(current_allstages["sizec3"]);
-              NumericVector sizec2n = as<NumericVector>(current_allstages["sizec2n"]);
-              NumericVector sizec2o = as<NumericVector>(current_allstages["sizec2o"]);
-              
-              NumericVector maxveca = {max(size3), max(size2n), max(size2o)};
-              NumericVector maxvecb = {max(sizeb3), max(sizeb2n), max(sizeb2o)};
-              NumericVector maxvecc = {max(sizec3), max(sizec2n), max(sizec2o)};
-              
-              maxsize = max(maxveca);
-              maxsizeb = max(maxvecb);
-              maxsizec = max(maxvecc);
-            }
-            
-            //Rcout << "invade3_fb_core g        ";
-            
-            double dens_sp {1.0};
-            
-            if (sp_density_num_vec(0) > 0) {
-              if (sp_density_counter(i, m) >= sp_density_num_vec(0)) sp_density_counter(i, m) = 0;
-              
-              NumericVector current_sp_density = as<NumericVector>(sp_density_list(0));
-              dens_sp = current_sp_density(sp_density_counter(i, m));
-              
-              sp_density_counter(i, m) = sp_density_counter(i, m) + 1;
-            }
-            
-            List current_mpm;
-            if (format_int < 5) {
-              //Rcout << "invade3_fb_core g1        ";
-              current_mpm = AdaptMats::mazurekd(current_mpm_allstages,
-                current_stageframe, format_int, surv_proxy, obs_proxy,
-                size_proxy, sizeb_proxy, sizec_proxy, repst_proxy, fec_proxy,
-                jsurv_proxy, jobs_proxy, jsize_proxy, jsizeb_proxy,
-                jsizec_proxy, jrepst_proxy, jmatst_proxy, f2_inda, f1_inda,
-                f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
-                r1_indb, r2_indc, r1_indc, dv_terms, dvr_bool, dvr_yn,
-                dvr_style, dvr_alpha, dvr_beta, dens_n, dens_sp, fecmod_vec(0),
-                maxsize, maxsizeb, maxsizec, firstage_int, finalage_int, true,
-                yearnumber, patchnumber, exp_tol, theta_tol, true, err_check,
-                sparse_bool, A_only);
-              
-              if (err_check_extreme) {
-                NumericMatrix mpm_out = as<NumericMatrix>(current_mpm["out"]);
-                errcheck_mpmout_reps_time_vmt_var(m) = mpm_out; 
-              }
-                
-              //Rcout << "invade3_fb_core g2        ";
-            } else {
-              IntegerVector all_ages = seq(firstage_int, finalage_int);
-              //DataFrame current_supplement;
-              if (!(current_supplement.length() > 1)) {
-                //Rcout << "invade3_fb_core g3        ";
-                current_mpm = AdaptMats::mdabrowskiego(all_ages,
-                  current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
-                  f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
-                  r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
-                  fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
-                  dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
-                  exp_tol, theta_tol, sparse_bool);
-                //Rcout << "invade3_fb_core g4        ";
-                
-              } else {
-                //current_supplement = as<DataFrame>(supplement_list(0));
-                
-                //Rcout << "invade3_fb_core g5        ";
-                current_mpm = AdaptMats::mdabrowskiego(all_ages,
-                  current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
-                  f2_indb, f1_indb, f2_indc, f1_indc, r2_inda, r1_inda, r2_indb,
-                  r1_indb, r2_indc, r1_indc, dv_terms(0), dv_terms(6), dens_sp,
-                  fecmod_vec(0), finalage_int, true, yearnumber, patchnumber,
-                  dvr_bool, dvr_yn, dvr_style, dvr_alpha, dvr_beta, dens_n,
-                  exp_tol, theta_tol, sparse_bool, current_supplement);
-                //Rcout << "invade3_fb_core g6        ";
-              }
-            }
-            //Rcout << "invade3_fb_core h        ";
-            
-            if (!dens_yn_bool) {
-              
-              if (A_only) {
-                if (!sparse_bool) {
-                  arma::mat current_A = as<arma::mat>(current_mpm["A"]);
-                  Amat_alter(current_A, sge_current); 
-                  if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
-                  
-                  running_popvec_vrm = current_A * running_popvec_vrm; 
-                } else {
-                  arma::sp_mat current_A = as<arma::sp_mat>(current_mpm["A"]);
-                  AdaptUtils::sp_Amat_alter(current_A, sge_current);
-                  if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; 
-                  
-                  running_popvec_vrm = current_A * running_popvec_vrm;
-                }
-              } else {
-                if (!sparse_bool) {
-                  arma::mat current_A = as<arma::mat>(current_mpm["A"]);
-                  arma::mat current_U_unaltered = as<arma::mat>(current_mpm["U"]);
-                  arma::mat current_F_unaltered = as<arma::mat>(current_mpm["F"]);
-                  AdaptUtils::UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
-                  if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
-                  
-                  running_popvec_vrm = current_A * running_popvec_vrm;
-                } else {
-                  arma::sp_mat current_A = as<arma::sp_mat>(current_mpm("A"));
-                  arma::sp_mat current_U_unaltered = as<arma::sp_mat>(current_mpm["U"]);
-                  arma::sp_mat current_F_unaltered = as<arma::sp_mat>(current_mpm["F"]);
-                  AdaptUtils::sp_UFmat_alter(current_A, current_U_unaltered, current_F_unaltered, sge_current);
-                  if (err_check_extreme) errcheck_mpm_reps_time_vmt_var(m) = current_A; // Could remove later
-                  
-                  running_popvec_vrm = current_A * running_popvec_vrm;
-                }
-              }
-            } else {
-              ///// dens_bool = true
-              DataFrame used_density_input = density_df;
-              DataFrame used_density_index_input = dens_index_df;
-              
-              IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
-              int used_delay = max(ud_delay_vec);
-              
-              if (j >= (used_delay - 1)) {
-                if (!stages_not_equal) {
-                  arma::mat di_mat = N_mpm.slice(i);
-                  arma::vec delay_issue = di_mat.col(j + 1 - used_delay);
-                  double delay_N_sum = arma::sum(delay_issue);
-                  
-                  arma::vec new_popvec;
-                  arma::mat new_projmat;
-                  arma::sp_mat new_projsp;
-                  
-                  AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
-                    running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
-                    0, integeronly, substoch, used_density_input,
-                    used_density_index_input, false, sparse_bool, sparse_bool,
-                    false, err_check);
-                  
-                  running_popvec_vrm = new_popvec;
-                  if (err_check_extreme) { // Could remove later
-                    if (!sparse_bool) {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
-                    } else {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
-                    }
-                  } // Could remove later
-                } else {
-                  double delay_N_sum {0.0};
-                  
-                  if (j > 0) {
-                    for (int l = 0; l < var_per_run; l++) {
-                      int current_variant_index_agg = var_run_mat(i, l);
-                      List current_pop_list = as<List>(comm_out_pre(i));
-                      List pop_rep_list = as<List>(current_pop_list(l));
-                      arma::mat delay_pop = as<arma::mat>(current_pop_list(current_rep));
-                      
-                      arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
-                      arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(current_variant_index_agg));
-                      arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
-                      double delay_pop_N = arma::accu(adjusted_delay_pop_vec);
-                      
-                      delay_N_sum += delay_pop_N;
-                    }
-                  }
-                  
-                  arma::vec new_popvec;
-                  arma::mat new_projmat;
-                  arma::sp_mat new_projsp;
-                  
-                  AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
-                    running_popvec_vrm, sge_current, current_mpm, delay_N_sum,
-                    0, integeronly, substoch, used_density_input,
-                    used_density_index_input, false, sparse_bool, sparse_bool,
-                    false, err_check);
-                  
-                  running_popvec_vrm = new_popvec;
-                  if (err_check_extreme) {
-                    if (!sparse_bool) {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
-                    } else {
-                      errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
-                    }
-                  }
-                }
-              } else {
-                arma::vec new_popvec;
-                arma::mat new_projmat;
-                arma::sp_mat new_projsp;
-                
-                AdaptUtils::proj3dens_inv(new_popvec, new_projmat, new_projsp,
-                  running_popvec_vrm, sge_current, current_mpm, 0.0, 0,
-                  integeronly, substoch, used_density_input,
-                  used_density_index_input, false, sparse_bool, sparse_bool,
-                  false, err_check);
-                
-                running_popvec_vrm = new_popvec;
-                if (err_check_extreme) {
-                  if (!sparse_bool) {
-                    errcheck_mpm_reps_time_vmt_var(m) = new_projmat;
-                  } else {
-                    errcheck_mpm_reps_time_vmt_var(m) = new_projsp;
-                  }
-                }
-              }
-            }
-            
-            //Rcout << "invade3_fb_core i        ";
-            
-            if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
-            double N_current = arma::sum(running_popvec_vrm);
-            N_mpm(m, (j + 1), i) = N_current;
-            
-            inda_num_terms_previous(i, m) = static_cast<int>(inda_num_terms_counter(i, m));
-            indb_num_terms_previous(i, m) = static_cast<int>(indb_num_terms_counter(i, m));
-            indc_num_terms_previous(i, m) = static_cast<int>(indc_num_terms_counter(i, m));
-            inda_cat_terms_previous(i, m) = static_cast<int>(inda_cat_terms_counter(i, m));
-            indb_cat_terms_previous(i, m) = static_cast<int>(indb_cat_terms_counter(i, m));
-            indc_cat_terms_previous(i, m) = static_cast<int>(indc_cat_terms_counter(i, m));
-            
-            inda_num_terms_counter(i, m) = inda_num_terms_counter(i, m) + 1;
-            indb_num_terms_counter(i, m) = indb_num_terms_counter(i, m) + 1;
-            indc_num_terms_counter(i, m) = indc_num_terms_counter(i, m) + 1;
-            inda_cat_terms_counter(i, m) = inda_cat_terms_counter(i, m) + 1;
-            indb_cat_terms_counter(i, m) = indb_cat_terms_counter(i, m) + 1;
-            indc_cat_terms_counter(i, m) = indc_cat_terms_counter(i, m) + 1;
-            
-            running_popvecs(m) = running_popvec_vrm;
-            pops_out.col(j + 1) = running_popvec_vrm;
-            
-          } // if (j > (entry_time_vec(i) - 1))
-          
-          pop_reps(current_rep) = pops_out;
-          // comm_out_pre(i) = reps_out;
-        } // vrm loop
-        if (err_check_extreme) {
-          errcheck_mpmout_reps_time_vmt(i) = errcheck_mpmout_reps_time_vmt_var;
-          errcheck_mpm_reps_time_vmt(i) = errcheck_mpm_reps_time_vmt_var;
-        }
-      }
-      
-      if (err_check_extreme) {
-        errcheck_mpmout_reps_time(j) = errcheck_mpmout_reps_time_vmt;
-        errcheck_mpm_reps_time(j) = errcheck_mpm_reps_time_vmt;
-      }
-      
-      year_counter++;
-    } // j loop
-    if (err_check_extreme) {
-      errcheck_mpmout_reps(current_rep) = errcheck_mpmout_reps_time;
-      errcheck_mpm_reps(current_rep) = errcheck_mpm_reps_time;
+    if (optima) {
+      invfb_optim(surv_dev_nta_optim, obs_dev_nta_optim, size_dev_nta_optim,
+        sizeb_dev_nta_optim, sizec_dev_nta_optim, repst_dev_nta_optim,
+        fec_dev_nta_optim, jsurv_dev_nta_optim, jobs_dev_nta_optim,
+        jsize_dev_nta_optim, jsizeb_dev_nta_optim, jsizec_dev_nta_optim,
+        jrepst_dev_nta_optim, jmatst_dev_nta_optim, variant_nta_optim,
+        surv_dev_nta_optim_995, obs_dev_nta_optim_995, size_dev_nta_optim_995,
+        sizeb_dev_nta_optim_995, sizec_dev_nta_optim_995, repst_dev_nta_optim_995,
+        fec_dev_nta_optim_995, jsurv_dev_nta_optim_995, jobs_dev_nta_optim_995,
+        jsize_dev_nta_optim_995, jsizeb_dev_nta_optim_995, jsizec_dev_nta_optim_995,
+        jrepst_dev_nta_optim_995, jmatst_dev_nta_optim_995, variant_nta_optim_995,
+        N_out_pre_optim, comm_out_pre_optim, new_stageexpansion_list_optim,
+        errcheck_mpm_reps_optima, errcheck_mpmout_reps_optima, mdtl_optim, used_times, allmodels_all,
+        vrm_list, allstages_all, dev_terms_list, ind_terms_num_list, ind_terms_cat_list,
+        stageexpansion_ta_devterms_by_variant_optima, sp_density_list, start_list,
+        equivalence_list, density_vr_list, current_stageframe, current_supplement,
+        density_df, dens_index_df, entry_time_vec, sp_density_num_vec,
+        inda_terms_num_vec, indb_terms_num_vec, indc_terms_num_vec, inda_terms_cat_vec,
+        indb_terms_cat_vec, indc_terms_cat_vec, dens_vr_yn_vec, sp_density_counter_optim,
+        inda_num_terms_previous_optim, indb_num_terms_previous_optim, indc_num_terms_previous_optim,
+        inda_cat_terms_previous_optim, indb_cat_terms_previous_optim, indc_cat_terms_previous_optim,
+        inda_num_terms_counter_optim, indb_num_terms_counter_optim, indc_num_terms_counter_optim,
+        inda_cat_terms_counter_optim, indb_cat_terms_counter_optim, indc_cat_terms_counter_optim,
+        dev_num_counter_optim, fecmod_vec, year_vec, patch_vec, var_per_run, times,
+        var_mat_length, format_int, current_rep, firstage_int, finalage_int,
+        dev_terms_times_int, substoch, opt_res_true, year_counter, exp_tol, theta_tol,
+        err_check, err_check_extreme, sparse_bool, A_only, stages_not_equal,
+        integeronly, dens_yn_bool);
     }
-    N_out_pre(current_rep) = N_mpm;
+    //Rcout << "invade3_fb_core d current_rep: " << current_rep << "      ";
     
   } // current_rep loop
   comm_out = comm_out_pre;
+  comm_out_optim = comm_out_pre_optim;
+  
   N_out = N_out_pre;
+  N_out_optim = N_out_pre_optim;
+  
   if (err_check) {
     errcheck_mpmouts = errcheck_mpmout_reps;
+    errcheck_mpmouts_optima = errcheck_mpmout_reps_optima;
     errcheck_mpms = errcheck_mpm_reps;
+    errcheck_mpms_optima = errcheck_mpm_reps_optima;
     modified_dev_terms_list = mdtl;
   }
   
@@ -11050,6 +14618,7 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
         AdaptUtils::fastLm_sl(Lyap_regr, running_fitness, xmat);
         
         double Lyapunov_estimate = Lyap_regr(1);
+        if (abs(Lyapunov_estimate) <= threshold) Lyapunov_estimate = 0.;
         
         Lyap_var(Lyap_counter) = Lyap_var_orig(j);
         Lyap_rep(Lyap_counter) = i+1;
@@ -11233,17 +14802,29 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' of each run to use to estimate the fitness of the respective genotype.
 //' Defaults to \code{100}, but if \code{times < 100}, then is set equal to
 //' \code{times}.
+//' @param opt_res If evaluating optima, then this integer gives the number
+//' of variants to create between each minimum and maximum for each trait found
+//' to be variable in the input trait axis. Defaults to \code{100}.
 //' @param exp_tol A numeric value used to indicate a maximum value to set
 //' exponents to in the core kernel to prevent numerical overflow. Defaults to
 //' \code{700}.
 //' @param theta_tol A numeric value used to indicate a maximum value to theta as
 //' used in the negative binomial probability density kernel. Defaults to
 //' \code{100000000}, but can be reset to other values during error checking.
+//' @param threshold The lower limit for the absolute value of fitness, below
+//' which fitness is rounded to 0. Defaults to 0.00000001.
 //' @param A_only A logical value indicating whether to alter survival and
 //' fecundity matrix elements separately prior to creating the overall \code{A}
 //' matrix, or whether to alter elements directly on \code{A} matrices. Defaults
 //' to \code{TRUE}, and should be kept to that setting unless some matrix
 //' elements to be altered are sums of survival and fecundity transitions.
+//' @param fitness_table A logical value dictating whether to include a data
+//' frame giving Lyapunov coefficients for all combinations of variants tested.
+//' Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+//' to \code{TRUE}.
+//' @param optima A logical value indicating whether to assess the values of ESS
+//' optima for traits that vary among variants in the given \code{adaptAxis}
+//' table. Defaults to \code{TRUE}.
 //' 
 //' @return A list of class \code{adaptInv}, with the following elements:
 //' \item{fitness}{A data frame giving the Lyapunov coefficients estimated for
@@ -11281,7 +14862,6 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' \code{density_vr_list}, which gives the \code{density_vr} inputs utilized.}
 //' 
 //' @section Notes:
-//' 
 //' The argument \code{var_per_run} establishes the style of simulation to run.
 //' Entering \code{var_per_run = 1} runs each variant singly. Entering
 //' \code{var_per_run = 2} runs pairwise invason analysis, trying each pair
@@ -11289,6 +14869,19 @@ void invade3_fb_core (DataFrame& Lyapunov, const arma::mat& var_run_mat,
 //' analysis with different permutations of groups. For example,
 //' \code{var_per_run = 3} runs each permutation of groups of three. The integer
 //' set must be positive, and must not be larger than the number of variants.
+//' 
+//' When \code{optima = TRUE}, ESS values for traits that vary in the input
+//' \code{adaptAxis} data frame are evaluated. The methodology is that
+//' originally developed in Benton and Grant (1999, Evolution 53:677-688), as
+//' communicated in Roff (2010, Modeling evolution: an introduction to numerical
+//' methods, Oxford University Press). In essence, function \code{invade3}
+//' determines which traits vary among all traits noted in the input trait axis.
+//' A new trait axis is then created with \code{opt_res} levels of the varying
+//' traits between the minioma and maxima noted. A separate trait axis is then
+//' created with values of variable traits multiplied by 0.995. These two
+//' trait axis frames are then used to conduct pairwise invasibility elasticity
+//' analyses, particularly noting where fitness values and trends invert. Note
+//' that this optimization approach only works with up to 2 variable traits.
 //' 
 //' @examples
 //' library(lefko3)
@@ -11379,8 +14972,10 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   int var_per_run = 2,
   
   bool stochastic = false, bool integeronly = false, int substoch = 0,
-  int nreps = 1, int times = 10000, int fitness_times = 100,
-  double exp_tol = 700.0, double theta_tol = 100000000.0, bool A_only = true) {
+  int nreps = 1, int times = 10000, int fitness_times = 100, int opt_res = 100,
+  double exp_tol = 700.0, double theta_tol = 100000000.0,
+  double threshold = 0.00000001, bool A_only = true, bool fitness_table = true,
+  bool optima = true) {
   
   int mpm_count {0};
   int vrm_count {0};
@@ -11430,22 +15025,36 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   IntegerVector fecage_min_vec;
   IntegerVector fecage_max_vec;
   
-  // Main lists
-  List mpm_list;
-  List A_list;
-  List vrm_list;
+  // Main data frames
   DataFrame final_stageframe;
   DataFrame stageframe_df; // List ending in _fb are only used in function-based cases
   DataFrame supplement_df;
   DataFrame supplement_list_fb;
+  DataFrame density_df;
+  DataFrame dens_index_df;  // Holds element index vectors for density_frames in density_df
+  DataFrame density_vr_list;
+  DataFrame trait_axis; // DataFrame used to house trait axis
+  DataFrame new_trait_axis; // Data frame housing re-assessed trait_axis
+  DataFrame optim_trait_axis; // Data frame housing re-assessed trait axis for optimization
+  DataFrame optim_trait_axis_995; // Data frame housing re-assessed trait axis for optimization
+  DataFrame Lyapunov; // DataFrame showing fitness of all genotypes under all circumstances
+  DataFrame labels;  // Data frame to provide order of MPMs
+  
+  // Main lists
+  List comm_out; // List of mats of pop vecs (top lvl: mpm, lower lvl: reps, mats: stages x times)
+  List comm_out_optim; // List of optim mats of pop vecs (top lvl: mpm, lower lvl: reps, mats: stages x times)
+  List N_out;  // List of pop size mats (top level: reps, mats: mpm by times)
+  List N_out_optim;  // List of optim pop size mats (top level: reps, mats: mpm by times)
+  List mpm_list;
+  List A_list;
+  List vrm_list;
+  List labels_list;  // List to hold data for data frame labels
   List repmatrix_list;
   List equivalence_list;
   List hstages_list;
   List agestages_list;
   List start_list;
   List tweights_list;
-  DataFrame density_df;
-  DataFrame dens_index_df;  // Holds element index vectors for density_frames in density_df
   List sp_density_list;
   List ind_terms_num_list;
   List ind_terms_cat_list;
@@ -11453,17 +15062,19 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   List modified_dev_terms_list; // Only used in fb processing
   List allstages_all; // Used in fbMPM processing
   List allmodels_all; // Used in fbMPM processirg
-  List stageexpansion_list; // Get rid of this eventually
-  List stageexpansion_list_vrm; // Get rid of this eventually, VRM only
+  List stageexpansion_list; // Classic stage expansion data frame for each variant
+  List stageexpansion_list_optim; // Classic stage expansion data frame for each variant in ESS evaluation
   List errcheck_mpm_list;
+  List errcheck_mpm_list_optima;
   List errcheck_mpmout_list;
+  List errcheck_mpmout_list_optima;
   
-  DataFrame density_vr_list;
-  
-  IntegerVector matrowcounts; // # rows in each MPM
-  NumericVector equivalence_vec; // equivalence vector if !stages_not_equal
   CharacterVector patch_vec; // choice of patch in MPM
   CharacterVector year_vec; // choice of years in MPM
+  NumericVector equivalence_vec; // equivalence vector if !stages_not_equal
+  NumericVector fecmod_vec; // fecundity multipliers for multiple offspring stages
+  
+  IntegerVector matrowcounts; // # rows in each MPM
   IntegerVector tweights_type_vec; // tweights input as vector (1) or matrix (2) or null (0)
   IntegerVector total_years_vec; // total # years in each MPM
   IntegerVector entry_time_vec; // times of entry for each MPM
@@ -11475,19 +15086,10 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   IntegerVector inda_terms_cat_vec; // # of indcova (cat) times per MPM
   IntegerVector indb_terms_cat_vec; // # of indcovb (cat) times per MPM
   IntegerVector indc_terms_cat_vec; // # of indcovc (cat) times per MPM
-  NumericVector fecmod_vec; // fecundity multipliers for multiple offspring stages
   
   IntegerVector axis_variants_unique; // Vector giving the variant numbers
   arma::mat var_run_mat; // Holds indices for variants to run per run in invasion analysis
   List zero_stage_vec_list; // Holds zero stage vectors, if entry times are staggered
-  
-  DataFrame trait_axis; // DataFrame used to house trait axis
-  DataFrame new_trait_axis; // Data frame housing re-assessed trait_axis
-  DataFrame Lyapunov; // DataFrame showing fitness of all genotypes under all circumstances
-  List comm_out; // List of mats of pop vecs (top lvl: mpm, lower lvl: reps, mats: stages x times)
-  List N_out;  // List of pop size mats (top level: reps, mats: mpm by times)
-  DataFrame labels;  // Data frame to provide order of MPMs
-  List labels_list;  // List to hold data for data frame labels
   
   //Rcout << "invade3 a ";
   
@@ -11629,26 +15231,28 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   // Projection runs
   if (preexisting) {
     //Rcout << "invade3 e ";
-    invade3_pre_core (Lyapunov, var_run_mat, N_out, comm_out, zero_stage_vec_list,
-      trait_axis, new_trait_axis, stageexpansion_list, errcheck_mpm_list, mpm_list,
-      tweights_list, start_list, vrm_list, stageframe_df, allmodels_all,
-      allstages_all, supplement_df, year_vec, sp_density_list, density_df,
-      dens_index_df, equivalence_list, sp_density_num_vec, entry_time_vec,
-      inda_terms_num_vec, indb_terms_num_vec, indc_terms_num_vec,
-      inda_terms_cat_vec, indb_terms_cat_vec, indc_terms_cat_vec, dens_vr_yn_vec,
-      tweights_type_vec, fecmod_vec, patch_vec, variant_count, var_per_run,
-      nreps, times, fitness_times, stagecounts, substoch, format_int,
-      preexisting_mpm_size, firstage_int, finalage_int, exp_tol, theta_tol,
-      integeronly, stages_not_equal, stochastic, dens_yn_bool, entry_time_vec_use,
+    invade3_pre_core (Lyapunov, var_run_mat, N_out, comm_out, N_out_optim, comm_out_optim,
+      zero_stage_vec_list, trait_axis, new_trait_axis, optim_trait_axis,
+      optim_trait_axis_995, stageexpansion_list, stageexpansion_list_optim,
+      errcheck_mpm_list, errcheck_mpm_list_optima, mpm_list, tweights_list,
+      start_list, vrm_list, stageframe_df, allmodels_all, allstages_all,
+      supplement_df, year_vec, sp_density_list, density_df, dens_index_df,
+      equivalence_list, sp_density_num_vec, entry_time_vec, inda_terms_num_vec,
+      indb_terms_num_vec, indc_terms_num_vec, inda_terms_cat_vec,
+      indb_terms_cat_vec, indc_terms_cat_vec, dens_vr_yn_vec, tweights_type_vec,
+      fecmod_vec, patch_vec, variant_count, var_per_run, nreps, times,
+      fitness_times, stagecounts, substoch, format_int, preexisting_mpm_size,
+      firstage_int, finalage_int, opt_res, exp_tol, theta_tol, integeronly,
+      stages_not_equal, stochastic, dens_yn_bool, entry_time_vec_use,
       sparse_bool, historical, pure_leslie, A_only, err_check_bool,
-      err_check_extreme);
-    
+      err_check_extreme, threshold, fitness_table, optima);
   } else if (funcbased) {
     //Rcout << "invade3 f ";
-    
-    invade3_fb_core (Lyapunov, var_run_mat, N_out, comm_out, zero_stage_vec_list,
-      trait_axis, new_trait_axis, stageexpansion_list, modified_dev_terms_list,
-      errcheck_mpm_list, errcheck_mpmout_list, tweights_list, start_list,
+    invade3_fb_core (Lyapunov, var_run_mat, N_out, comm_out, N_out_optim, comm_out_optim, zero_stage_vec_list,
+      trait_axis, new_trait_axis, optim_trait_axis, optim_trait_axis_995,
+      stageexpansion_list, stageexpansion_list_optim, modified_dev_terms_list,
+      errcheck_mpm_list, errcheck_mpm_list_optima, errcheck_mpmout_list,
+      errcheck_mpmout_list_optima, tweights_list, start_list,
       vrm_list, final_stageframe, allmodels_all, allstages_all, supplement_df,
       year_vec, ind_terms_num_list, ind_terms_cat_list, dev_terms_list,
       density_vr_list, sp_density_list, density_df, dens_index_df,
@@ -11657,14 +15261,18 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       indb_terms_cat_vec, indc_terms_cat_vec, dens_vr_yn_vec, tweights_type_vec,
       fecmod_vec, patch_vec, variant_count, var_per_run, nreps, times,
       fitness_times, stagecounts, substoch, format_int, firstage_int,
-      finalage_int, dev_terms_times_int, exp_tol, theta_tol, integeronly,
+      finalage_int, dev_terms_times_int, opt_res, exp_tol, theta_tol, integeronly,
       stochastic, dens_yn_bool, stages_not_equal, sparse_bool, historical,
-      pure_leslie, A_only, err_check_bool, err_check_extreme);
+      pure_leslie, A_only, err_check_bool, err_check_extreme, threshold,
+      fitness_table, optima);
   } // funcbased processing
   
   //Rcout << "invade3 g ";
   
-  int out_dim = 7;
+  List optim_list = Rcpp::List::create(_["comm_elas_out"] = comm_out_optim,
+    _["N_elas_out"] = N_out_optim);
+  
+  int out_dim = 8;
   if (err_check_bool) out_dim++;
   List output (out_dim);
   
@@ -11675,10 +15283,24 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   output(4) = hstages_list;
   output(5) = agestages_list;
   output(6) = labels;
+  output(7) = optim_list;
   
   if (err_check_bool) {
     if (err_check_extreme) {
-      List output_errcheck (15);
+      List optim (5);
+      
+      optim(0) = optim_trait_axis;
+      optim(1) = optim_trait_axis_995;
+      optim(2) = stageexpansion_list_optim;
+      optim(3) = errcheck_mpm_list_optima;
+      optim(4) = errcheck_mpmout_list_optima;
+      
+      CharacterVector optim_errcheck_names = {"optim_trait_axis",
+        "optim_trait_axis_995", "stage_expansion_list_optim",
+        "errcheck_mpm_list_optima", "errcheck_mpmout_list_optima"};
+      optim.attr("names") = optim_errcheck_names;
+      
+      List output_errcheck (16);
       
       output_errcheck(0) = allstages_all;
       output_errcheck(1) = allmodels_all;
@@ -11695,18 +15317,19 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       output_errcheck(12) = var_run_mat;
       output_errcheck(13) = start_list;
       output_errcheck(14) = final_stageframe;
+      output_errcheck(15) = optim;
       
       CharacterVector output_errcheck_names = {"allstages_all", "allmodels_all",
         "equivalence_list", "density_df", "dens_index_df", "density_vr_list",
         "trait_axis_reassessed", "stageexpansion_list", "dev_terms_list",
         "modified_dev_terms_list", "modified_mpms", "fb_mpm_out_matrices",
-        "var_run_mat", "start_list", "final_stageframe"};
+        "var_run_mat", "start_list", "final_stageframe", "optim"};
       output_errcheck.attr("names") = output_errcheck_names;
       
-      output(7) = output_errcheck;
+      output(8) = output_errcheck;
       
       CharacterVector output_main_names = {"fitness", "variants_out", "N_out",
-        "stageframe", "hstages", "agestages", "labels", "err_check"};
+        "stageframe", "hstages", "agestages", "labels", "optim", "err_check"};
       output.attr("names") = output_main_names;
     } else {
       List output_errcheck (12);
@@ -11730,19 +15353,18 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
         "modified_dev_terms_list", "var_run_mat", "start_list"};
       output_errcheck.attr("names") = output_errcheck_names;
       
-      output(7) = output_errcheck;
+      output(8) = output_errcheck;
       
       CharacterVector output_main_names = {"fitness", "variants_out", "N_out",
-        "stageframe", "hstages", "agestages", "labels", "err_check"};
+        "stageframe", "hstages", "agestages", "labels", "optim", "err_check"};
       output.attr("names") = output_main_names;
     }
   } else {
     CharacterVector output_main_names = {"fitness", "variants_out", "N_out",
-      "stageframe", "hstages", "agestages", "labels"};
+      "stageframe", "hstages", "agestages", "labels", "optim"};
     output.attr("names") = output_main_names;
   }
   output.attr("class") = "adaptInv";
   
   return output;
 }
-
