@@ -11,7 +11,7 @@ vignette: >
 
 
 
-  <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset to illustrate pairwise invasibility analysis using package `adapt3`. We will conduct two such analyses, the first focused on testing variants created by altering matrix elements, and the second focused on testing variants created through alterations to vital rate models used in function-based MPM development.</p>
+  <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset to illustrate pairwise invasibility analysis using package `adapt3`. We will conduct two such analyses, the first focused on testing variants created by altering matrix elements, and the second focused on testing variants created through alterations to vital rate models used in function-based MPM development. Users will note that the former allows a very general application of pairwise invasibility analysis to all studies generating MPMs. However, the latter allows a potentially greater toolset for the evaluation of trait optima. Both approaches utilize functions from and structures created by the package `lefko3`, and we encourage users to become familiar with that package to use package `adapt3` properly.</p>
 
   <p style="text-indent: 20px">To reduce vignette size, we have prevented some statements from running if they produce long stretches of output. Examples include most `summary()` calls. In these cases, we include hashtagged versions of these calls, and we encourage the user to run these statements without hashtags.</p>
 
@@ -32,78 +32,64 @@ library(lefko3)
 library(adapt3)
 
 data(cypa_data)
+dim(cypa_data)
+#> [1] 1103   37
 summary(cypa_data)
-#>       plant_id       Inf2.94             Inf.94            Veg.94           Inf2.95              Inf.95           Veg.95      
-#>  K NA     :  28   Min.   :0.000000   Min.   :0.00000   Min.   :0.00000   Min.   :0.0000000   Min.   :0.0000   Min.   :0.0000  
-#>  A NA     :  18   1st Qu.:0.000000   1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.0000000   1st Qu.:0.0000   1st Qu.:0.0000  
-#>  T NA     :  11   Median :0.000000   Median :0.00000   Median :0.00000   Median :0.0000000   Median :0.0000   Median :0.0000  
-#>  Willow NA:  11   Mean   :0.001787   Mean   :0.06971   Mean   :0.02234   Mean   :0.0008937   Mean   :0.1698   Mean   :0.1528  
-#>  Aspen NA :  10   3rd Qu.:0.000000   3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.0000000   3rd Qu.:0.0000   3rd Qu.:0.0000  
-#>  X NA     :   7   Max.   :1.000000   Max.   :4.00000   Max.   :4.00000   Max.   :1.0000000   Max.   :4.0000   Max.   :7.0000  
-#>  (Other)  :1034                                                                                                               
-#>     Inf2.96             Inf.96           Veg.96          Inf2.97      Inf.97           Veg.97          Inf2.98        
-#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000  
-#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000  
-#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :0   Median :0.0000   Median :0.0000   Median :0.000000  
-#>  Mean   :0.001787   Mean   :0.2502   Mean   :0.2779   Mean   :0   Mean   :0.1314   Mean   :0.2967   Mean   :0.003575  
-#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.000000  
-#>  Max.   :1.000000   Max.   :6.0000   Max.   :6.0000   Max.   :0   Max.   :4.0000   Max.   :7.0000   Max.   :1.000000  
+#>       plant_id        Inf.94            Veg.94            Inf.95           Veg.95          Inf.96           Veg.96     
+#>  K NA     :  28   Min.   :0.00000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.000  
+#>  A NA     :  13   1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000  
+#>  T NA     :  10   Median :0.00000   Median :0.00000   Median :0.0000   Median :0.000   Median :0.0000   Median :0.000  
+#>  Willow NA:  10   Mean   :0.07253   Mean   :0.02267   Mean   :0.1732   Mean   :0.155   Mean   :0.2557   Mean   :0.282  
+#>  X NA     :   7   3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.000  
+#>  Aspen NA :   6   Max.   :4.00000   Max.   :4.00000   Max.   :4.0000   Max.   :7.000   Max.   :6.0000   Max.   :6.000  
+#>  (Other)  :1029                                                                                                        
+#>      Inf.97           Veg.97          Inf.98           Veg.98           Inf.99           Veg.99           Inf.00      
+#>  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.1333   Mean   :0.301   Mean   :0.2593   Mean   :0.2928   Mean   :0.3218   Mean   :0.2838   Mean   :0.2103  
+#>  3rd Qu.:0.0000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :7.000   Max.   :5.0000   Max.   :5.0000   Max.   :7.0000   Max.   :4.0000   Max.   :6.0000  
 #>                                                                                                                       
-#>      Inf.98          Veg.98          Inf2.99             Inf.99           Veg.99          Inf2.00             Inf.00      
-#>  Min.   :0.000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000  
-#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000  
-#>  Median :0.000   Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.000000   Median :0.0000  
-#>  Mean   :0.252   Mean   :0.2887   Mean   :0.005362   Mean   :0.3119   Mean   :0.2797   Mean   :0.003575   Mean   :0.2038  
-#>  3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000  
-#>  Max.   :5.000   Max.   :5.0000   Max.   :1.000000   Max.   :7.0000   Max.   :4.0000   Max.   :1.000000   Max.   :6.0000  
-#>                                                                                                                           
-#>      Veg.00          Inf2.01             Inf.01           Veg.01          Inf2.02              Inf.02           Veg.02      
-#>  Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.0000   Min.   :0.0000  
-#>  1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.0000   1st Qu.:0.0000  
-#>  Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.0000   Median :0.0000  
-#>  Mean   :0.3503   Mean   :0.003575   Mean   :0.2011   Mean   :0.3718   Mean   :0.0008937   Mean   :0.2225   Mean   :0.2895  
-#>  3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000000   3rd Qu.:0.0000   3rd Qu.:0.0000  
-#>  Max.   :6.0000   Max.   :1.000000   Max.   :5.0000   Max.   :5.0000   Max.   :1.0000000   Max.   :6.0000   Max.   :4.0000  
-#>                                                                                                                             
-#>     Inf2.03              Inf.03           Veg.03          Inf2.04              Inf.04            Veg.04          Inf2.05        
-#>  Min.   :0.0000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000000  
-#>  1st Qu.:0.0000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000000  
-#>  Median :0.0000000   Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.00000   Median :0.0000   Median :0.000000  
-#>  Mean   :0.0008937   Mean   :0.1921   Mean   :0.3646   Mean   :0.0008937   Mean   :0.09562   Mean   :0.2645   Mean   :0.002681  
-#>  3rd Qu.:0.0000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000000  
-#>  Max.   :1.0000000   Max.   :6.0000   Max.   :6.0000   Max.   :1.0000000   Max.   :4.00000   Max.   :4.0000   Max.   :1.000000  
-#>                                                                                                                                 
-#>      Inf.05           Veg.05          Inf2.06              Inf.06            Veg.06          Inf2.07      Inf.07       
-#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.00000   Min.   :0.0000   Min.   :0   Min.   :0.00000  
-#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0   1st Qu.:0.00000  
-#>  Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.00000   Median :0.0000   Median :0   Median :0.00000  
-#>  Mean   :0.1189   Mean   :0.3029   Mean   :0.0008937   Mean   :0.03485   Mean   :0.1984   Mean   :0   Mean   :0.03217  
-#>  3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0   3rd Qu.:0.00000  
-#>  Max.   :6.0000   Max.   :4.0000   Max.   :1.0000000   Max.   :3.00000   Max.   :4.0000   Max.   :0   Max.   :3.00000  
+#>      Veg.00           Inf.01           Veg.01           Inf.02           Veg.02           Inf.03           Veg.03      
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.3554   Mean   :0.2076   Mean   :0.3772   Mean   :0.2267   Mean   :0.2937   Mean   :0.1958   Mean   :0.3699  
+#>  3rd Qu.:0.5000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000  
+#>  Max.   :6.0000   Max.   :5.0000   Max.   :5.0000   Max.   :6.0000   Max.   :4.0000   Max.   :6.0000   Max.   :6.0000  
 #>                                                                                                                        
-#>      Veg.07          Inf2.08      Inf.08           Veg.08          Inf2.09              Inf.09            Veg.09      
-#>  Min.   :0.0000   Min.   :0   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000000   Min.   :0.00000   Min.   :0.0000  
-#>  1st Qu.:0.0000   1st Qu.:0   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000000   1st Qu.:0.00000   1st Qu.:0.0000  
-#>  Median :0.0000   Median :0   Median :0.0000   Median :0.0000   Median :0.0000000   Median :0.00000   Median :0.0000  
-#>  Mean   :0.1555   Mean   :0   Mean   :0.0563   Mean   :0.1224   Mean   :0.0008937   Mean   :0.08668   Mean   :0.1841  
-#>  3rd Qu.:0.0000   3rd Qu.:0   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000000   3rd Qu.:0.00000   3rd Qu.:0.0000  
-#>  Max.   :4.0000   Max.   :0   Max.   :3.0000   Max.   :4.0000   Max.   :1.0000000   Max.   :5.00000   Max.   :6.0000  
-#>                                                                                                                       
-#>     Inf2.10             Inf.10            Veg.10          Inf2.11             Inf.11          Veg.11      
-#>  Min.   :0.000000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000000   Min.   :0.000   Min.   :0.0000  
-#>  1st Qu.:0.000000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000   1st Qu.:0.0000  
-#>  Median :0.000000   Median :0.00000   Median :0.0000   Median :0.000000   Median :0.000   Median :0.0000  
-#>  Mean   :0.001787   Mean   :0.08311   Mean   :0.1644   Mean   :0.002681   Mean   :0.134   Mean   :0.1975  
-#>  3rd Qu.:0.000000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000   3rd Qu.:0.0000  
-#>  Max.   :1.000000   Max.   :4.00000   Max.   :4.0000   Max.   :2.000000   Max.   :4.000   Max.   :4.0000  
+#>      Inf.04            Veg.04           Inf.05           Veg.05           Inf.06            Veg.06           Inf.07       
+#>  Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000  
+#>  1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000  
+#>  Median :0.00000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000  
+#>  Mean   :0.09791   Mean   :0.2684   Mean   :0.1233   Mean   :0.3073   Mean   :0.03626   Mean   :0.2013   Mean   :0.03264  
+#>  3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000  
+#>  Max.   :4.00000   Max.   :4.0000   Max.   :6.0000   Max.   :4.0000   Max.   :3.00000   Max.   :4.0000   Max.   :3.00000  
+#>                                                                                                                           
+#>      Veg.07           Inf.08            Veg.08           Inf.09            Veg.09           Inf.10            Veg.10      
+#>  Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000   Median :0.0000  
+#>  Mean   :0.1578   Mean   :0.05712   Mean   :0.1242   Mean   :0.08885   Mean   :0.1868   Mean   :0.08613   Mean   :0.1668  
+#>  3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :3.00000   Max.   :4.0000   Max.   :5.00000   Max.   :6.0000   Max.   :4.00000   Max.   :4.0000  
+#>                                                                                                                           
+#>      Inf.11           Veg.11      
+#>  Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.0000  
+#>  Mean   :0.1342   Mean   :0.1886  
+#>  3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :4.0000  
 #> 
 ```
 
-  <p style="text-indent: 20px">This dataset includes information on 114 individuals arranged horizontally, by row. There are 26 variables, by column. The first two columns are variables giving identifying information about each individual, including the individual identity and the patch the individual is located in. This is followed by six sets of four columns, each named `Inf2XX`, `InfXX`, `VegXX`, and `PodXX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 3-6 refer to year 2004, columns 7-10 refer to year 2005, etc. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3`.</p>
+  <p style="text-indent: 20px">This dataset includes information on 1119 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `InfXX` and `VegXX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://bookdown.org/cdorm/lefko3gentle/">*lefko3: a gentle introduction*</a> for more).</p>
 
 ### Pairwise invasibility analysis focused on matrix element manipulation
 
-  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process is generally quite quick, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
+  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
   
   <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below.</p>
 
@@ -158,76 +144,68 @@ cypframe_raw
   <p style="text-indent: 20px">Next we will create our verticalized dataset, in which our horizontal dataset is restructured to have all data for each individual split into blocks of 3 consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame.</p>
 
 ``` r
-cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 2004,
-  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
-  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
-  repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
-  stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
+cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+  individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+  sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+  NRasRep = TRUE)
 summary_hfv(cypraw_v1)
 #> 
-#> This hfv dataset contains 6871 rows, 57 variables, 1 population, 
+#> This hfv dataset contains 6871 rows, 51 variables, 1 population, 
 #> 1 patch, 1025 individuals, and 17 time steps.
 #>      rowid           popid             patchid               individ         year2        firstseen       lastseen   
-#>  Min.   :   1.0   Length:6871        Length:6871        K NA     :  62   Min.   :2004   Min.   :2004   Min.   :2004  
-#>  1st Qu.: 291.0   Class :character   Class :character   A NA     :  27   1st Qu.:2009   1st Qu.:2005   1st Qu.:2014  
-#>  Median : 563.0   Mode  :character   Mode  :character   X NA     :  24   Median :2012   Median :2007   Median :2019  
-#>  Mean   : 557.5                                         T NA     :  23   Mean   :2012   Mean   :2007   Mean   :2017  
-#>  3rd Qu.: 820.0                                         Willow NA:  17   3rd Qu.:2015   3rd Qu.:2009   3rd Qu.:2021  
-#>  Max.   :1119.0                                         X 3      :  17   Max.   :2020   Max.   :2020   Max.   :2021  
+#>  Min.   :   1.0   Length:6871        Length:6871        K NA     :  62   Min.   :1994   Min.   :1994   Min.   :1994  
+#>  1st Qu.: 291.0   Class :character   Class :character   A NA     :  27   1st Qu.:1999   1st Qu.:1995   1st Qu.:2004  
+#>  Median : 557.0   Mode  :character   Mode  :character   X NA     :  24   Median :2002   Median :1997   Median :2009  
+#>  Mean   : 549.7                                         T NA     :  23   Mean   :2002   Mean   :1997   Mean   :2007  
+#>  3rd Qu.: 804.0                                         Willow NA:  17   3rd Qu.:2005   3rd Qu.:1999   3rd Qu.:2011  
+#>  Max.   :1103.0                                         X 3      :  17   Max.   :2010   Max.   :2010   Max.   :2011  
 #>                                                         (Other)  :6701                                               
-#>      obsage        obslifespan         sizea1             sizeb1           sizec1         size1added        repstra1     
-#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
-#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
-#>  Median : 5.000   Median :10.000   Median :0.000000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000  
-#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.003638   Mean   :0.3448   Mean   :0.5244   Mean   :0.8728   Mean   :0.3448  
-#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000  
-#>  Max.   :17.000   Max.   :17.000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
-#>                                                                                                                          
-#>     repstrb1         repstr1added        feca1          fec1added        obsstatus1       repstatus1      fecstatus1    
-#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000  
-#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000  
-#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.0000  
-#>  Mean   :0.003638   Mean   :0.3484   Mean   :0.3448   Mean   :0.3448   Mean   :0.5472   Mean   :0.247   Mean   :0.2463  
-#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.0000  
-#>  Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000   Max.   :1.0000  
-#>                                                                                                                         
-#>    matstatus1         alive1          stage1           stage1index        sizea2             sizeb2           sizec2      
-#>  Min.   :0.0000   Min.   :0.0000   Length:6871        Min.   :0.000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000  
-#>  1st Qu.:1.0000   1st Qu.:1.0000   Class :character   1st Qu.:4.000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000  
-#>  Median :1.0000   Median :1.0000   Mode  :character   Median :5.000   Median :0.000000   Median :0.0000   Median :0.0000  
-#>  Mean   :0.8395   Mean   :0.8395                      Mean   :4.145   Mean   :0.004803   Mean   :0.4091   Mean   :0.6656  
-#>  3rd Qu.:1.0000   3rd Qu.:1.0000                      3rd Qu.:5.000   3rd Qu.:0.000000   3rd Qu.:1.0000   3rd Qu.:1.0000  
-#>  Max.   :1.0000   Max.   :1.0000                      Max.   :8.000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000  
-#>                                                                                                                           
-#>    size2added       repstra2         repstrb2         repstr2added        feca2          fec2added        obsstatus2   
-#>  Min.   :0.000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000  
-#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000  
-#>  Median :1.000   Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.0000   Median :1.000  
-#>  Mean   :1.079   Mean   :0.4091   Mean   :0.004803   Mean   :0.4139   Mean   :0.4091   Mean   :0.4091   Mean   :0.697  
-#>  3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:0.000000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000  
-#>  Max.   :7.000   Max.   :7.0000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :1.000  
+#>      obsage        obslifespan         sizea1           sizeb1         size1added        repstra1       repstr1added   
+#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median : 5.000   Median :10.000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000   Median :0.0000  
+#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.3484   Mean   :0.5244   Mean   :0.8728   Mean   :0.3484   Mean   :0.3484  
+#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :17.000   Max.   :17.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
 #>                                                                                                                        
-#>    repstatus2       fecstatus2       matstatus2     alive2     stage2           stage2index        sizea3             sizeb3      
-#>  Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871        Min.   :4.000   Min.   :0.000000   Min.   :0.0000  
-#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character   1st Qu.:4.000   1st Qu.:0.000000   1st Qu.:0.0000  
-#>  Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character   Median :5.000   Median :0.000000   Median :0.0000  
-#>  Mean   :0.2969   Mean   :0.2959   Mean   :1    Mean   :1                      Mean   :4.982   Mean   :0.004221   Mean   :0.3308  
-#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                      3rd Qu.:5.000   3rd Qu.:0.000000   3rd Qu.:0.0000  
-#>  Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                      Max.   :8.000   Max.   :2.000000   Max.   :7.0000  
+#>      feca1          fec1added        obsstatus1       repstatus1      fecstatus1      matstatus1         alive1      
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:1.0000   1st Qu.:1.0000  
+#>  Median :0.0000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :1.0000   Median :1.0000  
+#>  Mean   :0.3484   Mean   :0.3484   Mean   :0.5472   Mean   :0.247   Mean   :0.247   Mean   :0.8395   Mean   :0.8395  
+#>  3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000  
+#>                                                                                                                      
+#>     stage1           stage1index        sizea2           sizeb2         size2added       repstra2       repstr2added   
+#>  Length:6871        Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  Class :character   1st Qu.:4.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Mode  :character   Median :5.000   Median :0.0000   Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000  
+#>                     Mean   :4.145   Mean   :0.4139   Mean   :0.6656   Mean   :1.079   Mean   :0.4139   Mean   :0.4139  
+#>                     3rd Qu.:5.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>                     Max.   :8.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                        
+#>      feca2          fec2added        obsstatus2      repstatus2       fecstatus2       matstatus2     alive2     stage2         
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871       
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character  
+#>  Median :0.0000   Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character  
+#>  Mean   :0.4139   Mean   :0.4139   Mean   :0.697   Mean   :0.2969   Mean   :0.2969   Mean   :1    Mean   :1                     
+#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                     
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                     
+#>                                                                                                                                 
+#>   stage2index        sizea3          sizeb3         size3added        repstra3      repstr3added       feca3         fec3added    
+#>  Min.   :4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
+#>  1st Qu.:4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
+#>  Median :5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000   Median :0.000  
+#>  Mean   :4.982   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335   Mean   :0.335  
+#>  3rd Qu.:5.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
+#>  Max.   :8.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
 #>                                                                                                                                   
-#>      sizec3         size3added        repstra3         repstrb3         repstr3added       feca3          fec3added     
-#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
-#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000  
-#>  Median :0.0000   Median :1.0000   Median :0.0000   Median :0.000000   Median :0.000   Median :0.0000   Median :0.0000  
-#>  Mean   :0.5523   Mean   :0.8874   Mean   :0.3308   Mean   :0.004221   Mean   :0.335   Mean   :0.3308   Mean   :0.3308  
-#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.0000  
-#>  Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :2.000000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000  
-#>                                                                                                                         
 #>    obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3           stage3index   
 #>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871        Min.   :0.000  
 #>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character   1st Qu.:4.000  
 #>  Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character   Median :5.000  
-#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2384   Mean   :1    Mean   :0.874                      Mean   :4.301  
+#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                      Mean   :4.301  
 #>  3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                      3rd Qu.:5.000  
 #>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                      Max.   :8.000  
 #> 
@@ -286,7 +264,7 @@ cyp_start
 #> 1     P1          2     NA         NA   NA       2     1
 ```
   
-  <p style="text-indent: 20px">Next we need to define the desntiy dependence that we will use. In herbaceous perennial plants, the germination stage is most commonly negatively density dependent. In orchids, germination may be from a fresh seed, or from a previously dormant seed, and we will assume density dependence in both. Clarifying the exact nature and proper parameterization of density dependence is too great a topic for this vignette, and so we utilize the following two-parameter Ricker function-based approach, which we know works in this case.</p>
+  <p style="text-indent: 20px">Next we need to clarify how density dependence will operate on the demography of this population. In herbaceous perennial plants, the germination stage is most commonly negatively density dependent. In orchids, germination may be from a fresh seed, or from a previously dormant seed, and we will assume density dependence in both. Determining the exact nature and proper parameterization of density dependence is too great a topic for this vignette, and so we utilize the following two-parameter Ricker function-based approach, which we know works in this case based on our own previous studies.</p>
 
 ``` r
 c2d_4 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
@@ -301,7 +279,7 @@ c2d_4
 #> 6     P1    XLg     NA   NA     2 0.005 5e-06          1    2        1
 ```
   
-  <p style="text-indent: 20px">Next, we need to propose the variants to test. In the following data frame, which we call a trait axis, we define 15 genetic variants, each of which differs in fecundity multipliers. In a pairwise invasibility analysis, each possible pair permutation will be projected, with one serving as the resident population and the other as the mutant invader.</p>
+  <p style="text-indent: 20px">Next, we need to propose the variants to test. The information regarding the variants is probably the most important information to provide to R, because it clarifies the trait(s) under investigation. In the following data frame, which we call a trait axis, we define 15 genetic variants, each of which differs in fecundity multipliers. In a pairwise invasibility analysis, each possible pair permutation will be projected, with one serving as the resident population and the other as the mutant invader.</p>
 
 ``` r
 cyp_ta <- trait_axis(stageframe = cypframe_raw, stage3 = rep("P1", 15),
@@ -376,19 +354,28 @@ plot(cyp_inv, pip = FALSE, run = 50)
 
 ![plot of chunk ch1.8](ch1.8-1.png)
   
-  <p style="text-indent: 20px">It appears that our mutant never gained a footing in the population, likely going extinct while the resident grew to a stable population size.</p>
+  <p style="text-indent: 20px">In the plots above, the resident variant is given in solid black, while the invader variant, which is introduced at time 250, is given as a dashed red line. It appears that the invader never gained a foothold in the population, likely going extinct while the resident grew to a stable population size. However, we can also take a peek at the fitness values in the pairwise simulations, as below.</p>
+
+``` r
+summary(cyp_inv$fitness)
+#>  simulation_num      rep       variant1     variant2    entrytime1   entrytime2  fitness_variant1     fitness_variant2    
+#>  Min.   :  1    Min.   :1   Min.   : 1   Min.   : 1   Min.   :0    Min.   :250   Min.   :-64933.135   Min.   :    -1.343  
+#>  1st Qu.: 57    1st Qu.:1   1st Qu.: 4   1st Qu.: 4   1st Qu.:0    1st Qu.:250   1st Qu.:  -118.362   1st Qu.:    -0.660  
+#>  Median :113    Median :1   Median : 8   Median : 8   Median :0    Median :250   Median :     0.000   Median :     0.000  
+#>  Mean   :113    Mean   :1   Mean   : 8   Mean   : 8   Mean   :0    Mean   :250   Mean   : -2442.037   Mean   :  5880.032  
+#>  3rd Qu.:169    3rd Qu.:1   3rd Qu.:12   3rd Qu.:12   3rd Qu.:0    3rd Qu.:250   3rd Qu.:     0.928   3rd Qu.:   162.300  
+#>  Max.   :225    Max.   :1   Max.   :15   Max.   :15   Max.   :0    Max.   :250   Max.   :     1.531   Max.   :180963.650
+```
   
-  *****Need a summary statement here*****
-  
-  <p style="text-indent: 20px">Next, we can view the pairwise invasibility plot (PIP). This will give us a sense of whether we have any evolutionarily stable equilibria, or whether natural selection appears to completely directional.</p>
+  <p style="text-indent: 20px">The data frame that we see the summary of above shows the fitness for both the resident (`variant1`) and the invader (`variant2`). Note that the invaders' fitness, assessed as the Lyapunov coefficient for the final 30 times in each simulation, shows that some invaders actually had very high growth. These are likely cases in which low fecundity multiplier residents were run with high fecundity multiplier invaders. Let's view the pairwise invasibility plot (PIP) to see if an ESS resulted from this. This will give us a sense of whether we have any evolutionarily stable equilibria, or whether natural selection appears to completely directional.</p>
 
 ``` r
 plot(cyp_inv)
 ```
 
-![plot of chunk ch1.9](ch1.9-1.png)
+![plot of chunk ch1.10](ch1.10-1.png)
   
-  <p style="text-indent: 20px">It appears that natural selection is completely directional here, favoring increasingly large multipliers.</p>
+  <p style="text-indent: 20px">It appears that natural selection is completely directional here, favoring increasingly large fruiting value multipliers.</p>
   
 ### Pairwise invasibility analysis focused on vital rate model manipulation
 
@@ -477,89 +464,72 @@ cypframe_fb
 #> 18                NA           NA           NA              NA             NA     0 Flo adult 7 stems
 ```
   
-  <p style="text-indent: 20px">Now we will standardize our dataset using the new life history model, allowing lefko3 to develop new stage calls in all cases.</p>
+  <p style="text-indent: 20px">Now we will standardize our dataset using the new life history model, allowing `lefko3` to develop new stage calls in all cases.</p>
 
 ``` r
 cypraw_v2 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
-  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
-  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
-  repstrbcol = "Inf2.94", fecacol = "Inf.94", fecbcol = "Inf2.94",
+  individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+  sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
   stageassign = cypframe_fb, stagesize = "sizeadded", NAas0 = TRUE)
 summary_hfv(cypraw_v2)
 #> 
-#> This hfv dataset contains 6871 rows, 60 variables, 1 population, 
+#> This hfv dataset contains 6871 rows, 51 variables, 1 population, 
 #> 1 patch, 1025 individuals, and 17 time steps.
 #>      rowid           popid             patchid               individ         year2        firstseen       lastseen   
 #>  Min.   :   1.0   Length:6871        Length:6871        K NA     :  62   Min.   :1994   Min.   :1994   Min.   :1994  
 #>  1st Qu.: 291.0   Class :character   Class :character   A NA     :  27   1st Qu.:1999   1st Qu.:1995   1st Qu.:2004  
-#>  Median : 563.0   Mode  :character   Mode  :character   X NA     :  24   Median :2002   Median :1997   Median :2009  
-#>  Mean   : 557.5                                         T NA     :  23   Mean   :2002   Mean   :1997   Mean   :2007  
-#>  3rd Qu.: 820.0                                         Willow NA:  17   3rd Qu.:2005   3rd Qu.:1999   3rd Qu.:2011  
-#>  Max.   :1119.0                                         X 3      :  17   Max.   :2010   Max.   :2010   Max.   :2011  
+#>  Median : 557.0   Mode  :character   Mode  :character   X NA     :  24   Median :2002   Median :1997   Median :2009  
+#>  Mean   : 549.7                                         T NA     :  23   Mean   :2002   Mean   :1997   Mean   :2007  
+#>  3rd Qu.: 804.0                                         Willow NA:  17   3rd Qu.:2005   3rd Qu.:1999   3rd Qu.:2011  
+#>  Max.   :1103.0                                         X 3      :  17   Max.   :2010   Max.   :2010   Max.   :2011  
 #>                                                         (Other)  :6701                                               
-#>      obsage        obslifespan         sizea1             sizeb1           sizec1         size1added        repstra1     
-#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
-#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
-#>  Median : 5.000   Median :10.000   Median :0.000000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000  
-#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.003638   Mean   :0.3448   Mean   :0.5244   Mean   :0.8728   Mean   :0.3448  
-#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000  
-#>  Max.   :17.000   Max.   :17.000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
-#>                                                                                                                          
-#>     repstrb1         repstr1added        feca1            fecb1            fec1added        obsstatus1       repstatus1   
-#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000  
-#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000  
-#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :0.000000   Median :0.0000   Median :1.0000   Median :0.000  
-#>  Mean   :0.003638   Mean   :0.3484   Mean   :0.3448   Mean   :0.003638   Mean   :0.3484   Mean   :0.5472   Mean   :0.247  
-#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000  
-#>  Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :1.000000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000  
-#>                                                                                                                           
-#>    fecstatus1      matstatus1         alive1          stage1           stage1index        sizea2             sizeb2      
-#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Length:6871        Min.   : 0.00   Min.   :0.000000   Min.   :0.0000  
-#>  1st Qu.:0.000   1st Qu.:1.0000   1st Qu.:1.0000   Class :character   1st Qu.: 4.00   1st Qu.:0.000000   1st Qu.:0.0000  
-#>  Median :0.000   Median :1.0000   Median :1.0000   Mode  :character   Median : 5.00   Median :0.000000   Median :0.0000  
-#>  Mean   :0.247   Mean   :0.8395   Mean   :0.8395                      Mean   : 5.96   Mean   :0.004803   Mean   :0.4091  
-#>  3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000                      3rd Qu.: 8.00   3rd Qu.:0.000000   3rd Qu.:1.0000  
-#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000                      Max.   :18.00   Max.   :1.000000   Max.   :7.0000  
-#>                                                                                                                          
-#>      sizec2         size2added       repstra2         repstrb2         repstr2added        feca2            fecb2         
-#>  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000  
-#>  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000  
-#>  Median :0.0000   Median :1.000   Median :0.0000   Median :0.000000   Median :0.0000   Median :0.0000   Median :0.000000  
-#>  Mean   :0.6656   Mean   :1.079   Mean   :0.4091   Mean   :0.004803   Mean   :0.4139   Mean   :0.4091   Mean   :0.004803  
-#>  3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:0.000000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000000  
-#>  Max.   :7.0000   Max.   :7.000   Max.   :7.0000   Max.   :1.000000   Max.   :7.0000   Max.   :7.0000   Max.   :1.000000  
-#>                                                                                                                           
-#>    fec2added        obsstatus2      repstatus2       fecstatus2       matstatus2     alive2     stage2           stage2index    
-#>  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871        Min.   : 4.000  
-#>  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character   1st Qu.: 4.000  
-#>  Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character   Median : 5.000  
-#>  Mean   :0.4139   Mean   :0.697   Mean   :0.2969   Mean   :0.2969   Mean   :1    Mean   :1                      Mean   : 7.158  
-#>  3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                      3rd Qu.:12.000  
-#>  Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                      Max.   :18.000  
+#>      obsage        obslifespan         sizea1           sizeb1         size1added        repstra1       repstr1added   
+#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median : 5.000   Median :10.000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000   Median :0.0000  
+#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.3484   Mean   :0.5244   Mean   :0.8728   Mean   :0.3484   Mean   :0.3484  
+#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :17.000   Max.   :17.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                        
+#>      feca1          fec1added        obsstatus1       repstatus1      fecstatus1      matstatus1         alive1      
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:1.0000   1st Qu.:1.0000  
+#>  Median :0.0000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :1.0000   Median :1.0000  
+#>  Mean   :0.3484   Mean   :0.3484   Mean   :0.5472   Mean   :0.247   Mean   :0.247   Mean   :0.8395   Mean   :0.8395  
+#>  3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000  
+#>                                                                                                                      
+#>     stage1           stage1index        sizea2           sizeb2         size2added       repstra2       repstr2added   
+#>  Length:6871        Min.   : 0.00   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  Class :character   1st Qu.: 4.00   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Mode  :character   Median : 5.00   Median :0.0000   Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000  
+#>                     Mean   : 5.96   Mean   :0.4139   Mean   :0.6656   Mean   :1.079   Mean   :0.4139   Mean   :0.4139  
+#>                     3rd Qu.: 8.00   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>                     Max.   :18.00   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                        
+#>      feca2          fec2added        obsstatus2      repstatus2       fecstatus2       matstatus2     alive2     stage2         
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871       
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character  
+#>  Median :0.0000   Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character  
+#>  Mean   :0.4139   Mean   :0.4139   Mean   :0.697   Mean   :0.2969   Mean   :0.2969   Mean   :1    Mean   :1                     
+#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                     
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                     
 #>                                                                                                                                 
-#>      sizea3             sizeb3           sizec3         size3added        repstra3         repstrb3         repstr3added  
-#>  Min.   :0.000000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000000   Min.   :0.000  
-#>  1st Qu.:0.000000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000  
-#>  Median :0.000000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000   Median :0.000000   Median :0.000  
-#>  Mean   :0.004221   Mean   :0.3308   Mean   :0.5523   Mean   :0.8874   Mean   :0.3308   Mean   :0.004221   Mean   :0.335  
-#>  3rd Qu.:0.000000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000  
-#>  Max.   :2.000000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :2.000000   Max.   :7.000  
-#>                                                                                                                           
-#>      feca3            fecb3            fec3added       obsstatus3      repstatus3       fecstatus3       matstatus3     alive3     
-#>  Min.   :0.0000   Min.   :0.000000   Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000  
-#>  1st Qu.:0.0000   1st Qu.:0.000000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000  
-#>  Median :0.0000   Median :0.000000   Median :0.000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000  
-#>  Mean   :0.3308   Mean   :0.004221   Mean   :0.335   Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874  
-#>  3rd Qu.:0.0000   3rd Qu.:0.000000   3rd Qu.:0.000   3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000  
-#>  Max.   :7.0000   Max.   :2.000000   Max.   :7.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000  
+#>   stage2index         sizea3          sizeb3         size3added        repstra3      repstr3added       feca3         fec3added    
+#>  Min.   : 4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
+#>  1st Qu.: 4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
+#>  Median : 5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000   Median :0.000  
+#>  Mean   : 7.158   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335   Mean   :0.335  
+#>  3rd Qu.:12.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
+#>  Max.   :18.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
 #>                                                                                                                                    
-#>     stage3           stage3index    
-#>  Length:6871        Min.   : 0.000  
-#>  Class :character   1st Qu.: 4.000  
-#>  Mode  :character   Median : 5.000  
-#>                     Mean   : 6.057  
-#>                     3rd Qu.: 7.000  
-#>                     Max.   :18.000  
+#>    obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3           stage3index    
+#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871        Min.   : 0.000  
+#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character   1st Qu.: 4.000  
+#>  Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character   Median : 5.000  
+#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                      Mean   : 6.057  
+#>  3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                      3rd Qu.: 7.000  
+#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                      Max.   :18.000  
 #> 
 ```
   
@@ -684,34 +654,34 @@ summary(cypmodels2)
 #> 
 #> 
 #> Fecundity model:
-#> Formula:          feca2 ~ size2added + (1 | year2) + (1 | individ)
+#> Formula:          feca2 ~ (1 | year2) + (1 | individ)
 #> Zero inflation:         ~(1 | year2) + (1 | individ)
 #> Data: fec.data
 #>       AIC       BIC    logLik -2*log(L)  df.resid 
-#>  4826.427  4865.771 -2406.213  4812.427      2033 
+#>  5199.186  5232.910 -2593.593  5187.186      2034 
 #> Random-effects (co)variances:
 #> 
 #> Conditional model:
 #>  Groups  Name        Std.Dev. 
-#>  year2   (Intercept) 0.0002205
-#>  individ (Intercept) 0.0003349
+#>  year2   (Intercept) 0.0004197
+#>  individ (Intercept) 0.0748143
 #> 
 #> Zero-inflation model:
 #>  Groups  Name        Std.Dev.
-#>  year2   (Intercept) 1.81323 
-#>  individ (Intercept) 0.03543 
+#>  year2   (Intercept) 5.0750  
+#>  individ (Intercept) 0.3871  
 #> 
 #> Number of obs: 2040 / Conditional model: year2, 17; individ, 699 / Zero-inflation model: year2, 17; individ, 699
 #> 
 #> Fixed Effects:
 #> 
 #> Conditional model:
-#> (Intercept)   size2added  
-#>     -0.2199       0.2612  
+#> (Intercept)  
+#>      0.3264  
 #> 
 #> Zero-inflation model:
 #> (Intercept)  
-#>      -33.79  
+#>      -20.05  
 #> 
 #> 
 #> Juvenile survival model:
@@ -841,7 +811,7 @@ summary(cypmodels2)
 #> Reproductive status model estimated with 779 individuals and 3923 individual transitions.
 #> Reproductive status model accuracy is 0.737.
 #> Fecundity model estimated with 699 individuals and 2040 individual transitions.
-#> Fecundity model R-squared is 0.481.
+#> Fecundity model R-squared is 0.042.
 #> Juvenile survival model not estimated.
 #> Juvenile observation status model not estimated.
 #> Juvenile primary size model not estimated.
@@ -851,7 +821,7 @@ summary(cypmodels2)
 #> Juvenile maturity status model not estimated.
 ```
   
-  <p style="text-indent: 20px">The output of the vital rate modeling exercise is worth looking over. Note that our best-fit models vary in interesting ways. For example, increasing size has a negative impact on survival, while reproductive status has a positive impact. These patterns suggest interesting trade-offs that might constrain natural selection. Also note the model accuracy in the best-fit models, which includes some models with high accuracy (e.g., survival, at around 88%), and others with fairly low accuracy (e.g., primary size, with roughly 27%).</p>
+  <p style="text-indent: 20px">The output of the vital rate modeling exercise is worth looking over. Note that our best-fit models vary in interesting ways. For example, increasing size has a negative impact on survival, while reproductive status has a positive impact. These patterns suggest interesting trade-offs that might constrain natural selection. Also note the model accuracy in the best-fit models, which includes some models with high accuracy (e.g., survival, at around 88%), and others with fairly low accuracy (e.g., primary size, with roughly 27%, and fecundity, with a pseudo-R^2^ of 4.2%).</p>
   
   <p style="text-indent: 20px">Our next step will be to develop an MPM. Although we will not project this MPM through our invasibility analysis, this is our chance to see what the matrices will look like that will be built in the course of analysis. So, we will set up the proper supplemental parameters, and then create MPMs to look at more carefully.</p>
 
@@ -962,7 +932,7 @@ plot(cyp_proj1)
 
 ![plot of chunk ch2.7](ch2.7-1.png)
   
-  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 10 variants total, and please note that the resulting analysis may take a while to run.</p>
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 10 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using more variants, in order to get a good resolution of trait variation.</p>
 
 ``` r
 current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
@@ -1003,19 +973,26 @@ current_traits
 #> 10         NA         NA         NA
 ```
   
-  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 10 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values).</p>
+  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 10 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values). Note that we are also setting `trait_optima = TRUE`, which allows us to estimate the ESS value of the additive deviation to the sprouting model, if one exists.</p>
 
 ``` r
 cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
   starts = cyp_start, years = 2008, stageframe = cypframe_fb,
   supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
   times = 1000, fitness_times = 100, var_per_run = 2, stochastic = FALSE,
-  density = c2d_1)
+  density = c2d_1, trait_optima = TRUE)
 ```
   
-  *****Need a summary statement*****
+  <p style="text-indent: 20px">Let's see a summary of the resulting object.</p>
+
+``` r
+summary(cyp_inv3)
+#> 
+#> The input adaptInv object covers 2 variants, 1001 projected steps, 2 variants per run, and 1 projected replicate.
+#> It includes optimization data suggesting 1 purported ESS optimum.
+```
   
-  <p style="text-indent: 20px">As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 8, then there will be no run 50 and that line will lead to an error.</p>
+  <p style="text-indent: 20px">The resulting output suggests that we have an ESS value of our trait. As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 8, then there will be no run 50 and that line will lead to an error.</p>
 
 ``` r
 par(mfrow = c(2, 1))
@@ -1024,7 +1001,7 @@ plot(cyp_inv3, pip = FALSE, run = 1)
 plot(cyp_inv3, pip = FALSE, run = 11)
 ```
 
-![plot of chunk ch2.10](ch2.10-1.png)
+![plot of chunk ch2.11](ch2.11-1.png)
   
   <p style="text-indent: 20px">At first glance the invader seems to be so low as to be extinct in both cases. However, we can take a look at the actual growth of the invader in run 11 as follows.</p>
 
@@ -1110,27 +1087,27 @@ cyp_inv3$N_out[[1]][2,,11]
 #>  [771]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
 #>  [781]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
 #>  [791]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [801]  1.00000000  0.20000000  0.05689552  0.01625870  0.81631092  0.85617878  0.56884989  0.31025232  0.43997450  0.65096681
-#>  [811]  0.69512922  0.58301000  0.51712301  0.56799126  0.64854320  0.66602652  0.63535322  0.62218076  0.64906498  0.68385887
-#>  [821]  0.69681686  0.69441208  0.69906616  0.71728093  0.73767113  0.75057789  0.75876312  0.76980312  0.78553886  0.80194955
-#>  [831]  0.81592588  0.82858892  0.84249309  0.85813917  0.87411811  0.88943722  0.90453951  0.92028509  0.93680407  0.95360756
-#>  [841]  0.97038336  0.98730467  1.00466246  1.02248994  1.04062084  1.05896053  1.07757791  1.09657379  1.11595848  1.13567851
-#>  [851]  1.15570856  1.17607825  1.19682534  1.21795603  1.23945633  1.26132310  1.28357165  1.30621919  1.32927205  1.35273025
-#>  [861]  1.37659801  1.40088575  1.42560433  1.45076091  1.47636079  1.50241091  1.52892037  1.55589839  1.58335304  1.61129189
-#>  [871]  1.63972323  1.66865616  1.69809991  1.72806337  1.75855546  1.78958543  1.82116290  1.85329765  1.88599949  1.91927833
-#>  [881]  1.95314432  1.98760788  2.02267958  2.05837016  2.09469048  2.13165167  2.16926504  2.20754211  2.24649460  2.28613441
-#>  [891]  2.32647366  2.36752470  2.40930010  2.45181264  2.49507531  2.53910136  2.58390425  2.62949770  2.67589566  2.72311231
-#>  [901]  2.77116211  2.82005976  2.86982021  2.92045869  2.97199070  3.02443199  3.07779862  3.13210692  3.18737349  3.24361525
-#>  [911]  3.30084940  3.35909345  3.41836524  3.47868288  3.54006483  3.60252988  3.66609713  3.73078604  3.79661639  3.86360832
-#>  [921]  3.93178234  4.00115930  4.07176042  4.14360732  4.21672195  4.29112671  4.36684435  4.44389803  4.52231134  4.60210826
-#>  [931]  4.68331321  4.76595103  4.85004700  4.93562686  5.02271678  5.11134342  5.20153388  5.29331576  5.38671715  5.48176662
-#>  [941]  5.57849324  5.67692662  5.77709686  5.87903462  5.98277108  6.08833798  6.19576762  6.30509287  6.41634717  6.52956457
-#>  [951]  6.64477969  6.76202780  6.88134477  7.00276709  7.12633192  7.25207706  7.38004099  7.51026285  7.64278248  7.77764044
-#>  [961]  7.91487797  8.05453707  8.19666047  8.34129164  8.48847484  8.63825509  8.79067823  8.94579089  9.10364052  9.26427541
-#>  [971]  9.42774471  9.59409844  9.76338749  9.93566365 10.11097963 10.28938907 10.47094655 10.65570762 10.84372881 11.03506763
-#>  [981] 11.22978263 11.42793338 11.62958051 11.83478570 12.04361175 12.25612253 12.47238306 12.69245951 12.91641922 13.14433069
-#>  [991] 13.37626365 13.61228908 13.85247916 14.09690740 14.34564857 14.59877877 14.85637544 15.11851740 15.38528485 15.65675940
-#> [1001] 15.93302410
+#>  [801]  1.00000000  0.20000000  0.05689552  0.01625870  0.85675062  0.84115877  0.53850283  0.28749123  0.45963115  0.66678098
+#>  [811]  0.68241956  0.55156259  0.50179938  0.57146204  0.64876428  0.64804506  0.60992746  0.60482172  0.63967678  0.67068322
+#>  [821]  0.67439368  0.66849856  0.67635063  0.69675331  0.71404529  0.72198296  0.72799315  0.73944479  0.75480445  0.76859330
+#>  [831]  0.77936946  0.79005667  0.80290232  0.81701058  0.83052351  0.84319856  0.85614039  0.87000381  0.88436652  0.89861814
+#>  [841]  0.91276532  0.92721244  0.94214008  0.95737016  0.97271026  0.98819498  1.00396962  1.02008129  1.03646128  1.05305322
+#>  [851]  1.06988161  1.08699915  1.10441855  1.12211644  1.14007942  1.15832213  1.17686528  1.19571420  1.21486343  1.23431282
+#>  [861]  1.25407171  1.27415030  1.29455310  1.31528161  1.33633981  1.35773482  1.37947365  1.40156134  1.42400222  1.44680166
+#>  [871]  1.46996613  1.49350195  1.51741483  1.54171038  1.56639468  1.59147424  1.61695551  1.64284482  1.66914857  1.69587339
+#>  [881]  1.72302613  1.75061367  1.77864292  1.80712092  1.83605487  1.86545209  1.89532000  1.92566614  1.95649814  1.98782379
+#>  [891]  2.01965100  2.05198780  2.08484235  2.11822293  2.15213796  2.18659602  2.22160579  2.25717610  2.29331593  2.33003439
+#>  [901]  2.36734076  2.40524444  2.44375500  2.48288216  2.52263578  2.56302590  2.60406271  2.64575656  2.68811797  2.73115764
+#>  [911]  2.77488641  2.81931533  2.86445561  2.91031862  2.95691596  3.00425936  3.05236078  3.10123236  3.15088642  3.20133550
+#>  [921]  3.25259232  3.30466981  3.35758112  3.41133960  3.46595880  3.52145252  3.57783474  3.63511971  3.69332187  3.75245590
+#>  [931]  3.81253674  3.87357953  3.93559968  3.99861283  4.06263489  4.12768202  4.19377061  4.26091735  4.32913918  4.39845331
+#>  [941]  4.46887723  4.54042871  4.61312581  4.68698686  4.76203050  4.83827567  4.91574160  4.99444784  5.07441424  5.15566100
+#>  [951]  5.23820859  5.32207786  5.40728996  5.49386639  5.58182900  5.67119997  5.76200187  5.85425760  5.94799044  6.04322403
+#>  [961]  6.13998241  6.23828999  6.33817158  6.43965237  6.54275796  6.64751438  6.75394806  6.86208585  6.97195502  7.08358332
+#>  [971]  7.19699889  7.31223036  7.42930680  7.54825776  7.66911323  7.79190372  7.91666020  8.04341416  8.17219757  8.30304293
+#>  [981]  8.43598326  8.57105209  8.70828350  8.84771212  8.98937312  9.13330226  9.27953584  9.42811076  9.57906451  9.73243518
+#>  [991]  9.88826145 10.04658265 10.20743873 10.37087026 10.53691849 10.70562530 10.87703327 11.05118565 11.22812636 11.40790006
+#> [1001] 11.59055211
 ```
   
   <p style="text-indent: 20px">We can see that the invader does grow in at least some of the simulations. Now let's see the pairwise invasibility plot (PIP).</p>
@@ -1139,9 +1116,28 @@ cyp_inv3$N_out[[1]][2,,11]
 plot(cyp_inv3)
 ```
 
-![plot of chunk ch2.12](ch2.12-1.png)
+![plot of chunk ch2.13](ch2.13-1.png)
 
-  <p style="text-indent: 20px">A fairly beautiful PIP, if I say so myself! We find that there appears to be an ESS value for sprouting. More to come as this package develops....</p>
+  <p style="text-indent: 20px">A fairly beautiful PIP, if I say so myself! We find that there appears to be an ESS value for sprouting. Let's now take a look at the associated elasticity plot.</p>
+
+``` r
+plot(cyp_inv3, pip = FALSE, elast = TRUE)
+```
+
+![plot of chunk ch2.14](ch2.14-1.png)
+
+  <p style="text-indent: 20px">Elasticity plots will only be as good as the resolution of the associated trait axis, and in this case, with only 10 variants, we see that the low resolution suggests 2 potential optima. It is likely that one of these potential optima is actually one that did not converge properly. Regardless, let's take a look at the predicted ESS value of the trait.</p>
+
+``` r
+cyp_inv3$optim$ESS_values
+#>   variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype
+#> 1       1     NA     NA     NA   NA   NA        NA        NA        NA      NA      NA        NA     NA         NA       NA
+#>   convtype_t12 surv_dev obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev
+#> 1           NA       NA       0       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#>   jrepst_dev jmatst_dev year2 mpm_altered vrm_altered fitness converged
+#> 1         NA         NA  <NA>           0           1       0      TRUE
+```
+  <p style="text-indent: 20px">Our converged ESS value is at an additive deviation of 0 to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS. This is exactly what was found in Shefferson et al. @shefferson_life_2014, so we've done well.</p>
 
 
 ## Acknowledgements

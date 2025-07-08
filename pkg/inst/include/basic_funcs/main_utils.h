@@ -28,9 +28,10 @@ using namespace LefkoUtils;
 // 9. void Lyapunov_df_maker  Create Data Frame to Hold Fitness Output from Function invade3()
 // 10. DataFrame ta_reassess  Expand Trait Axis Table Given User Input
 // 11. void pop_error2  Standardized Error Messages
-// 12. void ta_trianator  Develop Core Reassessed Trait Axis for ESS Optimization
-// 13. DataFrame df_rbind  Bind Two Data Frames By Row
-// 14. List df_indices  Subset A Data Frame By Row Index
+// 12. DataFrame df_rbind  Bind Two Data Frames By Row
+// 13. List df_indices  Subset A Data Frame By Row Index
+// 14. void Lyapunov_creator  Creates Final Table of Lyapunov Estimates
+// 15. void optim_ta_setup  Create Trait Axis Reassessed for Trait Optimization
 
 
 namespace AdaptUtils {
@@ -1140,8 +1141,6 @@ namespace AdaptUtils {
     DataFrame& trait_axis, const int first_age_int, const bool historical,
     const bool functionbased, const bool pure_leslie) {
     
-    //Rcout << "ta_reassess a          ";
-    
     IntegerVector variant_ta;
     StringVector stage3_ta;
     StringVector stage2_ta;
@@ -1195,8 +1194,6 @@ namespace AdaptUtils {
     convtype_ta = as<IntegerVector>(trait_axis["convtype"]);
     convtype_t12_ta = as<IntegerVector>(trait_axis["convtype_t12"]);
     
-    //Rcout << "ta_reassess b          ";
-    
     surv_dev_ta = as<NumericVector>(trait_axis["surv_dev"]);
     obs_dev_ta = as<NumericVector>(trait_axis["obs_dev"]);
     size_dev_ta = as<NumericVector>(trait_axis["size_dev"]);
@@ -1212,8 +1209,6 @@ namespace AdaptUtils {
     jrepst_dev_ta = as<NumericVector>(trait_axis["jrepst_dev"]);
     jmatst_dev_ta = as<NumericVector>(trait_axis["jmatst_dev"]);
     int ta_rows = static_cast<int>(stage3_ta.length());
-    
-    //Rcout << "ta_reassess c          ";
     
     // Prep based on stages in stageframe
     StringVector stagevec = as<StringVector>(stageframe["stage"]);
@@ -1243,9 +1238,6 @@ namespace AdaptUtils {
       }
     }
     
-    //Rcout << "stagevec: " << stagevec << endl;
-    //Rcout << "ta_reassess d          ";
-    
     // Identify all groups
     arma::ivec all_groups = unique(groupvec);
     int no_groups {static_cast<int>(all_groups.n_elem)};
@@ -1255,8 +1247,6 @@ namespace AdaptUtils {
       group_text(i) = "group";
       group_text(i) += std::to_string(all_groups(i));
     }
-    
-    //Rcout << "ta_reassess e          ";
     
     StringVector unique_stages = unique(stagevec);
     StringVector extra_terms = {"rep", "nrep", "immat", "mat", "prop", "npr", "all", "obs", "nobs"};
@@ -1275,8 +1265,6 @@ namespace AdaptUtils {
       all_possible_stage_terms(i + no_newstages + no_extraterms) = group_text(i);
     }
     
-    //Rcout << "ta_reassess f          ";
-    
     if (trait_axis.containsElementNamed("year2")) {
       year2_ta = as<StringVector>(trait_axis["year2"]);
     } else {
@@ -1286,8 +1274,6 @@ namespace AdaptUtils {
     
     arma::uvec vrm_altered (ta_rows, fill::zeros); // vrm alteration (binary)  by trait axis row
     arma::uvec mpm_altered (ta_rows, fill::zeros); // mpm alteration (binary)  by trait axis row
-    
-    //Rcout << "ta_reassess g          ";
     
     for (int i = 0; i < ta_rows; i++) {
       if (!StringVector::is_na(eststage3_ta(i))) {
@@ -1351,8 +1337,6 @@ namespace AdaptUtils {
       }
     }
     
-    //Rcout << "ta_reassess h          ";
-    
     // Check entries in trait_axis table
     for (int i = 0; i < static_cast<int>(ta_rows); i++) {
       int s3ta_count {0};
@@ -1366,8 +1350,6 @@ namespace AdaptUtils {
       bool s3_used {false};
       bool s2_used {false};
       bool s1_used {false};
-      
-      //Rcout << "ta_reassess i          ";
       
       for (int j = 0; j < static_cast<int>(all_possible_stage_terms.length()); j++) {
         if (stage3_ta(i) == all_possible_stage_terms(j)) s3ta_count++;
@@ -1491,8 +1473,6 @@ namespace AdaptUtils {
         }
       }
       
-      //Rcout << "ta_reassess j          ";
-      
       if (s3ta_count == 0 && (s3_used || !functionbased) && mpm_altered(i) > 0) {
         String eat_my_shorts = "Stage names in trait_axis variable ";
         String eat_my_shorts1 = "stage3 must match stageframe.";
@@ -1545,8 +1525,6 @@ namespace AdaptUtils {
       }
     }
     
-    //Rcout << "ta_reassess k          ";
-    
     IntegerVector s1_calls (ta_rows, 1);
     IntegerVector s2_calls (ta_rows, 1);
     IntegerVector s3_calls (ta_rows, 1);
@@ -1571,8 +1549,6 @@ namespace AdaptUtils {
       alive = alive_temp;
     }
     
-    //Rcout << "ta_reassess l          ";
-    
     arma::uvec repvec = as<arma::uvec>(stageframe["repstatus"]);
     arma::uvec obsvec = as<arma::uvec>(stageframe["obsstatus"]);
     arma::uvec propvec = as<arma::uvec>(stageframe["propstatus"]);
@@ -1593,8 +1569,6 @@ namespace AdaptUtils {
     arma::uvec newobs0_stages = find(obsvec == 0);
     arma::uvec all_stages = find(alive);
     
-    //Rcout << "ta_reassess m          ";
-    
     int np_s = static_cast<int>(newprop_stages.n_elem);
     int np0_s = static_cast<int>(newprop0_stages.n_elem);
     int ni_s = static_cast<int>(newimm_stages.n_elem);
@@ -1607,8 +1581,6 @@ namespace AdaptUtils {
     
     // Build expanded trait_axis table
     for (int i = 0; i < ta_rows; i++) {
-      //Rcout << "ta_reassess n  i: " << i << "          ";
-      
       s3_calls(i) = LefkoMats::supp_decision1(as<std::string>(stage3_ta(i)),
         np_s, np0_s, ni_s, nm_s, nr_s, nmr0_s, no_s, no0_s, a_s, no_groups,
         groupvec, group_text);
@@ -1636,8 +1608,6 @@ namespace AdaptUtils {
       String eat_my_shorts_gse = "If stage group shorthand is used to designate ";
       eat_my_shorts_gse += "both a transition and a proxy, then the ";
       eat_my_shorts_gse += "shorthand group must be the same in both cases.";
-      
-      //Rcout << "ta_reassess o          ";
       
       if (!StringVector::is_na(eststage3_ta(i))) {
         if (eststage3_ta(i) != stage3_ta(i)) {
@@ -1687,8 +1657,6 @@ namespace AdaptUtils {
       s123_calls(i) = s3_planned(i) * s2_planned(i) * s1_planned(i);
     }
     
-    //Rcout << "ta_reassess p          ";
-    
     NumericVector basepoints(ta_rows, 0.0);
     for (int i = 0; i < (ta_rows - 1); i++) {
       basepoints(i+1) = basepoints(i) + s123_calls(i);
@@ -1716,8 +1684,6 @@ namespace AdaptUtils {
       vital_rate_modifiers_by_variant(i) = current_found_nonzeros;
     }
     
-    //Rcout << "ta_reassess q          ";
-    
     {
       if (!functionbased) {
         IntegerVector check_calls_mpm = mat_elem_modifiers_by_variant + found_est_calls;
@@ -1742,8 +1708,6 @@ namespace AdaptUtils {
           "Some variants have no alterations to matrices and vital rate models in argument trait_axis");
       }
     }
-    
-    //Rcout << "ta_reassess r          ";
     
     // New trait_axis set-up
     int newta_rows = sum(s123_calls);
@@ -1806,8 +1770,6 @@ namespace AdaptUtils {
     int prevle3 {0};
     int prevle2 {0};
     int prevle1 {0};
-    
-    //Rcout << "ta_reassess s          ";
     
     for (int i = 0; i < ta_rows; i++) {
       overall_counter = 0;
@@ -1897,8 +1859,6 @@ namespace AdaptUtils {
         }
       }
     }
-    
-    //Rcout << "ta_reassess t          ";
     
     Rcpp::List newtraitaxis(33);
     
@@ -2046,103 +2006,6 @@ namespace AdaptUtils {
     return;
   }
   
-  //' Develop Core Reassessed Trait Axis for ESS Optimization
-  //' 
-  //' This function creates two core vectors for development of the ESS
-  //' optimization trait axis data frames.
-  //' 
-  //' @name ta_trianator
-  //' 
-  //' @param inp_out Reference to the output main vector.
-  //' @param inp_out_995 Rerence to the output 0.995 variant vector.
-  //' @param inp_inp_vec The input vector
-  //' @param inp_min The minimum value in the input vector.
-  //' @param inp_max The maximum value in the input vector.
-  //' @param found_variables The number of variable traits.
-  //' @param opt_res The number of variants to make in the gradient.
-  //' @param var1_length The total length of the input vector.
-  //' @param inp_NA A Boolean value indicating whether the input vector is
-  //' entirely composed of NA values.
-  //' @param first_var_found A Boolean variables ndicating if the first variable
-  //' trait has been found.
-  //' 
-  //' @return Two vectors are modified by reference, without any real output.
-  //' 
-  //' @keywords internal
-  //' @noRd
-  inline void ta_trianator (NumericVector& inp_out, NumericVector& inp_out_995,
-    NumericVector inp_inp_vec, double inp_min, double inp_max, int found_variables,
-    int opt_res, int var1_length, bool inp_NA, bool& first_var_found) {
-    if (inp_min != inp_max) {
-      double current_diff = inp_max - inp_min;
-      double current_inc = current_diff / opt_res;
-      
-      if (found_variables == 1) {
-        NumericVector chopping_block (opt_res * var1_length);
-        for (int i = 0; i < opt_res; i++) {
-          for (int j = 0; j < var1_length; j++) {
-            chopping_block((i * var1_length) + j) =
-              inp_min + (static_cast<double>(i) * current_inc);
-          }
-        }
-        
-        inp_out = chopping_block;
-      } else if (found_variables == 2) {
-        NumericVector chopping_block_2 (opt_res * opt_res * var1_length);
-        
-        for (int i = 0; i < opt_res; i++) {
-          for (int j = 0; j < opt_res; j++) {
-            for (int k = 0; k < var1_length; k++) {
-              if (!first_var_found) {
-                chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) =
-                  inp_min + (static_cast<double>(i) * current_inc);
-              } else {
-                chopping_block_2((i * (opt_res * var1_length)) + (j * var1_length) + k) =
-                  inp_min + (static_cast<double>(j) * current_inc);
-              }
-            }
-          }
-        }
-        inp_out = chopping_block_2;
-        first_var_found = true;
-      }
-      
-      inp_out_995 = clone(inp_out);
-      inp_out_995 = inp_out_995 * 0.995;
-    } else if (inp_NA) {
-      if (found_variables == 1) {
-        NumericVector chopping_block (opt_res * var1_length);
-        for (int i = 0; i < (opt_res * var1_length); i++) {
-          chopping_block(i) = NA_REAL;
-        }
-        inp_out = chopping_block;
-      } else {
-        NumericVector chopping_block (opt_res * opt_res * var1_length);
-        for (int i = 0; i < (opt_res * opt_res * var1_length); i++) {
-          chopping_block(i) = NA_REAL;
-        }
-        inp_out = chopping_block;
-      }
-      inp_out_995 = clone(inp_out);
-    } else {
-      NumericVector inp_out_noNA = na_omit(inp_inp_vec);
-      if (found_variables == 1) {
-        NumericVector chopping_block (opt_res * var1_length);
-        for (int i = 0; i < (opt_res * var1_length); i++) {
-          chopping_block(i) = inp_out_noNA(0);
-        }
-        inp_out = chopping_block;
-      } else {
-        NumericVector chopping_block (opt_res * opt_res * var1_length);
-        for (int i = 0; i < (opt_res * opt_res * var1_length); i++) {
-          chopping_block(i) = inp_out_noNA(0);
-        }
-        inp_out = chopping_block;
-      }
-      inp_out_995 = clone(inp_out);
-    }
-  }
-  
   //' Bind Two Data Frames By Row
   //' 
   //' This function takes two data frames, which must be composed of the same
@@ -2202,6 +2065,17 @@ namespace AdaptUtils {
             
             combinedCol.attr("levels") = unique_levels;
           }
+          out_df(i) = combinedCol;
+          break;
+        }
+  
+        case LGLSXP: {
+          LogicalVector combinedCol(nrows1 + nrows2);
+          LogicalVector col1Vector = as<LogicalVector>(col1);
+          LogicalVector col2Vector = as<LogicalVector>(col2);
+          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
+          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
+          
           out_df(i) = combinedCol;
           break;
         }
@@ -2338,6 +2212,1284 @@ namespace AdaptUtils {
     new_df.attr("row.names") = row_names;
     
     return new_df;
+  }
+  
+  //' Creates Final Table of Lyapunov Estimates
+  //' 
+  //' @name Lyapunov_creator
+  //' 
+  //' @param in_df A pointer to a data frame that will be formed by this function.
+  //' @param N_out The main list of population / variant size matrices.
+  //' @param entry_time_vec An integer vector giving the entry time of each
+  //' variant.
+  //' @param nreps The number of replicates performed.
+  //' @param var_per_run The number of variants per simulation.
+  //' @param var_mat_length The total number of simulations.
+  //' @param times The length of time to run simulations.
+  //' @param fitness_times The time from which fitness should be estimated.
+  //' @param threshold The threshold value to use to determine whether a fitness
+  //' value is essentially zero.
+  //' @param style An integer coding for whether the output should be for the
+  //' full pairwise / multiple invasibility analyses (\code{0}), or for the ESS
+  //' optimization (\code{1}). Defaults to \code{0}.
+  //' @param optim_run A Boolean variable denoting whether the function is being
+  //' used to optimize ESS values in the final search (not the initial opt_res
+  //' search). If \code{true}, then assumes \code{N_out} is a list of matrices,
+  //' rather than a list of cubes. Defaults to \code{false}.
+  //' @param round A Boolean variable denoting whether to round fitness values
+  //' below \code{threshold} to zero.
+  //' 
+  //' @return A data frame is formed and modified via pointer, so no actual
+  //' output results from this function.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline void Lyapunov_creator (DataFrame& in_df, List& N_out,
+    IntegerVector entry_time_vec, const int nreps, const int var_per_run,
+    const int var_mat_length, const int times, const int fitness_times,
+    const double threshold, int style = 0, bool optim_run = false,
+    bool round = false) {
+    
+    IntegerVector Lyap_rows = seq(1, nreps * var_mat_length);
+    CharacterVector Lyap_df_names ((3 * var_per_run) + 2);
+    Lyap_df_names(0) = "simulation_num";
+    Lyap_df_names(1) = "rep";
+    
+    String Lyap_df_names_base1 = "variant";
+    String Lyap_df_names_base2 = "entrytime";
+    String Lyap_df_names_base3 = "fitness_variant";
+    
+    List output ((3 * var_per_run) + 2);
+    output(0) = Lyap_rows;
+    
+    if (style == 1) {
+      IntegerVector int_runs = seq(1, var_mat_length);
+      IntegerVector int_runs2 = seq(1, var_mat_length);
+      NumericVector fitness (var_mat_length);
+      
+      DataFrame coarse_agency = Rcpp::DataFrame::create(_["simulation_run"] = int_runs,
+        _["variant"] = int_runs2, _["fitness_variant"] = fitness);
+      in_df = coarse_agency;
+    }
+    
+    int Lyap_counter {0};
+    for (int m = 0; m < var_per_run; m++) {
+      Lyap_counter = 0;
+      
+      IntegerVector Lyap_var_orig;
+      if (style == 0 ) {
+        Lyap_var_orig = as<IntegerVector>(in_df(1+m));
+      } else {
+        Lyap_var_orig = as<IntegerVector>(in_df(1));
+      }
+      IntegerVector Lyap_rep (nreps * var_mat_length);
+      IntegerVector Lyap_var (nreps * var_mat_length);
+      IntegerVector Lyap_etime (nreps * var_mat_length);
+      NumericVector Lyap_fitness (nreps * var_mat_length);
+      
+      for (int i = 0; i < nreps; i++) {
+        arma::cube current_N_out_cube;
+        if (!optim_run) current_N_out_cube = as<arma::cube>(N_out(i));
+        
+        for (int l = 0; l < var_mat_length; l++) {
+          int used_fitness_times = fitness_times;
+          if (times - (entry_time_vec(m)) < fitness_times) {
+            used_fitness_times = times - (entry_time_vec(m));
+            Rf_warningcall(R_NilValue, "Truncating fitness_times due to late entry time.");
+          }
+          
+          arma::mat current_N_out;
+          if (!optim_run) {
+            current_N_out = current_N_out_cube.slice(l);
+          } else {
+            current_N_out = as<arma::mat>(N_out(i));
+          }
+          int time_length = static_cast<int>(current_N_out.n_cols);
+          int start_time = time_length - used_fitness_times;
+          
+          arma::vec running_fitness(used_fitness_times, fill::zeros);
+          arma::vec generations(used_fitness_times, fill::zeros);
+          arma::vec intercept_ones(used_fitness_times, fill::ones);
+          
+          for (int k = 0; k < used_fitness_times; k++) {
+            running_fitness(k) = current_N_out(m, k+start_time);
+            generations(k) = static_cast<double>(k);
+          }
+          
+          arma::mat xmat = join_rows(intercept_ones, generations);
+          arma::vec Lyap_regr;
+          
+          AdaptUtils::fastLm_sl(Lyap_regr, running_fitness, xmat);
+          
+          double Lyapunov_estimate = Lyap_regr(1);
+          if (round && (abs(Lyapunov_estimate) <= threshold)) Lyapunov_estimate = 0.;
+          
+          Lyap_var(Lyap_counter) = Lyap_var_orig(l);
+          Lyap_rep(Lyap_counter) = i+1;
+          Lyap_etime(Lyap_counter) = entry_time_vec(m);
+          Lyap_fitness(Lyap_counter) = Lyapunov_estimate;
+          
+          Lyap_counter++;
+        }
+      }
+      output(1) = Lyap_rep;
+      output(2 + m) = Lyap_var;
+      output(2 + var_per_run + m) = Lyap_etime;
+      output(2 + (2 * var_per_run) + m) = Lyap_fitness;
+      
+      String new_col_name = Lyap_df_names_base1;
+      new_col_name += (m + 1);
+      if (style == 1 && m == 1) new_col_name += "_e995";
+      Lyap_df_names(2 + m) = new_col_name;
+      
+      String next_col_name = Lyap_df_names_base2;
+      next_col_name += (m + 1);
+      if (style == 1 && m == 1) next_col_name += "_e995";
+      Lyap_df_names(2 + var_per_run + m) = next_col_name;
+      
+      String last_col_name = Lyap_df_names_base3;
+      last_col_name += (m + 1);
+      if (style == 1 && m == 1) last_col_name += "_e995";
+      Lyap_df_names(2 + (2 * var_per_run) + m) = last_col_name;
+    }
+    
+    output.attr("names") = Lyap_df_names;
+    output.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER,
+      nreps * var_mat_length);
+    StringVector needed_class {"data.frame"};
+    output.attr("class") = needed_class;
+    
+    in_df = output;
+  }
+  
+  //' Create Trait Axis Reassessed for Trait Optimization
+  //' 
+  //' Given some core choices by the user, this function will create a new trait
+  //' axis for ESS trait value esitmation.
+  //' 
+  //' @name optim_ta_setup
+  //' 
+  //' @param ta_reassessed A data frame giving trait axis data post-processing
+  //' with function \code{ta_reassess()}.
+  //' @param ESS_ta An initially empty data frame provided as a reference, which
+  //' is modified by this function to yield a trait axis for ESS optimization.
+  //' @param optim_ta A data frame giving trait axis data processed for ESS
+  //' optimization. This is one of two data frames, and gives the core info.
+  //' @param optim_ta_995 A data frame giving trait axis data processed for ESS
+  //' optimization. This is one of two data frames, and gives info for 99.5% the
+  //' values of variable traits in \code{optim_ta}.
+  //' @param variable_traits An integer vector modifed by this function by
+  //' reference, indicating the actual traits that vary. The element order is:
+  //' 1, givenrate; 2, offset; 3, multiplier; 4, surv_dev; 5, obs_dev;
+  //' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
+  //' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
+  //' 16, jrepst_dev; and 17, jmatst_dev.
+  //' @param opt_res Relic integer value denoting the number of rows in the
+  //' trait_axis used in trait optimization.
+  //' @param elast_multiplier A double precision floating point number to
+  //' multiply traits by to assess elasticity. Defaults to 0.995. 
+  //' 
+  //' @return Creates a new data frame with all variants to be tested, in order,
+  //' and places that at the \code{optim_ta} reference. Also creates a list with
+  //' the first element corresponding to the first and last elements for
+  //' optimization, and the second element a vector giving the variable traits.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline void optim_ta_setup (DataFrame& ta_reassessed, DataFrame& ESS_ta,
+    DataFrame& optim_ta, DataFrame& optim_ta_995, IntegerVector& variable_traits,
+    int opt_res, double elast_multiplier = 0.995) {
+    
+    DataFrame ESS_optim_ta;
+    DataFrame cloned_ta_reassess;
+    IntegerVector ESS_variable_traits (17, 0);
+    
+    // Vectors for optim_ta
+    IntegerVector optim_variant;
+    
+    StringVector optim_stage3;
+    StringVector optim_stage2;
+    StringVector optim_stage1;
+    IntegerVector optim_age3;
+    IntegerVector optim_age2;
+    StringVector optim_eststage3;
+    StringVector optim_eststage2;
+    StringVector optim_eststage1;
+    IntegerVector optim_estage3;
+    IntegerVector optim_estage2;
+    NumericVector optim_givenrate;
+    NumericVector optim_offset;
+    NumericVector optim_multiplier;
+    IntegerVector optim_convtype;
+    IntegerVector optim_convtype_t12;
+    StringVector optim_year2;
+    IntegerVector optim_mpm_altered;
+    IntegerVector optim_vrm_altered;
+    
+    NumericVector optim_surv_dev;
+    NumericVector optim_obs_dev;
+    NumericVector optim_size_dev;
+    NumericVector optim_sizeb_dev;
+    NumericVector optim_sizec_dev;
+    NumericVector optim_repst_dev;
+    NumericVector optim_fec_dev;
+    
+    NumericVector optim_jsurv_dev;
+    NumericVector optim_jobs_dev;
+    NumericVector optim_jsize_dev;
+    NumericVector optim_jsizeb_dev;
+    NumericVector optim_jsizec_dev;
+    NumericVector optim_jrepst_dev;
+    NumericVector optim_jmatst_dev;
+    
+    // Vectors for optim_ta_995
+    IntegerVector optim_variant_995;
+    
+    StringVector optim_stage3_995;
+    StringVector optim_stage2_995;
+    StringVector optim_stage1_995;
+    IntegerVector optim_age3_995;
+    IntegerVector optim_age2_995;
+    StringVector optim_eststage3_995;
+    StringVector optim_eststage2_995;
+    StringVector optim_eststage1_995;
+    IntegerVector optim_estage3_995;
+    IntegerVector optim_estage2_995;
+    NumericVector optim_givenrate_995;
+    NumericVector optim_offset_995;
+    NumericVector optim_multiplier_995;
+    IntegerVector optim_convtype_995;
+    IntegerVector optim_convtype_t12_995;
+    StringVector optim_year2_995;
+    IntegerVector optim_mpm_altered_995;
+    IntegerVector optim_vrm_altered_995;
+    
+    NumericVector optim_surv_dev_995;
+    NumericVector optim_obs_dev_995;
+    NumericVector optim_size_dev_995;
+    NumericVector optim_sizeb_dev_995;
+    NumericVector optim_sizec_dev_995;
+    NumericVector optim_repst_dev_995;
+    NumericVector optim_fec_dev_995;
+    
+    NumericVector optim_jsurv_dev_995;
+    NumericVector optim_jobs_dev_995;
+    NumericVector optim_jsize_dev_995;
+    NumericVector optim_jsizeb_dev_995;
+    NumericVector optim_jsizec_dev_995;
+    NumericVector optim_jrepst_dev_995;
+    NumericVector optim_jmatst_dev_995;
+    
+    // Vectors for ESS_trait_axis
+    IntegerVector ESS_variant = {1, 2};
+    
+    StringVector ESS_stage3 (2, NA_STRING);
+    StringVector ESS_stage2 (2, NA_STRING);
+    StringVector ESS_stage1 (2, NA_STRING);
+    IntegerVector ESS_age3 (2, NA_INTEGER);
+    IntegerVector ESS_age2 (2, NA_INTEGER);
+    StringVector ESS_eststage3 (2, NA_STRING);
+    StringVector ESS_eststage2 (2, NA_STRING);
+    StringVector ESS_eststage1 (2, NA_STRING);
+    IntegerVector ESS_estage3 (2, NA_INTEGER);
+    IntegerVector ESS_estage2 (2, NA_INTEGER);
+    IntegerVector ESS_convtype (2, NA_INTEGER);
+    IntegerVector ESS_convtype_t12 (2, NA_INTEGER);
+    StringVector ESS_year2 (2, NA_STRING);
+    IntegerVector ESS_mpm_altered (2, NA_INTEGER);
+    IntegerVector ESS_vrm_altered (2, NA_INTEGER);
+    
+    NumericVector ESS_givenrate (2, NA_REAL);
+    NumericVector ESS_offset (2, NA_REAL);
+    NumericVector ESS_multiplier (2, NA_REAL);
+    
+    NumericVector ESS_surv_dev (2, NA_REAL);
+    NumericVector ESS_obs_dev (2, NA_REAL);
+    NumericVector ESS_size_dev (2, NA_REAL);
+    NumericVector ESS_sizeb_dev (2, NA_REAL);
+    NumericVector ESS_sizec_dev (2, NA_REAL);
+    NumericVector ESS_repst_dev (2, NA_REAL);
+    NumericVector ESS_fec_dev (2, NA_REAL);
+    
+    NumericVector ESS_jsurv_dev (2, NA_REAL);
+    NumericVector ESS_jobs_dev (2, NA_REAL);
+    NumericVector ESS_jsize_dev (2, NA_REAL);
+    NumericVector ESS_jsizeb_dev (2, NA_REAL);
+    NumericVector ESS_jsizec_dev (2, NA_REAL);
+    NumericVector ESS_jrepst_dev (2, NA_REAL);
+    NumericVector ESS_jmatst_dev (2, NA_REAL);
+    
+    // Vectors supplied in ta_reassessed
+    IntegerVector variant = as<IntegerVector>(ta_reassessed["variant"]);
+    
+    NumericVector givenrate = as<NumericVector>(ta_reassessed["givenrate"]);
+    NumericVector offset = as<NumericVector>(ta_reassessed["offset"]);
+    NumericVector multiplier = as<NumericVector>(ta_reassessed["multiplier"]);
+    
+    NumericVector surv_dev = as<NumericVector>(ta_reassessed["surv_dev"]);
+    NumericVector obs_dev = as<NumericVector>(ta_reassessed["obs_dev"]);
+    NumericVector size_dev = as<NumericVector>(ta_reassessed["size_dev"]);
+    NumericVector sizeb_dev = as<NumericVector>(ta_reassessed["sizeb_dev"]);
+    NumericVector sizec_dev = as<NumericVector>(ta_reassessed["sizec_dev"]);
+    NumericVector repst_dev = as<NumericVector>(ta_reassessed["repst_dev"]);
+    NumericVector fec_dev = as<NumericVector>(ta_reassessed["fec_dev"]);
+    NumericVector jsurv_dev = as<NumericVector>(ta_reassessed["jsurv_dev"]);
+    NumericVector jobs_dev = as<NumericVector>(ta_reassessed["jobs_dev"]);
+    NumericVector jsize_dev = as<NumericVector>(ta_reassessed["jsize_dev"]);
+    NumericVector jsizeb_dev = as<NumericVector>(ta_reassessed["jsizeb_dev"]);
+    NumericVector jsizec_dev = as<NumericVector>(ta_reassessed["jsizec_dev"]);
+    NumericVector jrepst_dev = as<NumericVector>(ta_reassessed["jrepst_dev"]);
+    NumericVector jmatst_dev = as<NumericVector>(ta_reassessed["jmatst_dev"]);
+    
+    StringVector stage3 = as<StringVector>(ta_reassessed["stage3"]);
+    StringVector stage2 = as<StringVector>(ta_reassessed["stage2"]);
+    StringVector stage1 = as<StringVector>(ta_reassessed["stage1"]);
+    IntegerVector age3 = as<IntegerVector>(ta_reassessed["age3"]);
+    IntegerVector age2 = as<IntegerVector>(ta_reassessed["age2"]);
+    StringVector eststage3 = as<StringVector>(ta_reassessed["eststage3"]);
+    StringVector eststage2 = as<StringVector>(ta_reassessed["eststage2"]);
+    StringVector eststage1 = as<StringVector>(ta_reassessed["eststage1"]);
+    IntegerVector estage3 = as<IntegerVector>(ta_reassessed["estage3"]);
+    IntegerVector estage2 = as<IntegerVector>(ta_reassessed["estage2"]);
+    IntegerVector convtype = as<IntegerVector>(ta_reassessed["convtype"]);
+    IntegerVector convtype_t12 = as<IntegerVector>(ta_reassessed["convtype_t12"]);
+    StringVector year2 = as<StringVector>(ta_reassessed["year2"]);
+    IntegerVector mpm_altered = as<IntegerVector>(ta_reassessed["mpm_altered"]);
+    IntegerVector vrm_altered = as<IntegerVector>(ta_reassessed["vrm_altered"]);
+    
+    NumericVector givenrate_noNA = na_omit(givenrate);
+    NumericVector offset_noNA = na_omit(offset);
+    NumericVector multiplier_noNA = na_omit(multiplier);
+    NumericVector surv_dev_noNA = na_omit(surv_dev);
+    NumericVector obs_dev_noNA = na_omit(obs_dev);
+    NumericVector size_dev_noNA = na_omit(size_dev);
+    NumericVector sizeb_dev_noNA = na_omit(sizeb_dev);
+    NumericVector sizec_dev_noNA = na_omit(sizec_dev);
+    NumericVector repst_dev_noNA = na_omit(repst_dev);
+    NumericVector fec_dev_noNA = na_omit(fec_dev);
+    NumericVector jsurv_dev_noNA = na_omit(jsurv_dev);
+    NumericVector jobs_dev_noNA = na_omit(jobs_dev);
+    NumericVector jsize_dev_noNA = na_omit(jsize_dev);
+    NumericVector jsizeb_dev_noNA = na_omit(jsizeb_dev);
+    NumericVector jsizec_dev_noNA = na_omit(jsizec_dev);
+    NumericVector jrepst_dev_noNA = na_omit(jrepst_dev);
+    NumericVector jmatst_dev_noNA = na_omit(jmatst_dev);
+    
+    bool givenrate_NA {false};
+    bool multiplier_NA {false};
+    bool offset_NA {false};
+    bool surv_dev_NA {false};
+    bool obs_dev_NA {false};
+    bool size_dev_NA {false};
+    bool sizeb_dev_NA {false};
+    bool sizec_dev_NA {false};
+    bool repst_dev_NA {false};
+    bool fec_dev_NA {false};
+    bool jsurv_dev_NA {false};
+    bool jobs_dev_NA {false};
+    bool jsize_dev_NA {false};
+    bool jsizeb_dev_NA {false};
+    bool jsizec_dev_NA {false};
+    bool jrepst_dev_NA {false};
+    bool jmatst_dev_NA {false};
+    
+    int var1_length {0};
+    
+    for (int i = 0; i < static_cast<int>(variant.length()); i++) {
+      if (variant(i) == 1) {
+        var1_length++;
+      }
+    }
+    IntegerVector var1_bounds (var1_length);
+    int var1_bounds_counter {0};
+    for (int i = 0; i < static_cast<int>(variant.length()); i++) {
+      if (variant(i) == 1) {
+        var1_bounds(var1_bounds_counter) = i;
+        var1_bounds_counter++;
+      }
+    }
+    
+    if (var1_length == 0) {
+      throw Rcpp::exception("Cannot locate variant 1. Cannot determine variant dimensions.", false);
+    }
+    
+    double givenrate_min {0.};
+    double givenrate_max {0.};
+    double offset_min {0.};
+    double offset_max {0.};
+    double multiplier_min {0.};
+    double multiplier_max {0.};
+    
+    double surv_dev_min {0.};
+    double surv_dev_max {0.};
+    double obs_dev_min {0.};
+    double obs_dev_max {0.};
+    double size_dev_min {0.};
+    double size_dev_max {0.};
+    double sizeb_dev_min {0.};
+    double sizeb_dev_max {0.};
+    double sizec_dev_min {0.};
+    double sizec_dev_max {0.};
+    double repst_dev_min {0.};
+    double repst_dev_max {0.};
+    double fec_dev_min {0.};
+    double fec_dev_max {0.};
+    
+    double jsurv_dev_min {0.};
+    double jsurv_dev_max {0.};
+    double jobs_dev_min {0.};
+    double jobs_dev_max {0.};
+    double jsize_dev_min {0.};
+    double jsize_dev_max {0.};
+    double jsizeb_dev_min {0.};
+    double jsizeb_dev_max {0.};
+    double jsizec_dev_min {0.};
+    double jsizec_dev_max {0.};
+    double jrepst_dev_min {0.};
+    double jrepst_dev_max {0.};
+    double jmatst_dev_min {0.};
+    double jmatst_dev_max {0.};
+    
+    bool givenrate_reversed {false};
+    bool offset_reversed {false};
+    bool multiplier_reversed {false};
+    
+    bool surv_dev_reversed {false};
+    bool obs_dev_reversed {false};
+    bool size_dev_reversed {false};
+    bool sizeb_dev_reversed {false};
+    bool sizec_dev_reversed {false};
+    bool repst_dev_reversed {false};
+    bool fec_dev_reversed {false};
+    
+    bool jsurv_dev_reversed {false};
+    bool jobs_dev_reversed {false};
+    bool jsize_dev_reversed {false};
+    bool jsizeb_dev_reversed {false};
+    bool jsizec_dev_reversed {false};
+    bool jrepst_dev_reversed {false};
+    bool jmatst_dev_reversed {false};
+    
+    if (static_cast<int>(givenrate_noNA.length()) > 0) {
+      givenrate_min = min(givenrate_noNA);
+      givenrate_max = max(givenrate_noNA);
+      
+      unsigned int givenrate_min_pos = which_min(givenrate_noNA);
+      unsigned int givenrate_max_pos = which_max(givenrate_noNA);
+      
+      if (givenrate_min_pos < givenrate_max_pos) {
+        ESS_givenrate(0) = givenrate_min;
+        ESS_givenrate(1) = givenrate_max;
+      } else {
+        ESS_givenrate(0) = givenrate_max;
+        ESS_givenrate(1) = givenrate_min;
+        
+        givenrate_reversed = true;
+      }
+    } else {
+      givenrate_NA = true;
+    }
+    
+    if (static_cast<int>(offset_noNA.length()) > 0) {
+      offset_min = min(offset_noNA);
+      offset_max = max(offset_noNA);
+      
+      unsigned int offset_min_pos = which_min(offset_noNA);
+      unsigned int offset_max_pos = which_max(offset_noNA);
+      
+      if (offset_min_pos < offset_max_pos) {
+        ESS_offset(0) = offset_min;
+        ESS_offset(1) = offset_max;
+      } else {
+        ESS_offset(0) = offset_max;
+        ESS_offset(1) = offset_min;
+        
+        offset_reversed = true;
+      }
+    } else {
+      offset_NA = true;
+    }
+    
+    if (static_cast<int>(multiplier_noNA.length()) > 0) {
+      multiplier_min = min(multiplier_noNA);
+      multiplier_max = max(multiplier_noNA);
+      
+      unsigned int multiplier_min_pos = which_min(multiplier_noNA);
+      unsigned int multiplier_max_pos = which_max(multiplier_noNA);
+      
+      if (multiplier_min_pos < multiplier_max_pos) {
+        ESS_multiplier(0) = multiplier_min;
+        ESS_multiplier(1) = multiplier_max;
+      } else {
+        ESS_multiplier(0) = multiplier_max;
+        ESS_multiplier(1) = multiplier_min;
+        
+        multiplier_reversed = true;
+      }
+    } else {
+      multiplier_NA = true;
+    }
+    
+    if (static_cast<int>(surv_dev_noNA.length()) > 0) {
+      surv_dev_min = min(surv_dev_noNA);
+      surv_dev_max = max(surv_dev_noNA);
+      
+      unsigned int surv_dev_min_pos = which_min(surv_dev_noNA);
+      unsigned int surv_dev_max_pos = which_max(surv_dev_noNA);
+      
+      if (surv_dev_min_pos < surv_dev_max_pos) {
+        ESS_surv_dev(0) = surv_dev_min;
+        ESS_surv_dev(1) = surv_dev_max;
+      } else {
+        ESS_surv_dev(0) = surv_dev_max;
+        ESS_surv_dev(1) = surv_dev_min;
+        
+        surv_dev_reversed = true;
+      }
+    } else {
+      surv_dev_NA = true;
+    }
+    
+    if (static_cast<int>(obs_dev_noNA.length()) > 0) {
+      obs_dev_min = min(obs_dev_noNA);
+      obs_dev_max = max(obs_dev_noNA);
+      
+      unsigned int obs_dev_min_pos = which_min(obs_dev_noNA);
+      unsigned int obs_dev_max_pos = which_max(obs_dev_noNA);
+      
+      if (obs_dev_min_pos < obs_dev_max_pos) {
+        ESS_obs_dev(0) = obs_dev_min;
+        ESS_obs_dev(1) = obs_dev_max;
+      } else {
+        ESS_obs_dev(0) = obs_dev_max;
+        ESS_obs_dev(1) = obs_dev_min;
+        
+        obs_dev_reversed = true;
+      }
+    } else {
+      obs_dev_NA = true;
+    }
+    
+    
+    if (static_cast<int>(size_dev_noNA.length()) > 0) {
+      size_dev_min = min(size_dev_noNA);
+      size_dev_max = max(size_dev_noNA);
+      
+      unsigned int size_dev_min_pos = which_min(size_dev_noNA);
+      unsigned int size_dev_max_pos = which_max(size_dev_noNA);
+      
+      if (size_dev_min_pos < size_dev_max_pos) {
+        ESS_size_dev(0) = size_dev_min;
+        ESS_size_dev(1) = size_dev_max;
+      } else {
+        ESS_size_dev(0) = size_dev_max;
+        ESS_size_dev(1) = size_dev_min;
+        
+        size_dev_reversed = true;
+      }
+    } else {
+      size_dev_NA = true;
+    }
+    
+    if (static_cast<int>(sizeb_dev_noNA.length()) > 0) {
+      sizeb_dev_min = min(sizeb_dev_noNA);
+      sizeb_dev_max = max(sizeb_dev_noNA);
+      
+      unsigned int sizeb_dev_min_pos = which_min(sizeb_dev_noNA);
+      unsigned int sizeb_dev_max_pos = which_max(sizeb_dev_noNA);
+      
+      if (sizeb_dev_min_pos < sizeb_dev_max_pos) {
+        ESS_sizeb_dev(0) = sizeb_dev_min;
+        ESS_sizeb_dev(1) = sizeb_dev_max;
+      } else {
+        ESS_sizeb_dev(0) = sizeb_dev_max;
+        ESS_sizeb_dev(1) = sizeb_dev_min;
+        
+        sizeb_dev_reversed = true;
+      }
+    } else {
+      sizeb_dev_NA = true;
+    }
+    
+    if (static_cast<int>(sizec_dev_noNA.length()) > 0) {
+      sizec_dev_min = min(sizec_dev_noNA);
+      sizec_dev_max = max(sizec_dev_noNA);
+      
+      unsigned int sizec_dev_min_pos = which_min(sizec_dev_noNA);
+      unsigned int sizec_dev_max_pos = which_max(sizec_dev_noNA);
+      
+      if (sizec_dev_min_pos < sizec_dev_max_pos) {
+        ESS_sizec_dev(0) = sizec_dev_min;
+        ESS_sizec_dev(1) = sizec_dev_max;
+      } else {
+        ESS_sizec_dev(0) = sizec_dev_max;
+        ESS_sizec_dev(1) = sizec_dev_min;
+        
+        sizec_dev_reversed = true;
+      }
+    } else {
+      sizec_dev_NA = true;
+    }
+    
+    if (static_cast<int>(repst_dev_noNA.length()) > 0) {
+      repst_dev_min = min(repst_dev_noNA);
+      repst_dev_max = max(repst_dev_noNA);
+      
+      unsigned int repst_dev_min_pos = which_min(repst_dev_noNA);
+      unsigned int repst_dev_max_pos = which_max(repst_dev_noNA);
+      
+      if (repst_dev_min_pos < repst_dev_max_pos) {
+        ESS_repst_dev(0) = repst_dev_min;
+        ESS_repst_dev(1) = repst_dev_max;
+      } else {
+        ESS_repst_dev(0) = repst_dev_max;
+        ESS_repst_dev(1) = repst_dev_min;
+        
+        repst_dev_reversed = true;
+      }
+    } else {
+      repst_dev_NA = true;
+    }
+    
+    if (static_cast<int>(fec_dev_noNA.length()) > 0) {
+      fec_dev_min = min(fec_dev_noNA);
+      fec_dev_max = max(fec_dev_noNA);
+      
+      unsigned int fec_dev_min_pos = which_min(fec_dev_noNA);
+      unsigned int fec_dev_max_pos = which_max(fec_dev_noNA);
+      
+      if (fec_dev_min_pos < fec_dev_max_pos) {
+        ESS_fec_dev(0) = fec_dev_min;
+        ESS_fec_dev(1) = fec_dev_max;
+      } else {
+        ESS_fec_dev(0) = fec_dev_max;
+        ESS_fec_dev(1) = fec_dev_min;
+        
+        fec_dev_reversed = true;
+      }
+    } else {
+      fec_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jsurv_dev_noNA.length()) > 0) {
+      jsurv_dev_min = min(jsurv_dev_noNA);
+      jsurv_dev_max = max(jsurv_dev_noNA);
+      
+      unsigned int jsurv_dev_min_pos = which_min(jsurv_dev_noNA);
+      unsigned int jsurv_dev_max_pos = which_max(jsurv_dev_noNA);
+      
+      if (jsurv_dev_min_pos < jsurv_dev_max_pos) {
+        ESS_jsurv_dev(0) = jsurv_dev_min;
+        ESS_jsurv_dev(1) = jsurv_dev_max;
+      } else {
+        ESS_jsurv_dev(0) = jsurv_dev_max;
+        ESS_jsurv_dev(1) = jsurv_dev_min;
+        
+        jsurv_dev_reversed = true;
+      }
+    } else {
+      jsurv_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jobs_dev_noNA.length()) > 0) {
+      jobs_dev_min = min(jobs_dev_noNA);
+      jobs_dev_max = max(jobs_dev_noNA);
+      
+      unsigned int jobs_dev_min_pos = which_min(jobs_dev_noNA);
+      unsigned int jobs_dev_max_pos = which_max(jobs_dev_noNA);
+      
+      if (jobs_dev_min_pos < jobs_dev_max_pos) {
+        ESS_jobs_dev(0) = jobs_dev_min;
+        ESS_jobs_dev(1) = jobs_dev_max;
+      } else {
+        ESS_jobs_dev(0) = jobs_dev_max;
+        ESS_jobs_dev(1) = jobs_dev_min;
+        
+        jobs_dev_reversed = true;
+      }
+    } else {
+      jobs_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jsize_dev_noNA.length()) > 0) {
+      jsize_dev_min = min(jsize_dev_noNA);
+      jsize_dev_max = max(jsize_dev_noNA);
+      
+      unsigned int jsize_dev_min_pos = which_min(jsize_dev_noNA);
+      unsigned int jsize_dev_max_pos = which_max(jsize_dev_noNA);
+      
+      if (jsize_dev_min_pos < jsize_dev_max_pos) {
+        ESS_jsize_dev(0) = jsize_dev_min;
+        ESS_jsize_dev(1) = jsize_dev_max;
+      } else {
+        ESS_jsize_dev(0) = jsize_dev_max;
+        ESS_jsize_dev(1) = jsize_dev_min;
+        
+        jsize_dev_reversed = true;
+      }
+    } else {
+      jsize_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jsizeb_dev_noNA.length()) > 0) {
+      jsizeb_dev_min = min(jsizeb_dev_noNA);
+      jsizeb_dev_max = max(jsizeb_dev_noNA);
+      
+      unsigned int jsizeb_dev_min_pos = which_min(jsizeb_dev_noNA);
+      unsigned int jsizeb_dev_max_pos = which_max(jsizeb_dev_noNA);
+      
+      if (jsizeb_dev_min_pos < jsizeb_dev_max_pos) {
+        ESS_jsizeb_dev(0) = jsizeb_dev_min;
+        ESS_jsizeb_dev(1) = jsizeb_dev_max;
+      } else {
+        ESS_jsizeb_dev(0) = jsizeb_dev_max;
+        ESS_jsizeb_dev(1) = jsizeb_dev_min;
+        
+        jsizeb_dev_reversed = true;
+      }
+    } else {
+      jsizeb_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jsizec_dev_noNA.length()) > 0) {
+      jsizec_dev_min = min(jsizec_dev_noNA);
+      jsizec_dev_max = max(jsizec_dev_noNA);
+      
+      unsigned int jsizec_dev_min_pos = which_min(jsizec_dev_noNA);
+      unsigned int jsizec_dev_max_pos = which_max(jsizec_dev_noNA);
+      
+      if (jsizec_dev_min_pos < jsizec_dev_max_pos) {
+        ESS_jsizec_dev(0) = jsizec_dev_min;
+        ESS_jsizec_dev(1) = jsizec_dev_max;
+      } else {
+        ESS_jsizec_dev(0) = jsizec_dev_max;
+        ESS_jsizec_dev(1) = jsizec_dev_min;
+        
+        jsizec_dev_reversed = true;
+      }
+    } else {
+      jsizec_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jrepst_dev_noNA.length()) > 0) {
+      jrepst_dev_min = min(jrepst_dev_noNA);
+      jrepst_dev_max = max(jrepst_dev_noNA);
+      
+      unsigned int jrepst_dev_min_pos = which_min(jrepst_dev_noNA);
+      unsigned int jrepst_dev_max_pos = which_max(jrepst_dev_noNA);
+      
+      if (jrepst_dev_min_pos < jrepst_dev_max_pos) {
+        ESS_jrepst_dev(0) = jrepst_dev_min;
+        ESS_jrepst_dev(1) = jrepst_dev_max;
+      } else {
+        ESS_jrepst_dev(0) = jrepst_dev_max;
+        ESS_jrepst_dev(1) = jrepst_dev_min;
+        
+        jrepst_dev_reversed = true;
+      }
+    } else {
+      jrepst_dev_NA = true;
+    }
+    
+    if (static_cast<int>(jmatst_dev_noNA.length()) > 0) {
+      jmatst_dev_min = min(jmatst_dev_noNA);
+      jmatst_dev_max = max(jmatst_dev_noNA);
+      
+      unsigned int jmatst_dev_min_pos = which_min(jmatst_dev_noNA);
+      unsigned int jmatst_dev_max_pos = which_max(jmatst_dev_noNA);
+      
+      if (jmatst_dev_min_pos < jmatst_dev_max_pos) {
+        ESS_jmatst_dev(0) = jmatst_dev_min;
+        ESS_jmatst_dev(1) = jmatst_dev_max;
+      } else {
+        ESS_jmatst_dev(0) = jmatst_dev_max;
+        ESS_jmatst_dev(1) = jmatst_dev_min;
+        
+        jmatst_dev_reversed = true;
+      }
+    } else {
+      jmatst_dev_NA = true;
+    }
+    
+    
+    int found_variables_all {0};
+    int found_variables {0};
+    bool first_var_found {false};
+    
+    arma::ivec mpm_altered_arma = as<arma::ivec>(mpm_altered);
+    arma::uvec found_mpm_altered = find(mpm_altered_arma);
+    int input_ta_length = static_cast<int>(stage3.length());
+    
+    StringVector core_stage_index (input_ta_length);
+    if (static_cast<int>(found_mpm_altered.n_elem) > 0) {
+      //Rcout << "using mpm_altered if-else route A" << endl;
+      for (int i = 0; i < input_ta_length; i++) {
+        String a3 = String(stage3(i));
+        String a2 = String(stage2(i));
+        String a1 = String(stage1(i));
+        String ag2;
+        if (IntegerVector::is_na(age2(i))) {
+          ag2 = "0 ";
+        } else {
+          std::string ag2_conv = std::to_string(static_cast<int>(age2(i)));
+          ag2 = String(ag2_conv);
+        }
+        if (a3 == "NA_STRING") a3 = "0 ";
+        if (a2 == "NA_STRING") a2 = "0 ";
+        if (a1 == "NA_STRING") a1 = "0 ";
+        
+        String new_string_code = a3;
+        new_string_code += " ";
+        new_string_code += a2;
+        new_string_code += " ";
+        new_string_code += a1;
+        new_string_code += " ";
+        new_string_code += ag2;
+        
+        core_stage_index(i) = new_string_code;
+      }
+    } else {
+      //Rcout << "using mpm_altered if-else route B" << endl;
+      for (int i = 0; i < input_ta_length; i++) {
+        core_stage_index(i) = "1";
+      }
+    }
+    
+    //Rcout << "core_stage_index: " << core_stage_index << endl;
+    
+    StringVector unique_core_stages = unique(core_stage_index);
+    int found_core_stage_indices = unique_core_stages.length();
+    
+    arma::mat ta_rows_per_change_per_variant (found_core_stage_indices, 17, fill::zeros); // rows = var_rows, cols = vital rates
+    IntegerVector place_holder_for_mat (found_core_stage_indices, 0);
+    
+    StringVector new_stage3_found_variables (found_core_stage_indices);
+    StringVector new_stage2_found_variables (found_core_stage_indices);
+    StringVector new_stage1_found_variables (found_core_stage_indices);
+    IntegerVector new_age3_found_variables (found_core_stage_indices);
+    IntegerVector new_age2_found_variables (found_core_stage_indices);
+    
+    StringVector new_eststage3_found_variables (found_core_stage_indices);
+    StringVector new_eststage2_found_variables (found_core_stage_indices);
+    StringVector new_eststage1_found_variables (found_core_stage_indices);
+    IntegerVector new_estage3_found_variables (found_core_stage_indices);
+    IntegerVector new_estage2_found_variables (found_core_stage_indices);
+    
+    IntegerVector new_convtype_found_variables (found_core_stage_indices);
+    IntegerVector new_convtype_t12_found_variables (found_core_stage_indices);
+    StringVector new_year2_found_variables (found_core_stage_indices);
+    IntegerVector new_mpm_altered_found_variables (found_core_stage_indices);
+    IntegerVector new_vrm_altered_found_variables (found_core_stage_indices);
+    
+    IntegerVector found_core_stage_index_vector (input_ta_length);
+    for (int i = 0; i < input_ta_length; i++) {
+      for (int j = 0; j < found_core_stage_indices; j++) {
+        if (core_stage_index(i) == unique_core_stages(j)) {
+          new_stage3_found_variables(j) = stage3(i);
+          new_stage2_found_variables(j) = stage2(i);
+          new_stage1_found_variables(j) = stage1(i);
+          new_age3_found_variables(j) = age3(i);
+          new_age2_found_variables(j) = age2(i);
+          
+          new_eststage3_found_variables(j) = eststage3(i);
+          new_eststage2_found_variables(j) = eststage2(i);
+          new_eststage1_found_variables(j) = eststage1(i);
+          new_estage3_found_variables(j) = estage3(i);
+          new_estage2_found_variables(j) = estage2(i);
+          
+          new_convtype_found_variables(j) = convtype(i);
+          new_convtype_t12_found_variables(j) = convtype_t12(i);
+          new_year2_found_variables(j) = year2(i);
+          new_mpm_altered_found_variables(j) = mpm_altered(i);
+          new_vrm_altered_found_variables(j) = vrm_altered(i);
+          
+          found_core_stage_index_vector(i) = j + 1;
+          place_holder_for_mat(j) = place_holder_for_mat(j) + 1;
+        }
+      }
+    }
+    
+    // mpm-altered only
+    if (givenrate_min != givenrate_max) {
+      ESS_variable_traits(0) = found_core_stage_indices;
+      found_variables_all = found_variables_all + found_core_stage_indices;
+      found_variables++;
+      
+      for (int i = 0; i < found_core_stage_indices; i++) {
+        ta_rows_per_change_per_variant(i, 0) = place_holder_for_mat(i);
+      }
+    }
+    if (offset_min != offset_max) {
+      ESS_variable_traits(1) = found_core_stage_indices;
+      found_variables_all = found_variables_all + found_core_stage_indices;
+      found_variables++;
+      
+      for (int i = 0; i < found_core_stage_indices; i++) {
+        ta_rows_per_change_per_variant(i, 1) = place_holder_for_mat(i);
+      }
+    }
+    if (multiplier_min != multiplier_max) {
+      ESS_variable_traits(2) = found_core_stage_indices;
+      found_variables_all = found_variables_all + found_core_stage_indices;
+      found_variables++;
+      
+      for (int i = 0; i < found_core_stage_indices; i++) {
+        ta_rows_per_change_per_variant(i, 2) = place_holder_for_mat(i);
+      }
+    }
+    
+    // vrm-altered only
+    if (surv_dev_min != surv_dev_max) {
+      ESS_variable_traits(3) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 3) = 1;
+    }
+    if (obs_dev_min != obs_dev_max) {
+      ESS_variable_traits(4) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 4) = 1;
+    }
+    if (size_dev_min != size_dev_max) {
+      ESS_variable_traits(5) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 5) = 1;
+    }
+    if (sizeb_dev_min != sizeb_dev_max) {
+      ESS_variable_traits(6) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 6) = 1;
+    }
+    if (sizec_dev_min != sizec_dev_max) {
+      ESS_variable_traits(7) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 7) = 1;
+    }
+    if (repst_dev_min != repst_dev_max) {
+      ESS_variable_traits(8) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 8) = 1;
+    }
+    if (fec_dev_min != fec_dev_max) {
+      ESS_variable_traits(9) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 9) = 1;
+    }
+    if (jsurv_dev_min != jsurv_dev_max) {
+      ESS_variable_traits(10) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 10) = 1;
+    }
+    if (jobs_dev_min != jobs_dev_max) {
+      ESS_variable_traits(11) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 11) = 1;
+    }
+    if (jsize_dev_min != jsize_dev_max) {
+      ESS_variable_traits(12) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 12) = 1;
+    }
+    if (jsizeb_dev_min != jsizeb_dev_max) {
+      ESS_variable_traits(13) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 13) = 1;
+    }
+    if (jsizec_dev_min != jsizec_dev_max) {
+      ESS_variable_traits(14) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 14) = 1;
+    }
+    if (jrepst_dev_min != jrepst_dev_max) {
+      ESS_variable_traits(15) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 15) = 1;
+    }
+    if (jmatst_dev_min != jmatst_dev_max) {
+      ESS_variable_traits(16) = 1;
+      found_variables_all++;
+      found_variables++;
+      
+      ta_rows_per_change_per_variant(0, 16) = 1;
+    }
+    
+    int data_frame_length = opt_res * var1_length;
+    
+    int ta_re_vars = ta_reassessed.length();
+    int ta_re_nrows = ta_reassessed.nrows();
+    int ESS_ta_vars = ESS_ta.length();
+    int ESS_ta_nrows = ESS_ta.nrows();
+    int optim_ta_vars = optim_ta.length();
+    int optim_ta_nrows = optim_ta.nrows();
+    int optim_ta_995_vars = optim_ta_995.length();
+    int optim_ta_995_nrows = optim_ta_995.nrows();
+    
+    cloned_ta_reassess = clone(ta_reassessed);
+    
+    optim_variant = as<IntegerVector>(cloned_ta_reassess["variant"]);
+    optim_stage3 = as<CharacterVector>(cloned_ta_reassess["stage3"]);
+    optim_stage2 = as<CharacterVector>(cloned_ta_reassess["stage2"]);
+    optim_stage1 = as<CharacterVector>(cloned_ta_reassess["stage1"]);
+    optim_age3 = as<IntegerVector>(cloned_ta_reassess["age3"]);
+    optim_age2 = as<IntegerVector>(cloned_ta_reassess["age2"]);
+    optim_eststage3 = as<CharacterVector>(cloned_ta_reassess["eststage3"]);
+    optim_eststage2 = as<CharacterVector>(cloned_ta_reassess["eststage2"]);
+    optim_eststage1 = as<CharacterVector>(cloned_ta_reassess["eststage1"]);
+    optim_estage3 = as<IntegerVector>(cloned_ta_reassess["estage3"]);
+    optim_estage2 = as<IntegerVector>(cloned_ta_reassess["estage2"]);
+    optim_convtype = as<IntegerVector>(cloned_ta_reassess["convtype"]);
+    optim_convtype_t12 = as<IntegerVector>(cloned_ta_reassess["convtype_t12"]);
+    optim_year2 = as<CharacterVector>(cloned_ta_reassess["year2"]);
+    optim_mpm_altered = as<IntegerVector>(cloned_ta_reassess["mpm_altered"]);
+    optim_vrm_altered = as<IntegerVector>(cloned_ta_reassess["vrm_altered"]);
+    
+    opt_res = static_cast<int>(optim_stage3.length());
+    
+    for (int i = 0; i < 2; i++) {
+      ESS_stage3(i) = stage3(0);
+      ESS_stage2(i) = stage2(0);
+      ESS_stage1(i) = stage1(0);
+      ESS_age3(i) = age3(0);
+      ESS_age2(i) = age2(0);
+      ESS_eststage3(i) = eststage3(0);
+      ESS_eststage2(i) = eststage2(0);
+      ESS_eststage1(i) = eststage1(0);
+      ESS_estage3(i) = estage3(0);
+      ESS_estage2(i) = estage2(0);
+      ESS_convtype(i) = convtype(0);
+      ESS_convtype_t12(i) = convtype_t12(0);
+      ESS_year2(i) = year2(0);
+      ESS_mpm_altered(i) = mpm_altered(0);
+      ESS_vrm_altered(i) = vrm_altered(0);
+    }
+    
+    // Establish core values in variable vs. constant traits
+    optim_givenrate = as<NumericVector>(cloned_ta_reassess["givenrate"]);
+    optim_offset = as<NumericVector>(cloned_ta_reassess["offset"]);
+    optim_multiplier = as<NumericVector>(cloned_ta_reassess["multiplier"]);
+    optim_surv_dev = as<NumericVector>(cloned_ta_reassess["surv_dev"]);
+    optim_obs_dev = as<NumericVector>(cloned_ta_reassess["obs_dev"]);
+    optim_size_dev = as<NumericVector>(cloned_ta_reassess["size_dev"]);
+    optim_sizeb_dev = as<NumericVector>(cloned_ta_reassess["sizeb_dev"]);
+    optim_sizec_dev = as<NumericVector>(cloned_ta_reassess["sizec_dev"]);
+    optim_repst_dev = as<NumericVector>(cloned_ta_reassess["repst_dev"]);
+    optim_fec_dev = as<NumericVector>(cloned_ta_reassess["fec_dev"]);
+    optim_jsurv_dev = as<NumericVector>(cloned_ta_reassess["jsurv_dev"]);
+    optim_jobs_dev = as<NumericVector>(cloned_ta_reassess["jobs_dev"]);
+    optim_jsize_dev = as<NumericVector>(cloned_ta_reassess["jsize_dev"]);
+    optim_jsizeb_dev = as<NumericVector>(cloned_ta_reassess["jsizeb_dev"]);
+    optim_jsizec_dev = as<NumericVector>(cloned_ta_reassess["jsizec_dev"]);
+    optim_jrepst_dev = as<NumericVector>(cloned_ta_reassess["jrepst_dev"]);
+    optim_jmatst_dev = as<NumericVector>(cloned_ta_reassess["jmatst_dev"]);
+    
+    optim_givenrate_995 = clone(optim_givenrate);
+    optim_offset_995 = clone(optim_offset);
+    optim_multiplier_995 = clone(optim_multiplier);
+    optim_surv_dev_995 = clone(optim_surv_dev);
+    optim_obs_dev_995 = clone(optim_obs_dev);
+    optim_size_dev_995 = clone(optim_size_dev);
+    optim_sizeb_dev_995 = clone(optim_sizeb_dev);
+    optim_sizec_dev_995 = clone(optim_sizec_dev);
+    optim_repst_dev_995 = clone(optim_repst_dev);
+    optim_fec_dev_995 = clone(optim_fec_dev);
+    optim_jsurv_dev_995 = clone(optim_jsurv_dev);
+    optim_jobs_dev_995 = clone(optim_jobs_dev);
+    optim_jsize_dev_995 = clone(optim_jsize_dev);
+    optim_jsizeb_dev_995 = clone(optim_jsizeb_dev);
+    optim_jsizec_dev_995 = clone(optim_jsizec_dev);
+    optim_jrepst_dev_995 = clone(optim_jrepst_dev);
+    optim_jmatst_dev_995 = clone(optim_jmatst_dev);
+    
+    
+    if (ESS_variable_traits(0) > 0) optim_givenrate_995 = optim_givenrate_995 * elast_multiplier;
+    if (ESS_variable_traits(1) > 0) optim_offset_995 = optim_offset_995 * elast_multiplier;
+    if (ESS_variable_traits(2) > 0) optim_multiplier_995 = optim_multiplier_995 * elast_multiplier;
+    if (ESS_variable_traits(3) > 0) optim_surv_dev_995 = optim_surv_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(4) > 0) optim_obs_dev_995 = optim_obs_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(5) > 0) optim_size_dev_995 = optim_size_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(6) > 0) optim_sizeb_dev_995 = optim_sizeb_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(7) > 0) optim_sizec_dev_995 = optim_sizec_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(8) > 0) optim_repst_dev_995 = optim_repst_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(9) > 0) optim_fec_dev_995 = optim_fec_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(10) > 0) optim_jsurv_dev_995 = optim_jsurv_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(11) > 0) optim_jobs_dev_995 = optim_jobs_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(12) > 0) optim_jsize_dev_995 = optim_jsize_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(13) > 0) optim_jsizeb_dev_995 = optim_jsizeb_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(14) > 0) optim_jsizec_dev_995 = optim_jsizec_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(15) > 0) optim_jrepst_dev_995 = optim_jrepst_dev_995 * elast_multiplier;
+    if (ESS_variable_traits(16) > 0) optim_jmatst_dev_995 = optim_jmatst_dev_995 * elast_multiplier;
+    
+    optim_variant_995 = clone(optim_variant);
+    
+    optim_stage3_995 = clone(optim_stage3);
+    optim_stage2_995 = clone(optim_stage2);
+    optim_stage1_995 = clone(optim_stage1);
+    optim_age3_995 = clone(optim_age3);
+    optim_age2_995 = clone(optim_age2);
+    optim_eststage3_995 = clone(optim_eststage3);
+    optim_eststage2_995 = clone(optim_eststage2);
+    optim_eststage1_995 = clone(optim_eststage1);
+    optim_estage3_995 = clone(optim_estage3);
+    optim_estage2_995 = clone(optim_estage2);
+    optim_convtype_995 = clone(optim_convtype);
+    optim_convtype_t12_995 = clone(optim_convtype_t12);
+    optim_year2_995 = clone(optim_year2);
+    optim_mpm_altered_995 = clone(optim_mpm_altered);
+    optim_vrm_altered_995 = clone(optim_vrm_altered);
+    
+    List output (33);
+    
+    output(0) = optim_variant;
+    output(1) = optim_stage3;
+    output(2) = optim_stage2;
+    output(3) = optim_stage1;
+    output(4) = optim_age3;
+    output(5) = optim_age2;
+    output(6) = optim_eststage3;
+    output(7) = optim_eststage2;
+    output(8) = optim_eststage1;
+    output(9) = optim_estage3;
+    output(10) = optim_estage2;
+    output(11) = optim_givenrate;
+    output(12) = optim_offset;
+    output(13) = optim_multiplier;
+    output(14) = optim_convtype;
+    output(15) = optim_convtype_t12;
+    output(16) = optim_surv_dev;
+    output(17) = optim_obs_dev;
+    output(18) = optim_size_dev;
+    output(19) = optim_sizeb_dev;
+    output(20) = optim_sizec_dev;
+    output(21) = optim_repst_dev;
+    output(22) = optim_fec_dev;
+    output(23) = optim_jsurv_dev;
+    output(24) = optim_jobs_dev;
+    output(25) = optim_jsize_dev;
+    output(26) = optim_jsizeb_dev;
+    output(27) = optim_jsizec_dev;
+    output(28) = optim_jrepst_dev;
+    output(29) = optim_jmatst_dev;
+    output(30) = optim_year2;
+    output(31) = optim_mpm_altered;
+    output(32) = optim_vrm_altered;
+    
+    CharacterVector ta_names = as<CharacterVector>(ta_reassessed.attr("names"));
+    output.attr("names") = clone(ta_names);
+    output.attr("class") = "data.frame";
+    output.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, data_frame_length);
+    
+    optim_ta = output;
+    
+    List output_995 (33);
+    
+    output_995(0) = optim_variant_995;
+    output_995(1) = optim_stage3_995;
+    output_995(2) = optim_stage2_995;
+    output_995(3) = optim_stage1_995;
+    output_995(4) = optim_age3_995;
+    output_995(5) = optim_age2_995;
+    output_995(6) = optim_eststage3_995;
+    output_995(7) = optim_eststage2_995;
+    output_995(8) = optim_eststage1_995;
+    output_995(9) = optim_estage3_995;
+    output_995(10) = optim_estage2_995;
+    output_995(11) = optim_givenrate_995;
+    output_995(12) = optim_offset_995;
+    output_995(13) = optim_multiplier_995;
+    output_995(14) = optim_convtype_995;
+    output_995(15) = optim_convtype_t12_995;
+    output_995(16) = optim_surv_dev_995;
+    output_995(17) = optim_obs_dev_995;
+    output_995(18) = optim_size_dev_995;
+    output_995(19) = optim_sizeb_dev_995;
+    output_995(20) = optim_sizec_dev_995;
+    output_995(21) = optim_repst_dev_995;
+    output_995(22) = optim_fec_dev_995;
+    output_995(23) = optim_jsurv_dev_995;
+    output_995(24) = optim_jobs_dev_995;
+    output_995(25) = optim_jsize_dev_995;
+    output_995(26) = optim_jsizeb_dev_995;
+    output_995(27) = optim_jsizec_dev_995;
+    output_995(28) = optim_jrepst_dev_995;
+    output_995(29) = optim_jmatst_dev_995;
+    output_995(30) = optim_year2_995;
+    output_995(31) = optim_mpm_altered_995;
+    output_995(32) = optim_vrm_altered_995;
+    
+    output_995.attr("names") = clone(ta_names);
+    output_995.attr("class") = "data.frame";
+    output_995.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, data_frame_length);
+    
+    optim_ta_995 = output_995;
+    
+    List output_ESS (33);
+    
+    output_ESS(0) = ESS_variant;
+    output_ESS(1) = ESS_stage3;
+    output_ESS(2) = ESS_stage2;
+    output_ESS(3) = ESS_stage1;
+    output_ESS(4) = ESS_age3;
+    output_ESS(5) = ESS_age2;
+    output_ESS(6) = ESS_eststage3;
+    output_ESS(7) = ESS_eststage2;
+    output_ESS(8) = ESS_eststage1;
+    output_ESS(9) = ESS_estage3;
+    output_ESS(10) = ESS_estage2;
+    output_ESS(11) = ESS_givenrate;
+    output_ESS(12) = ESS_offset;
+    output_ESS(13) = ESS_multiplier;
+    output_ESS(14) = ESS_convtype;
+    output_ESS(15) = ESS_convtype_t12;
+    output_ESS(16) = ESS_surv_dev;
+    output_ESS(17) = ESS_obs_dev;
+    output_ESS(18) = ESS_size_dev;
+    output_ESS(19) = ESS_sizeb_dev;
+    output_ESS(20) = ESS_sizec_dev;
+    output_ESS(21) = ESS_repst_dev;
+    output_ESS(22) = ESS_fec_dev;
+    output_ESS(23) = ESS_jsurv_dev;
+    output_ESS(24) = ESS_jobs_dev;
+    output_ESS(25) = ESS_jsize_dev;
+    output_ESS(26) = ESS_jsizeb_dev;
+    output_ESS(27) = ESS_jsizec_dev;
+    output_ESS(28) = ESS_jrepst_dev;
+    output_ESS(29) = ESS_jmatst_dev;
+    output_ESS(30) = ESS_year2;
+    output_ESS(31) = ESS_mpm_altered;
+    output_ESS(32) = ESS_vrm_altered;
+    
+    output_ESS.attr("names") = clone(ta_names);
+    output_ESS.attr("class") = "data.frame";
+    output_ESS.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, 2);
+    
+    ESS_ta = output_ESS;
+    
+    variable_traits = ESS_variable_traits;
   }
 
 }

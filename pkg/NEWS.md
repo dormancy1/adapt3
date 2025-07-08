@@ -1,4 +1,21 @@
-# adapt X.X.X. (2025-XX-XX)
+# adapt 0.9.9 (2025-07-08)
+
+## USER-VISIBLE CHANGES
+
+* Invasibility analysis vignette fully created.
+
+## BUGS FIXED
+
+* Function invade3() now correctly subsets converged trait optima rows.
+
+# adapt 0.9.8 (2025-07-07)
+
+## NEW FEATURES
+
+* Functions plot.adaptInv() and summary.adaptInv() created to plot and
+  summarize invasibility analyses, respectively.
+
+# adapt 0.9.7 (2025-07-05)
 
 ## NEW FEATURES
 

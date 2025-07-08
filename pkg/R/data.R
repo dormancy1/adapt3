@@ -10,65 +10,47 @@
 #' 
 #' @usage data(cypa_data)
 #' 
-#' @format A data frame with 1119 individuals and 55 variables. Each row 
-#' corresponds to an unique individual, and each variable from \code{Inf2.94} 
+#' @format A data frame with 1119 individuals and 37 variables. Each row 
+#' corresponds to an unique individual, and each variable from \code{Inf.94} 
 #' on refers to the state of the individual in a particular year.
 #' 
 #' \describe{
 #'   \item{plantid}{A numeric variable giving a unique number to each 
 #'   individual.}
-#'   \item{Inf2.94}{Number of double inflorescences in 1994.}
 #'   \item{Inf.94}{Number of inflorescences in 1994.}
 #'   \item{Veg.94}{Number of stems without inflorescences in 1994.}
-#'   \item{Inf2.95}{Number of double inflorescences in 1995.}
 #'   \item{Inf.95}{Number of inflorescences in 1995.}
 #'   \item{Veg.95}{Number of stems without inflorescences in 1995.}
-#'   \item{Inf2.96}{Number of double inflorescences in 1996.}
 #'   \item{Inf.96}{Number of inflorescences in 1996.}
 #'   \item{Veg.96}{Number of stems without inflorescences in 1996.}
-#'   \item{Inf2.97}{Number of double inflorescences in 1997.}
 #'   \item{Inf.97}{Number of inflorescences in 1997.}
 #'   \item{Veg.97}{Number of stems without inflorescences in 1997.}
-#'   \item{Inf2.98}{Number of double inflorescences in 1998.}
 #'   \item{Inf.98}{Number of inflorescences in 1998.}
 #'   \item{Veg.98}{Number of stems without inflorescences in 1998.}
-#'   \item{Inf2.99}{Number of double inflorescences in 1999.}
 #'   \item{Inf.99}{Number of inflorescences in 1999.}
 #'   \item{Veg.99}{Number of stems without inflorescences in 1999.}
-#'   \item{Inf2.00}{Number of double inflorescences in 2000.}
 #'   \item{Inf.00}{Number of inflorescences in 2000.}
 #'   \item{Veg.00}{Number of stems without inflorescences in 2000.}
-#'   \item{Inf2.01}{Number of double inflorescences in 2001.}
 #'   \item{Inf.01}{Number of inflorescences in 2001.}
 #'   \item{Veg.01}{Number of stems without inflorescences in 2001.}
-#'   \item{Inf2.02}{Number of double inflorescences in 2002.}
 #'   \item{Inf.02}{Number of inflorescences in 2002.}
 #'   \item{Veg.02}{Number of stems without inflorescences in 2002.}
-#'   \item{Inf2.03}{Number of double inflorescences in 2003.}
 #'   \item{Inf.03}{Number of inflorescences in 2003.}
 #'   \item{Veg.03}{Number of stems without inflorescences in 2003.}
-#'   \item{Inf2.04}{Number of double inflorescences in 2004.}
 #'   \item{Inf.04}{Number of inflorescences in 2004.}
 #'   \item{Veg.04}{Number of stems without inflorescences in 2004.}
-#'   \item{Inf2.05}{Number of double inflorescences in 2005.}
 #'   \item{Inf.05}{Number of inflorescences in 2005.}
 #'   \item{Veg.05}{Number of stems without inflorescences in 2005.}
-#'   \item{Inf2.06}{Number of double inflorescences in 2006.}
 #'   \item{Inf.06}{Number of inflorescences in 2006.}
 #'   \item{Veg.06}{Number of stems without inflorescences in 2006.}
-#'   \item{Inf2.07}{Number of double inflorescences in 2007.}
 #'   \item{Inf.07}{Number of inflorescences in 2007.}
 #'   \item{Veg.07}{Number of stems without inflorescences in 2007.}
-#'   \item{Inf2.08}{Number of double inflorescences in 2008.}
 #'   \item{Inf.08}{Number of inflorescences in 2008.}
 #'   \item{Veg.08}{Number of stems without inflorescences in 2008.}
-#'   \item{Inf2.09}{Number of double inflorescences in 2009.}
 #'   \item{Inf.09}{Number of inflorescences in 2009.}
 #'   \item{Veg.09}{Number of stems without inflorescences in 2009.}
-#'   \item{Inf2.10}{Number of double inflorescences in 2010.}
 #'   \item{Inf.10}{Number of inflorescences in 2010.}
 #'   \item{Veg.10}{Number of stems without inflorescences in 2010.}
-#'   \item{Inf2.11}{Number of double inflorescences in 2011.}
 #'   \item{Inf.11}{Number of inflorescences in 2011.}
 #'   \item{Veg.11}{Number of stems without inflorescences in 2011.}
 #' }

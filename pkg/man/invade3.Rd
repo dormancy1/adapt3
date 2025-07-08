@@ -30,21 +30,24 @@ invade3(
   fecmod = NULL,
   density = NULL,
   density_vr = NULL,
+  stochastic = NULL,
+  A_only = NULL,
+  integeronly = NULL,
+  fitness_table = NULL,
+  trait_optima = NULL,
+  zap_min = NULL,
+  converged_only = NULL,
   err_check = NULL,
   var_per_run = 2L,
-  stochastic = FALSE,
-  integeronly = FALSE,
   substoch = 0L,
+  elast_mult = 0.995,
   nreps = 1L,
   times = 10000L,
   fitness_times = 100L,
-  opt_res = 100L,
   exp_tol = 700,
   theta_tol = 1e+08,
   threshold = 1e-08,
-  A_only = TRUE,
-  fitness_table = TRUE,
-  optima = TRUE
+  loop_max = 150L
 )
 }
 \arguments{
@@ -186,6 +189,30 @@ created with function \code{link[lefko3]{density_vr}()}. Can only be used
 with function-based projections. Defaults to \code{NULL}, in which case no
 density dependence is built into vital rates.}
 
+\item{stochastic}{A logical value indicating whether the projection will be
+run as a temporally stochastic projection. Defaults to \code{FALSE}.}
+
+\item{A_only}{A logical value indicating whether to alter survival and
+fecundity matrix elements separately prior to creating the overall \code{A}
+matrix, or whether to alter elements directly on \code{A} matrices. Defaults
+to \code{TRUE}, and should be kept to that setting unless some matrix
+elements to be altered are sums of survival and fecundity transitions.}
+
+\item{integeronly}{A logical value indicating whether to round the number of
+individuals projected in each stage at each occasion down to the next lower
+integer. Defaults to \code{FALSE}.}
+
+\item{fitness_table}{A logical value dictating whether to include a data
+frame giving Lyapunov coefficients for all combinations of variants tested.
+Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
+to \code{TRUE}.}
+
+\item{trait_optima}{A logical value indicating whether to assess the optimal
+values of traits, generally as kinds of evolutionary stage equilibrium (ESS)
+points. Trait optimization is conducted via elasticity analysis of traits
+that are variable within the \code{trait_axis} table. Defaults to
+\code{FALSE}.}
+
 \item{err_check}{A logical value indicating whether to include an extra list
 of output objects for error checking. Can also be set to the text value
 \code{"extreme"}, in which case all \code{err_check} output plus a multiple
@@ -194,13 +221,6 @@ level list with each MPM used in each time step will be output.}
 \item{var_per_run}{The number of variants to run in each simulation.
 Defaults to \code{2}, resulting in pairwise invasibility analysis. See
 \code{Notes} for details.}
-
-\item{stochastic}{A logical value indicating whether the projection will be
-run as a temporally stochastic projection. Defaults to \code{FALSE}.}
-
-\item{integeronly}{A logical value indicating whether to round the number of
-individuals projected in each stage at each occasion down to the next lower
-integer. Defaults to \code{FALSE}.}
 
 \item{substoch}{An integer value indicating whether to force survival-
 transition matrices to be substochastic in density dependent and density
@@ -212,6 +232,9 @@ total no more than 1.0, in addition to the actions outlined for option
 \code{1}. Both settings \code{1} and \code{2} change negative fecundity
 elements to \code{0.0}, while setting \code{0} does not alter fecundity.}
 
+\item{elast_mult}{A multiplier for traits to assess the elasticity of
+fitness in trait optimization. Defaults to \code{0.995}.}
+
 \item{nreps}{The number of replicate projections. Defaults to \code{1}.}
 
 \item{times}{Number of occasions to iterate per replicate. Defaults to
@@ -221,10 +244,6 @@ elements to \code{0.0}, while setting \code{0} does not alter fecundity.}
 of each run to use to estimate the fitness of the respective genotype.
 Defaults to \code{100}, but if \code{times < 100}, then is set equal to
 \code{times}.}
-
-\item{opt_res}{If evaluating optima, then this integer gives the number
-of variants to create between each minimum and maximum for each trait found
-to be variable in the input trait axis. Defaults to \code{100}.}
 
 \item{exp_tol}{A numeric value used to indicate a maximum value to set
 exponents to in the core kernel to prevent numerical overflow. Defaults to
@@ -237,20 +256,8 @@ used in the negative binomial probability density kernel. Defaults to
 \item{threshold}{The lower limit for the absolute value of fitness, below
 which fitness is rounded to 0. Defaults to 0.00000001.}
 
-\item{A_only}{A logical value indicating whether to alter survival and
-fecundity matrix elements separately prior to creating the overall \code{A}
-matrix, or whether to alter elements directly on \code{A} matrices. Defaults
-to \code{TRUE}, and should be kept to that setting unless some matrix
-elements to be altered are sums of survival and fecundity transitions.}
-
-\item{fitness_table}{A logical value dictating whether to include a data
-frame giving Lyapunov coefficients for all combinations of variants tested.
-Necessary for the creation of pairwise invasibility plots (PIPs). Defaults
-to \code{TRUE}.}
-
-\item{optima}{A logical value indicating whether to assess the values of ESS
-optima for traits that vary among variants in the given \code{adaptAxis}
-table. Defaults to \code{TRUE}.}
+\item{loop_max}{An integer value denoting the number of search cycles
+allowed per ESS during ESS optimization. Defaults to 150.}
 }
 \value{
 A list of class \code{adaptInv}, with the following elements:
@@ -295,8 +302,8 @@ Function \code{invade3} runs pairwise and multiple invasion analyses.
 
 The argument \code{var_per_run} establishes the style of simulation to run.
 Entering \code{var_per_run = 1} runs each variant singly. Entering
-\code{var_per_run = 2} runs pairwise invason analysis, trying each pair
-permutation of variants. Greater values will lead to multiple invasion
+\code{var_per_run = 2} runs pairwise invasibility analysis, trying each pair
+permutation of variants. Greater values will lead to multiple invasibility
 analysis with different permutations of groups. For example,
 \code{var_per_run = 3} runs each permutation of groups of three. The integer
 set must be positive, and must not be larger than the number of variants.
@@ -307,12 +314,12 @@ originally developed in Benton and Grant (1999, Evolution 53:677-688), as
 communicated in Roff (2010, Modeling evolution: an introduction to numerical
 methods, Oxford University Press). In essence, function \code{invade3}
 determines which traits vary among all traits noted in the input trait axis.
-A new trait axis is then created with \code{opt_res} levels of the varying
-traits between the minioma and maxima noted. A separate trait axis is then
-created with values of variable traits multiplied by 0.995. These two
+A new trait axis is then created with values of variable traits multiplied
+by 0.995, and this new trait axis is composed entirely of invaders that will
+be paired against each respective row in the original trait axis. These two
 trait axis frames are then used to conduct pairwise invasibility elasticity
 analyses, particularly noting where fitness values and trends invert. Note
-that this optimization approach only works with up to 2 variable traits.
+that this optimization approach really only works with one variable trait.
 }
 
 \examples{

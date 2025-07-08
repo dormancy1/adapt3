@@ -217,6 +217,9 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' @param pip A logical value indicating whether to produce a pairwise
 #' invasibility plot. If \code{FALSE}, then will produce a diagnostic population
 #' size plot. Defaults to \code{TRUE}.
+#' @param elast A logical value indicating whether to produce an elasticity
+#' plot. Such plots can only be produced when trait optimization is performed
+#' during invasibility analysis. Defaults to \code{FALSE}.
 #' @param run An integer giving the run to plot if \code{pip = FALSE}.
 #' @param filled A logical value indicating whether to produce a filled contour
 #' plot, or a standard contour plot. Defaults to \code{TRUE}, but reverts if
@@ -323,8 +326,8 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' 
 #' @export
 plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
-  res_variant = 1, inv_variant = 2, repl = 1, pip = TRUE, run = 1,
-  filled = TRUE, plot.title, plot.axes, axes = TRUE, frame.plot = TRUE,
+  res_variant = 1, inv_variant = 2, repl = 1, pip = TRUE, elast = FALSE,
+  run = 1, filled = TRUE, plot.title, plot.axes, axes = TRUE, frame.plot = TRUE,
   auto_ylim = TRUE, auto_col = TRUE, auto_lty = TRUE, auto_title = FALSE, ...) {
   
   asp <- NA
@@ -335,6 +338,9 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
   
   if (!axes) frame.plot <- FALSE
   
+  if (length(pip) > 1) pip <- pip[1]
+  if (length(elast) > 1) elast <- elast[1]
+  
   further_args <- list(...)
   if (length(further_args) == 0) further_args <- list()
   found_terms <- names(further_args)
@@ -343,7 +349,7 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
     stop("Argument repl not understood.", call. = FALSE)
   }
   
-  if (!pip) {
+  if (!pip & !elast) {
     if (!is.element("type", found_terms)) {
       further_args$type <- "l"
     }
@@ -403,7 +409,9 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
     }
     
     num_pops <- dim(used_N_mat)[1]
-    c_xy <- xy.coords(x = c(1:length(used_N_mat[1,])), y = used_N_mat[1,])
+    
+    start_1 <- used_N_mat[1,c(min(which(used_N_mat[1,] > 0.)): max(which(used_N_mat[1,] > 0.)))]
+    c_xy <- xy.coords(x = c(min(which(used_N_mat[1,] > 0.)): max(which(used_N_mat[1,] > 0.))), y = start_1)
     further_args$x <- c_xy
     
     do.call("plot.default", further_args)
@@ -421,20 +429,29 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
         }
         used_col <- used_col + 1;
         
-        basal_args$x <- c(1:length(used_N_mat[j,]))
-        basal_args$y <- used_N_mat[j,]
+        start_j <- used_N_mat[j,c(min(which(used_N_mat[j,] > 0.)): max(which(used_N_mat[j,] > 0.)))]
+        #basal_args$x <- xy.coords(x = c(min(which(used_N_mat[j,] > 0.)):max(which(used_N_mat[j,] > 0.))), y = start_j)
+        
+        basal_args$x <- c(min(which(used_N_mat[j,] > 0.)): max(which(used_N_mat[j,] > 0.)))
+        basal_args$y <- start_j
         
         do.call("lines", basal_args)
       }
     }
-  } else {
+  }
+  
+  if (pip) {
     if (is.element("las", found_terms)) las <- further_args$las
     if (is.element("xaxs", found_terms)) xaxs <- further_args$xaxs
     if (is.element("yaxs", found_terms)) yaxs <- further_args$yaxs
     if (is.element("asp", found_terms)) asp <- further_args$asp
     
-    if (is.element("xlab", found_terms)) xlab <- further_args$xlab
-    if (is.element("ylab", found_terms)) xlab <- further_args$ylab
+    if (is.element("xlab", found_terms)) {
+      xlab <- further_args$xlab
+    } else xlab <- "Resident Value"
+    if (is.element("ylab", found_terms)) {
+      ylab <- further_args$ylab
+    } else ylab <- "Invader Value"
     
     if (is.element("col", found_terms)) {
       found_colours <- further_args$col
@@ -526,5 +543,76 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
     if (missing(plot.title)) title(...)
     else plot.title
     invisible()
+  }
+  
+  if (elast) {
+    if (!exists("optim", x)) {
+      stop("No optimization data included in object.", call. = FALSE)
+    }
+    
+    used_x <- x$optim$fitness
+    
+    if (!exists("fitness_variant2_e995", used_x)) {
+      stop("No optimization fitness data included in object.", call. = FALSE)
+    }
+    
+    if (!is.element("type", found_terms)) {
+      further_args$type <- "l"
+    }
+    if (is.element("col", found_terms)) {
+      auto_col <- FALSE
+    }
+    if (is.element("lty", found_terms)) {
+      auto_lty <- FALSE
+    }
+    if (is.element("ylim", found_terms)) {
+      auto_ylim <- FALSE
+    }
+    if (is.element("main", found_terms)) {
+      auto_title <- FALSE
+    }
+    basal_args <- further_args
+    
+    if (!is.element("ylab", names(further_args))) {
+      further_args$ylab <- "Invader fitness"
+    }
+    if (!is.element("xlab", names(further_args))) {
+      further_args$xlab <- "Trait value"
+    }
+    
+    used_col <- 1
+    
+    if (auto_title) {
+      used_string <- "Trait optimization elasticity"
+      further_args$main <- used_string
+    }
+    
+    used_fitness <- used_x$fitness_variant2_e995
+    
+    used_col <- 1
+    used_lty <- 1
+    
+    if (auto_ylim) {
+      further_args$ylim <- c(min(used_fitness, na.rm = TRUE), max(used_fitness, na.rm = TRUE))
+    }
+    
+    if (auto_col) {
+      further_args$col <- used_col
+      basal_args$col <- used_col
+    }
+    if (auto_lty) {
+      further_args$lty <- used_lty
+    }
+    
+    c_xy <- xy.coords(x = c(1:length(used_fitness)), y = used_fitness)
+    further_args$x <- c_xy
+    
+    do.call("plot.default", further_args)
+    
+    basal_args$x <- c(1:length(used_fitness))
+    basal_args$y <- rep(0, length(used_fitness))
+    basal_args$lty = 2
+    
+    do.call("lines", basal_args)
   }
 }

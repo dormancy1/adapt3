@@ -12,6 +12,7 @@
   inv_variant = 2,
   repl = 1,
   pip = TRUE,
+  elast = FALSE,
   run = 1,
   filled = TRUE,
   plot.title,
@@ -47,6 +48,10 @@ within the \code{adaptInv} object entered in argument \code{x}.}
 \item{pip}{A logical value indicating whether to produce a pairwise
 invasibility plot. If \code{FALSE}, then will produce a diagnostic population
 size plot. Defaults to \code{TRUE}.}
+
+\item{elast}{A logical value indicating whether to produce an elasticity
+plot. Such plots can only be produced when trait optimization is performed
+during invasibility analysis. Defaults to \code{FALSE}.}
 
 \item{run}{An integer giving the run to plot if \code{pip = FALSE}.}
 

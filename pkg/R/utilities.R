@@ -239,3 +239,136 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
   
   return (output)
 }
+
+#' Summarize adaptInv Objects
+#' 
+#' Function \code{summary.adaptInv()} summarizes \code{adaptInv} objects.
+#' 
+#' @name summary.adaptInv
+#' 
+#' @param object An \code{adaptInv} object.
+#' 
+#' @return This function only produces text summarizing the numbers of variants,
+#' time steps, replicates, ESS optima, etc.
+#' 
+#' @examples
+#' library(lefko3)
+#' data(cypdata)
+#' 
+#' sizevector <- c(0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)
+#' stagevector <- c("SD", "P1", "SL", "D", "XSm", "Sm", "Md", "Lg", "XLg")
+#' repvector <- c(0, 0, 0, 0, 1, 1, 1, 1, 1)
+#' obsvector <- c(0, 0, 0, 0, 1, 1, 1, 1, 1)
+#' matvector <- c(0, 0, 0, 1, 1, 1, 1, 1, 1)
+#' immvector <- c(0, 1, 1, 0, 0, 0, 0, 0, 0)
+#' propvector <- c(1, 0, 0, 0, 0, 0, 0, 0, 0)
+#' indataset <- c(0, 0, 0, 1, 1, 1, 1, 1, 1)
+#' binvec <- c(0, 0, 0, 0.5, 0.5, 1, 1, 2.5, 7)
+#' 
+#' cypframe_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
+#'   repstatus = repvector, obsstatus = obsvector, matstatus = matvector,
+#'   propstatus = propvector, immstatus = immvector, indataset = indataset,
+#'   binhalfwidth = binvec)
+#' 
+#' cypraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
+#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
+#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
+#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+#'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+#'   NRasRep = TRUE)
+#' 
+#' cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", 
+#'     "XSm", "Sm", "SD", "P1"),
+#'   stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep",
+#'     "rep"),
+#'   eststage3 = c(NA, NA, NA, "D", "XSm", "Sm", NA, NA),
+#'   eststage2 = c(NA, NA, NA, "XSm", "XSm", "XSm", NA, NA),
+#'   givenrate = c(0.10, 0.40, 0.25, NA, NA, NA, NA, NA),
+#'   multiplier = c(NA, NA, NA, NA, NA, NA, 1000, 1000),
+#'   type =c(1, 1, 1, 1, 1, 1, 3, 3),
+#'   stageframe = cypframe_raw, historical = FALSE)
+#' 
+#' cypmatrix2r <- rlefko2(data = cypraw_v1, stageframe = cypframe_raw, 
+#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
+#'   size = c("size3added", "size2added"), supplement = cypsupp2r,
+#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#' cypmean <- lmean(cypmatrix2r)
+#' 
+#' cyp_start <- start_input(cypmean, stage2 = c("SD", "P1", "D"),
+#'   value = c(1000, 200, 4))
+#' 
+#' c2d_4 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
+#'   style = 2, time_delay = 1, alpha = 0.005, beta = 0.000005, type = c(2, 2))
+#' 
+#' # A simple projection allows us to find a combination of density dependence
+#' # and running time that produces a stable quasi-equilibrium
+#' cyp_proj <- projection3(cypmean, times = 250, start_frame = cyp_start,
+#'   density = c2d_4, integeronly = TRUE)
+#' plot(cyp_proj)
+#' 
+#' cyp_ta <- trait_axis(stageframe = cypframe_raw,
+#'   stage3 = rep("P1", 15),
+#'   stage2 = rep("rep", 15),
+#'   multiplier = seq(from = 0.1, to = 10.0, length.out = 15),
+#'   type = rep(2, 15))
+#' 
+#' cyp_inv <- invade3(axis = cyp_ta, mpm = cypmean, density = c2d_4, times = 350,
+#'   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
+#'   var_per_run = 2)
+#' summary(cyp_inv)
+#' 
+#' @export
+summary.adaptInv <- function(object) {
+  
+  num_reps <- num_times <- 0
+  appended <- FALSE
+  max_times <- max_reps <- 1L
+  ave_times <- ave_reps <- 1.0
+  step_text <- "steps"
+  run_variant_text <- "variants per run"
+  rep_text <- "replicates"
+  time_text <- "steps"
+  run_text <- "runs"
+  variant_text <- "variants"
+  
+  num_reps <- length(object$N_out)
+  num_run_variants <- dim(object$N_out[[1]])[1]
+  num_times <- dim(object$N_out[[1]])[2]
+  num_runs <- dim(object$N_out[[1]])[3]
+  
+  all_fitness_vars <- names(object$fitness)
+  found_entrytime_vars <- grep("entry", all_fitness_vars)
+  found_fitness_vars <- grep("fitness", all_fitness_vars)
+  
+  total_variants <- length(found_entrytime_vars)
+  
+  if (total_variants == 1) variant_text <- "variant"
+  if (num_run_variants == 1) run_variant_text <- "variant per run"
+  if (num_runs == 1) pop_text <- "run"
+  if (num_reps == 1) rep_text <- "replicate"
+  if (num_times == 1) time_text <- "step"
+  
+  writeLines(paste0("\nThe input adaptInv object covers ", total_variants, " ",
+      variant_text, ", ", num_times, " projected ", time_text, ", ",
+      num_run_variants, " ", run_variant_text, ", and ", max_reps,
+      " projected ", rep_text, "."), con = stdout())
+  
+  if (exists("optim", object)) {
+    if (exists("ESS_values", object$optim)) {
+      found_ESS_frame <- object$optim$ESS_values
+      
+      if (length(found_ESS_frame) > 1) {
+        found_ESS_values <- nrow(found_ESS_frame)
+        
+        optimum_text <- "optima"
+        if (found_ESS_values == 1) optimum_text <- "optimum"
+        writeLines(paste0("It includes optimization data suggesting ", found_ESS_values,
+          " purported ESS ", optimum_text, "."), con = stdout())
+      } else {
+        writeLines("It includes optimization data but suggests no purported ESS optima.",
+          con = stdout())
+      }
+    }
+  }
+  writeLines("", con = stdout())
+}
