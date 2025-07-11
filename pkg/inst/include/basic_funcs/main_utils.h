@@ -2139,9 +2139,7 @@ namespace AdaptUtils {
     int no_rows = x.nrows();
     
     arma::uvec useable_indices;
-    double chosen_level_d {0.0};
     String chosen_level_s;
-    bool string_used {false};
     
     int max_asked_for = max(indices);
     if (max_asked_for >= no_rows) {
@@ -2575,24 +2573,6 @@ namespace AdaptUtils {
     NumericVector jrepst_dev_noNA = na_omit(jrepst_dev);
     NumericVector jmatst_dev_noNA = na_omit(jmatst_dev);
     
-    bool givenrate_NA {false};
-    bool multiplier_NA {false};
-    bool offset_NA {false};
-    bool surv_dev_NA {false};
-    bool obs_dev_NA {false};
-    bool size_dev_NA {false};
-    bool sizeb_dev_NA {false};
-    bool sizec_dev_NA {false};
-    bool repst_dev_NA {false};
-    bool fec_dev_NA {false};
-    bool jsurv_dev_NA {false};
-    bool jobs_dev_NA {false};
-    bool jsize_dev_NA {false};
-    bool jsizeb_dev_NA {false};
-    bool jsizec_dev_NA {false};
-    bool jrepst_dev_NA {false};
-    bool jmatst_dev_NA {false};
-    
     int var1_length {0};
     
     for (int i = 0; i < static_cast<int>(variant.length()); i++) {
@@ -2650,26 +2630,6 @@ namespace AdaptUtils {
     double jmatst_dev_min {0.};
     double jmatst_dev_max {0.};
     
-    bool givenrate_reversed {false};
-    bool offset_reversed {false};
-    bool multiplier_reversed {false};
-    
-    bool surv_dev_reversed {false};
-    bool obs_dev_reversed {false};
-    bool size_dev_reversed {false};
-    bool sizeb_dev_reversed {false};
-    bool sizec_dev_reversed {false};
-    bool repst_dev_reversed {false};
-    bool fec_dev_reversed {false};
-    
-    bool jsurv_dev_reversed {false};
-    bool jobs_dev_reversed {false};
-    bool jsize_dev_reversed {false};
-    bool jsizeb_dev_reversed {false};
-    bool jsizec_dev_reversed {false};
-    bool jrepst_dev_reversed {false};
-    bool jmatst_dev_reversed {false};
-    
     if (static_cast<int>(givenrate_noNA.length()) > 0) {
       givenrate_min = min(givenrate_noNA);
       givenrate_max = max(givenrate_noNA);
@@ -2683,11 +2643,7 @@ namespace AdaptUtils {
       } else {
         ESS_givenrate(0) = givenrate_max;
         ESS_givenrate(1) = givenrate_min;
-        
-        givenrate_reversed = true;
       }
-    } else {
-      givenrate_NA = true;
     }
     
     if (static_cast<int>(offset_noNA.length()) > 0) {
@@ -2703,11 +2659,7 @@ namespace AdaptUtils {
       } else {
         ESS_offset(0) = offset_max;
         ESS_offset(1) = offset_min;
-        
-        offset_reversed = true;
       }
-    } else {
-      offset_NA = true;
     }
     
     if (static_cast<int>(multiplier_noNA.length()) > 0) {
@@ -2723,11 +2675,7 @@ namespace AdaptUtils {
       } else {
         ESS_multiplier(0) = multiplier_max;
         ESS_multiplier(1) = multiplier_min;
-        
-        multiplier_reversed = true;
       }
-    } else {
-      multiplier_NA = true;
     }
     
     if (static_cast<int>(surv_dev_noNA.length()) > 0) {
@@ -2743,11 +2691,7 @@ namespace AdaptUtils {
       } else {
         ESS_surv_dev(0) = surv_dev_max;
         ESS_surv_dev(1) = surv_dev_min;
-        
-        surv_dev_reversed = true;
       }
-    } else {
-      surv_dev_NA = true;
     }
     
     if (static_cast<int>(obs_dev_noNA.length()) > 0) {
@@ -2763,11 +2707,7 @@ namespace AdaptUtils {
       } else {
         ESS_obs_dev(0) = obs_dev_max;
         ESS_obs_dev(1) = obs_dev_min;
-        
-        obs_dev_reversed = true;
       }
-    } else {
-      obs_dev_NA = true;
     }
     
     
@@ -2784,11 +2724,7 @@ namespace AdaptUtils {
       } else {
         ESS_size_dev(0) = size_dev_max;
         ESS_size_dev(1) = size_dev_min;
-        
-        size_dev_reversed = true;
       }
-    } else {
-      size_dev_NA = true;
     }
     
     if (static_cast<int>(sizeb_dev_noNA.length()) > 0) {
@@ -2804,11 +2740,7 @@ namespace AdaptUtils {
       } else {
         ESS_sizeb_dev(0) = sizeb_dev_max;
         ESS_sizeb_dev(1) = sizeb_dev_min;
-        
-        sizeb_dev_reversed = true;
       }
-    } else {
-      sizeb_dev_NA = true;
     }
     
     if (static_cast<int>(sizec_dev_noNA.length()) > 0) {
@@ -2824,11 +2756,7 @@ namespace AdaptUtils {
       } else {
         ESS_sizec_dev(0) = sizec_dev_max;
         ESS_sizec_dev(1) = sizec_dev_min;
-        
-        sizec_dev_reversed = true;
       }
-    } else {
-      sizec_dev_NA = true;
     }
     
     if (static_cast<int>(repst_dev_noNA.length()) > 0) {
@@ -2844,11 +2772,7 @@ namespace AdaptUtils {
       } else {
         ESS_repst_dev(0) = repst_dev_max;
         ESS_repst_dev(1) = repst_dev_min;
-        
-        repst_dev_reversed = true;
       }
-    } else {
-      repst_dev_NA = true;
     }
     
     if (static_cast<int>(fec_dev_noNA.length()) > 0) {
@@ -2864,11 +2788,7 @@ namespace AdaptUtils {
       } else {
         ESS_fec_dev(0) = fec_dev_max;
         ESS_fec_dev(1) = fec_dev_min;
-        
-        fec_dev_reversed = true;
       }
-    } else {
-      fec_dev_NA = true;
     }
     
     if (static_cast<int>(jsurv_dev_noNA.length()) > 0) {
@@ -2884,11 +2804,7 @@ namespace AdaptUtils {
       } else {
         ESS_jsurv_dev(0) = jsurv_dev_max;
         ESS_jsurv_dev(1) = jsurv_dev_min;
-        
-        jsurv_dev_reversed = true;
       }
-    } else {
-      jsurv_dev_NA = true;
     }
     
     if (static_cast<int>(jobs_dev_noNA.length()) > 0) {
@@ -2904,11 +2820,7 @@ namespace AdaptUtils {
       } else {
         ESS_jobs_dev(0) = jobs_dev_max;
         ESS_jobs_dev(1) = jobs_dev_min;
-        
-        jobs_dev_reversed = true;
       }
-    } else {
-      jobs_dev_NA = true;
     }
     
     if (static_cast<int>(jsize_dev_noNA.length()) > 0) {
@@ -2924,11 +2836,7 @@ namespace AdaptUtils {
       } else {
         ESS_jsize_dev(0) = jsize_dev_max;
         ESS_jsize_dev(1) = jsize_dev_min;
-        
-        jsize_dev_reversed = true;
       }
-    } else {
-      jsize_dev_NA = true;
     }
     
     if (static_cast<int>(jsizeb_dev_noNA.length()) > 0) {
@@ -2944,11 +2852,7 @@ namespace AdaptUtils {
       } else {
         ESS_jsizeb_dev(0) = jsizeb_dev_max;
         ESS_jsizeb_dev(1) = jsizeb_dev_min;
-        
-        jsizeb_dev_reversed = true;
       }
-    } else {
-      jsizeb_dev_NA = true;
     }
     
     if (static_cast<int>(jsizec_dev_noNA.length()) > 0) {
@@ -2964,11 +2868,7 @@ namespace AdaptUtils {
       } else {
         ESS_jsizec_dev(0) = jsizec_dev_max;
         ESS_jsizec_dev(1) = jsizec_dev_min;
-        
-        jsizec_dev_reversed = true;
       }
-    } else {
-      jsizec_dev_NA = true;
     }
     
     if (static_cast<int>(jrepst_dev_noNA.length()) > 0) {
@@ -2984,11 +2884,7 @@ namespace AdaptUtils {
       } else {
         ESS_jrepst_dev(0) = jrepst_dev_max;
         ESS_jrepst_dev(1) = jrepst_dev_min;
-        
-        jrepst_dev_reversed = true;
       }
-    } else {
-      jrepst_dev_NA = true;
     }
     
     if (static_cast<int>(jmatst_dev_noNA.length()) > 0) {
@@ -3004,17 +2900,11 @@ namespace AdaptUtils {
       } else {
         ESS_jmatst_dev(0) = jmatst_dev_max;
         ESS_jmatst_dev(1) = jmatst_dev_min;
-        
-        jmatst_dev_reversed = true;
       }
-    } else {
-      jmatst_dev_NA = true;
     }
     
     
     int found_variables_all {0};
-    int found_variables {0};
-    bool first_var_found {false};
     
     arma::ivec mpm_altered_arma = as<arma::ivec>(mpm_altered);
     arma::uvec found_mpm_altered = find(mpm_altered_arma);
@@ -3113,7 +3003,6 @@ namespace AdaptUtils {
     if (givenrate_min != givenrate_max) {
       ESS_variable_traits(0) = found_core_stage_indices;
       found_variables_all = found_variables_all + found_core_stage_indices;
-      found_variables++;
       
       for (int i = 0; i < found_core_stage_indices; i++) {
         ta_rows_per_change_per_variant(i, 0) = place_holder_for_mat(i);
@@ -3122,7 +3011,6 @@ namespace AdaptUtils {
     if (offset_min != offset_max) {
       ESS_variable_traits(1) = found_core_stage_indices;
       found_variables_all = found_variables_all + found_core_stage_indices;
-      found_variables++;
       
       for (int i = 0; i < found_core_stage_indices; i++) {
         ta_rows_per_change_per_variant(i, 1) = place_holder_for_mat(i);
@@ -3131,7 +3019,6 @@ namespace AdaptUtils {
     if (multiplier_min != multiplier_max) {
       ESS_variable_traits(2) = found_core_stage_indices;
       found_variables_all = found_variables_all + found_core_stage_indices;
-      found_variables++;
       
       for (int i = 0; i < found_core_stage_indices; i++) {
         ta_rows_per_change_per_variant(i, 2) = place_holder_for_mat(i);
@@ -3142,113 +3029,89 @@ namespace AdaptUtils {
     if (surv_dev_min != surv_dev_max) {
       ESS_variable_traits(3) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 3) = 1;
     }
     if (obs_dev_min != obs_dev_max) {
       ESS_variable_traits(4) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 4) = 1;
     }
     if (size_dev_min != size_dev_max) {
       ESS_variable_traits(5) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 5) = 1;
     }
     if (sizeb_dev_min != sizeb_dev_max) {
       ESS_variable_traits(6) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 6) = 1;
     }
     if (sizec_dev_min != sizec_dev_max) {
       ESS_variable_traits(7) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 7) = 1;
     }
     if (repst_dev_min != repst_dev_max) {
       ESS_variable_traits(8) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 8) = 1;
     }
     if (fec_dev_min != fec_dev_max) {
       ESS_variable_traits(9) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 9) = 1;
     }
     if (jsurv_dev_min != jsurv_dev_max) {
       ESS_variable_traits(10) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 10) = 1;
     }
     if (jobs_dev_min != jobs_dev_max) {
       ESS_variable_traits(11) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 11) = 1;
     }
     if (jsize_dev_min != jsize_dev_max) {
       ESS_variable_traits(12) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 12) = 1;
     }
     if (jsizeb_dev_min != jsizeb_dev_max) {
       ESS_variable_traits(13) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 13) = 1;
     }
     if (jsizec_dev_min != jsizec_dev_max) {
       ESS_variable_traits(14) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 14) = 1;
     }
     if (jrepst_dev_min != jrepst_dev_max) {
       ESS_variable_traits(15) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 15) = 1;
     }
     if (jmatst_dev_min != jmatst_dev_max) {
       ESS_variable_traits(16) = 1;
       found_variables_all++;
-      found_variables++;
       
       ta_rows_per_change_per_variant(0, 16) = 1;
     }
     
     int data_frame_length = opt_res * var1_length;
-    
-    int ta_re_vars = ta_reassessed.length();
-    int ta_re_nrows = ta_reassessed.nrows();
-    int ESS_ta_vars = ESS_ta.length();
-    int ESS_ta_nrows = ESS_ta.nrows();
-    int optim_ta_vars = optim_ta.length();
-    int optim_ta_nrows = optim_ta.nrows();
-    int optim_ta_995_vars = optim_ta_995.length();
-    int optim_ta_995_nrows = optim_ta_995.nrows();
-    
     cloned_ta_reassess = clone(ta_reassessed);
     
     optim_variant = as<IntegerVector>(cloned_ta_reassess["variant"]);

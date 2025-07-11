@@ -7,7 +7,7 @@
 #' represented by MPMs. All forms of MPMs are allowed, including integral
 #' projection models (IPMs).
 #' 
-#' @details The lefko3 package provides three categories of functions:
+#' @details The adapt3 package provides three categories of functions:
 #' 
 #' 1. Core projection
 #' 
@@ -22,7 +22,8 @@
 #' @author Richard P. Shefferson <cdorm@g.ecc.u-tokyo.ac.jp>
 #' @references Pending
 #' @import Rcpp graphics
-#' @importFrom graphics contour .filled.contour
+#' @importFrom graphics contour lines .filled.contour
+#' @importFrom grDevices palette xy.coords
 #' @importFrom methods as is
 #' @importFrom Rcpp evalCpp
 #' @useDynLib adapt3

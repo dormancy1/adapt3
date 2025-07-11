@@ -14,7 +14,7 @@ represented by MPMs. All forms of MPMs are allowed, including integral
 projection models (IPMs).
 }
 \details{
-The lefko3 package provides three categories of functions:
+The adapt3 package provides three categories of functions:
 
 1. Core projection
 

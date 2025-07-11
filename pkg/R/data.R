@@ -15,7 +15,7 @@
 #' on refers to the state of the individual in a particular year.
 #' 
 #' \describe{
-#'   \item{plantid}{A numeric variable giving a unique number to each 
+#'   \item{plant_id}{A numeric variable giving a unique number to each 
 #'   individual.}
 #'   \item{Inf.94}{Number of inflorescences in 1994.}
 #'   \item{Veg.94}{Number of stems without inflorescences in 1994.}
@@ -82,9 +82,8 @@
 #'   binhalfwidth = binvec)
 #' 
 #' cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
-#'   patchidcol = "patch", individcol = "plantid", blocksize = 3,
-#'   sizeacol = "Inf2.94", sizebcol = "Inf.94", sizeccol = "Veg.94",
-#'   repstracol = "Inf.94", repstrbcol = "Inf2.94", fecacol = "Inf.94",
+#'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+#'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
 #'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 #'   NRasRep = TRUE)
 #' 
@@ -100,9 +99,9 @@
 #'   stageframe = cypframe_raw, historical = FALSE)
 #' 
 #' cypmatrix2r <- rlefko2(data = cypraw_v1, stageframe = cypframe_raw, 
-#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
+#'   year = "all", stages = c("stage3", "stage2", "stage1"),
 #'   size = c("size3added", "size2added"), supplement = cypsupp2r,
-#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#'   yearcol = "year2", indivcol = "individ")
 #'                        
 #' lambda3(cypmatrix2r)
 "cypa_data"

@@ -1,0 +1,508 @@
+---
+title: "Community matrix projection"
+author: Richard P. Shefferson
+output: rmarkdown::html_vignette
+bibliography: adapt3tutorial.bib
+vignette: >
+  %\VignetteIndexEntry{Community matrix projection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+  <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset in package `adapt3`, as well as the `cypdata` dataset from package `lefko3`, to illustrate community matrix projection. Package `adapt3` allows both pre-existing MPMs to be utilized, as well as purely function-based MPMs, which must be constructed at each step. Both approaches utilize functions from and structures created by the package `lefko3`, and we encourage users to become familiar with that package to use package `adapt3` properly. Here, we illustrate the community matrix projection with pre-existing MPMs</p>
+
+  <p style="text-indent: 20px">To reduce vignette size, we have prevented some statements from running if they produce long stretches of output. Examples include most `summary()` calls. In these cases, we include hashtagged versions of these calls, and we encourage the user to run these statements without hashtags.</p>
+
+  <p style="text-indent: 20px">This vignette is only a sample analysis. Detailed information and instructions on using `adapt3` will be made available over time. Please check available resources on <a href = "http://www.revolutionarydemography.com/projects.html">the projects page</a> of the `{r}evolutionary demography` website.</p>
+
+### Organisms and populations
+
+  <p style="text-indent: 20px">In this analysis, we will use data for two species that occur sympatrically. *Cypripedium parviflorum* and *Cypripedium candidum* (family Orchidaceae) are long-lived herbaceous perennials, native to North America and particularly common near the Great Lakes. They typically live in wet, calcareous wetlands on the edges of woodlands, with *C. parviflorum* prefering more wooded habitat than *C. candidum* [@shefferson_estimating_2001]. Individuals begin life as dust seeds, which may or may not germinate the year following production. Germination leads to the protocorm stage, a life history stage in which the individual grows underground in a non-photosynthetic, mycoheterotrophic state [@rasmussen_orchids_1995]. They may live in this state for several years prior to becoming a seedling, at which point they may or may not sprout. Maturity involves the production of flowering sprouts, each with several leaves and typically only a single flower, although an individual may produce mostly non-flowering sprouts. Most individuals produce only a single sprout, and vegetative dormancy is common and can occur for overa decade in a single individual [@shefferson_drivers_2018].</p>
+
+  <p style="text-indent: 20px">Data for this study were collected from a population in northeastern Illinois, from 2004 to 2009 [@shefferson_predicting_2017]. Each year at the start of the flowering season, all individuals at the site were located, with previously identified individuals identified based on their previous locations, and new individuals recorded via an exhaustive survey. Plant characteristics including the number of sprouts, which sprouts were flowering vs. non-flowering, and the number of flowers per sprout, were recorded for every individual in every year.</p>
+
+### Dataset preparation
+
+  <p style="text-indent: 20px">Package `adapt3` is built to take advantage of package `lefko3`, which offers a general language and architecture to build and analyze most kinds of matrix projection models, including even discretized integral projection models [@shefferson_lefko3_2021]. To start, we will load both `lefko3` and `adapt3`, and also load the datasets that we will use for examples.</p>
+
+``` r
+library(lefko3)
+library(adapt3)
+
+data(cypa_data)
+data(cypdata)
+```
+
+  <p style="text-indent: 20px">Let's now take a look at the *C. parviflorum* dataset.</p>
+
+``` r
+dim(cypa_data)
+#> [1] 1103   37
+summary(cypa_data)
+#>       plant_id        Inf.94            Veg.94            Inf.95           Veg.95          Inf.96           Veg.96     
+#>  K NA     :  28   Min.   :0.00000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.000  
+#>  A NA     :  13   1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000  
+#>  T NA     :  10   Median :0.00000   Median :0.00000   Median :0.0000   Median :0.000   Median :0.0000   Median :0.000  
+#>  Willow NA:  10   Mean   :0.07253   Mean   :0.02267   Mean   :0.1732   Mean   :0.155   Mean   :0.2557   Mean   :0.282  
+#>  X NA     :   7   3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.000  
+#>  Aspen NA :   6   Max.   :4.00000   Max.   :4.00000   Max.   :4.0000   Max.   :7.000   Max.   :6.0000   Max.   :6.000  
+#>  (Other)  :1029                                                                                                        
+#>      Inf.97           Veg.97          Inf.98           Veg.98           Inf.99           Veg.99           Inf.00      
+#>  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.1333   Mean   :0.301   Mean   :0.2593   Mean   :0.2928   Mean   :0.3218   Mean   :0.2838   Mean   :0.2103  
+#>  3rd Qu.:0.0000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :7.000   Max.   :5.0000   Max.   :5.0000   Max.   :7.0000   Max.   :4.0000   Max.   :6.0000  
+#>                                                                                                                       
+#>      Veg.00           Inf.01           Veg.01           Inf.02           Veg.02           Inf.03           Veg.03      
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000  
+#>  Mean   :0.3554   Mean   :0.2076   Mean   :0.3772   Mean   :0.2267   Mean   :0.2937   Mean   :0.1958   Mean   :0.3699  
+#>  3rd Qu.:0.5000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000  
+#>  Max.   :6.0000   Max.   :5.0000   Max.   :5.0000   Max.   :6.0000   Max.   :4.0000   Max.   :6.0000   Max.   :6.0000  
+#>                                                                                                                        
+#>      Inf.04            Veg.04           Inf.05           Veg.05           Inf.06            Veg.06           Inf.07       
+#>  Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000  
+#>  1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000  
+#>  Median :0.00000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000  
+#>  Mean   :0.09791   Mean   :0.2684   Mean   :0.1233   Mean   :0.3073   Mean   :0.03626   Mean   :0.2013   Mean   :0.03264  
+#>  3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000  
+#>  Max.   :4.00000   Max.   :4.0000   Max.   :6.0000   Max.   :4.0000   Max.   :3.00000   Max.   :4.0000   Max.   :3.00000  
+#>                                                                                                                           
+#>      Veg.07           Inf.08            Veg.08           Inf.09            Veg.09           Inf.10            Veg.10      
+#>  Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000   Median :0.0000  
+#>  Mean   :0.1578   Mean   :0.05712   Mean   :0.1242   Mean   :0.08885   Mean   :0.1868   Mean   :0.08613   Mean   :0.1668  
+#>  3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :3.00000   Max.   :4.0000   Max.   :5.00000   Max.   :6.0000   Max.   :4.00000   Max.   :4.0000  
+#>                                                                                                                           
+#>      Inf.11           Veg.11      
+#>  Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median :0.0000   Median :0.0000  
+#>  Mean   :0.1342   Mean   :0.1886  
+#>  3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :4.0000   Max.   :4.0000  
+#> 
+```
+
+  <p style="text-indent: 20px">This dataset includes information on 1103 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. We can see that we have data for 18 years here. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://bookdown.org/cdorm/lefko3gentle/">*lefko3: a gentle introduction*</a> for more).</p>
+  
+  <p style="text-indent: 20px">Next let's look at a summary of the *C. candidum* dataset.</p>
+
+``` r
+dim(cypdata)
+#> [1] 77 29
+summary(cypdata)
+#>     plantid       patch        X               Y              censor     Inf2.04       Inf.04           Veg.04           Pod.04   
+#>  Min.   : 164.0   A:23   Min.   : 46.5   Min.   :-28.00   Min.   :1   Min.   :0    Min.   :0.0000   Min.   : 0.000   Min.   :0.0  
+#>  1st Qu.: 265.0   B:35   1st Qu.: 60.1   1st Qu.: 22.50   1st Qu.:1   1st Qu.:0    1st Qu.:0.0000   1st Qu.: 1.000   1st Qu.:0.0  
+#>  Median : 455.0   C:19   Median : 91.4   Median : 75.60   Median :1   Median :0    Median :0.0000   Median : 2.000   Median :0.0  
+#>  Mean   : 669.1          Mean   : 92.9   Mean   : 55.54   Mean   :1   Mean   :0    Mean   :0.6923   Mean   : 2.923   Mean   :0.2  
+#>  3rd Qu.: 829.0          3rd Qu.:142.2   3rd Qu.: 80.10   3rd Qu.:1   3rd Qu.:0    3rd Qu.:1.0000   3rd Qu.: 4.000   3rd Qu.:0.0  
+#>  Max.   :1560.0          Max.   :173.0   Max.   :142.40   Max.   :1   Max.   :0    Max.   :8.0000   Max.   :12.000   Max.   :3.0  
+#>                                                                       NA's   :12   NA's   :12       NA's   :12       NA's   :12   
+#>     Inf2.05            Inf.05           Veg.05          Pod.05          Inf2.06       Inf.06            Veg.06      
+#>  Min.   :0.00000   Min.   : 0.000   Min.   :0.000   Min.   :0.0000   Min.   :0    Min.   : 0.0000   Min.   : 0.000  
+#>  1st Qu.:0.00000   1st Qu.: 0.000   1st Qu.:1.000   1st Qu.:0.0000   1st Qu.:0    1st Qu.: 0.0000   1st Qu.: 1.000  
+#>  Median :0.00000   Median : 0.000   Median :1.000   Median :0.0000   Median :0    Median : 0.0000   Median : 2.000  
+#>  Mean   :0.04478   Mean   : 1.537   Mean   :2.134   Mean   :0.6567   Mean   :0    Mean   : 0.9016   Mean   : 2.213  
+#>  3rd Qu.:0.00000   3rd Qu.: 2.000   3rd Qu.:3.000   3rd Qu.:1.0000   3rd Qu.:0    3rd Qu.: 1.0000   3rd Qu.: 3.000  
+#>  Max.   :1.00000   Max.   :18.000   Max.   :9.000   Max.   :7.0000   Max.   :0    Max.   :18.0000   Max.   :13.000  
+#>  NA's   :10        NA's   :10       NA's   :10      NA's   :10       NA's   :16   NA's   :16        NA's   :16      
+#>      Pod.06       Inf2.07            Inf.07           Veg.07           Pod.07          Inf2.08       Inf.08            Veg.08     
+#>  Min.   :0.0000   Mode:logical   Min.   :0.0000   Min.   : 0.000   Min.   :0.0000   Min.   :0    Min.   : 0.0000   Min.   : 0.00  
+#>  1st Qu.:0.0000   NA's:77        1st Qu.:0.0000   1st Qu.: 1.000   1st Qu.:0.0000   1st Qu.:0    1st Qu.: 0.0000   1st Qu.: 1.00  
+#>  Median :0.0000                  Median :0.0000   Median : 2.000   Median :0.0000   Median :0    Median : 0.0000   Median : 2.00  
+#>  Mean   :0.3934                  Mean   :0.6271   Mean   : 2.627   Mean   :0.0678   Mean   :0    Mean   : 0.8868   Mean   : 2.83  
+#>  3rd Qu.:0.0000                  3rd Qu.:1.0000   3rd Qu.: 4.000   3rd Qu.:0.0000   3rd Qu.:0    3rd Qu.: 1.0000   3rd Qu.: 4.00  
+#>  Max.   :4.0000                  Max.   :7.0000   Max.   :13.000   Max.   :1.0000   Max.   :0    Max.   :11.0000   Max.   :13.00  
+#>  NA's   :16                      NA's   :18       NA's   :18       NA's   :18       NA's   :24   NA's   :24        NA's   :24     
+#>      Pod.08          Inf2.09       Inf.09           Veg.09           Pod.09     
+#>  Min.   :0.0000   Min.   :0    Min.   : 0.000   Min.   : 0.000   Min.   :0.000  
+#>  1st Qu.:0.0000   1st Qu.:0    1st Qu.: 0.000   1st Qu.: 1.000   1st Qu.:0.000  
+#>  Median :0.0000   Median :0    Median : 1.000   Median : 1.000   Median :1.000  
+#>  Mean   :0.1509   Mean   :0    Mean   : 1.833   Mean   : 2.233   Mean   :1.133  
+#>  3rd Qu.:0.0000   3rd Qu.:0    3rd Qu.: 2.000   3rd Qu.: 3.000   3rd Qu.:1.000  
+#>  Max.   :2.0000   Max.   :0    Max.   :11.000   Max.   :10.000   Max.   :8.000  
+#>  NA's   :24       NA's   :17   NA's   :17       NA's   :17       NA's   :17
+```
+
+  <p style="text-indent: 20px">This is a much smaller dataset, which makes sense given that this population is much smaller than the *C. parviflorum* population. There are data on 77 individuals across six years, and 29 total variables, each named `Inf2.XX`, `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively.</p>
+  
+### Community projection with pre-existing MPMs
+
+  <p style="text-indent: 20px">Our example will focus on developing MPMs for these populations, and using these MPMs to run community projections in which the two species exhibit density dependent responses in their vital rates. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
+  
+  <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below. Because these species share very similar life histories, we will use the same life history for both. Note, however, that we do not need to do this, and can use completely different life histories and associated stageframes.</p>
+
+``` r
+sizevector <- c(0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)
+stagevector <- c("SD", "P1", "SL", "D", "XSm", "Sm", "Md", "Lg", "XLg")
+repvector <- c(0, 0, 0, 0, 1, 1, 1, 1, 1)
+obsvector <- c(0, 0, 0, 0, 1, 1, 1, 1, 1)
+matvector <- c(0, 0, 0, 1, 1, 1, 1, 1, 1)
+immvector <- c(0, 1, 1, 0, 0, 0, 0, 0, 0)
+propvector <- c(1, 0, 0, 0, 0, 0, 0, 0, 0)
+indataset <- c(0, 0, 0, 1, 1, 1, 1, 1, 1)
+binvec <- c(0, 0, 0, 0.5, 0.5, 1, 1, 2.5, 7)
+
+cypframe_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
+  repstatus = repvector, obsstatus = obsvector, matstatus = matvector,
+  propstatus = propvector, immstatus = immvector, indataset = indataset,
+  binhalfwidth = binvec)
+cypframe_raw
+#>   stage size size_b size_c min_age max_age repstatus obsstatus propstatus immstatus matstatus indataset binhalfwidth_raw
+#> 1    SD  0.0     NA     NA      NA      NA         0         0          1         0         0         0              0.0
+#> 2    P1  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0
+#> 3    SL  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0
+#> 4     D  0.0     NA     NA      NA      NA         0         0          0         0         1         1              0.5
+#> 5   XSm  1.0     NA     NA      NA      NA         1         1          0         0         1         1              0.5
+#> 6    Sm  2.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0
+#> 7    Md  4.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0
+#> 8    Lg  8.0     NA     NA      NA      NA         1         1          0         0         1         1              2.5
+#> 9   XLg 17.5     NA     NA      NA      NA         1         1          0         0         1         1              7.0
+#>   sizebin_min sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center sizebinb_width
+#> 1         0.0         0.0            0.0             0                NA           NA           NA              NA             NA
+#> 2         0.0         0.0            0.0             0                NA           NA           NA              NA             NA
+#> 3         0.0         0.0            0.0             0                NA           NA           NA              NA             NA
+#> 4        -0.5         0.5            0.0             1                NA           NA           NA              NA             NA
+#> 5         0.5         1.5            1.0             1                NA           NA           NA              NA             NA
+#> 6         1.5         3.5            2.5             2                NA           NA           NA              NA             NA
+#> 7         3.5         5.5            4.5             2                NA           NA           NA              NA             NA
+#> 8         5.5        10.5            8.0             5                NA           NA           NA              NA             NA
+#> 9        10.5        24.5           17.5            14                NA           NA           NA              NA             NA
+#>   binhalfwidthc_raw sizebinc_min sizebinc_max sizebinc_center sizebinc_width group       comments
+#> 1                NA           NA           NA              NA             NA     0 No description
+#> 2                NA           NA           NA              NA             NA     0 No description
+#> 3                NA           NA           NA              NA             NA     0 No description
+#> 4                NA           NA           NA              NA             NA     0 No description
+#> 5                NA           NA           NA              NA             NA     0 No description
+#> 6                NA           NA           NA              NA             NA     0 No description
+#> 7                NA           NA           NA              NA             NA     0 No description
+#> 8                NA           NA           NA              NA             NA     0 No description
+#> 9                NA           NA           NA              NA             NA     0 No description
+```
+  
+  <p style="text-indent: 20px">Next we will create our verticalized datasets, in which our horizontal datasets are restructured to have all data for each individual split into blocks of three consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame. First, the *C.candidum* dataset.</p>
+
+``` r
+cycaraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
+  patchidcol = "patch", individcol = "plantid", blocksize = 4,
+  sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
+  repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+  NRasRep = TRUE)
+summary_hfv(cycaraw_v1)
+#> 
+#> This hfv dataset contains 320 rows, 57 variables, 1 population, 
+#> 3 patches, 74 individuals, and 5 time steps.
+#>      rowid          popid           patchid    individ           year2        firstseen       lastseen        obsage     
+#>  Min.   : 1.00   Length:320         A: 93   Min.   : 164.0   Min.   :2004   Min.   :2004   Min.   :2004   Min.   :1.000  
+#>  1st Qu.:21.00   Class :character   B:154   1st Qu.: 391.0   1st Qu.:2005   1st Qu.:2004   1st Qu.:2009   1st Qu.:2.000  
+#>  Median :37.50   Mode  :character   C: 73   Median : 453.0   Median :2006   Median :2004   Median :2009   Median :3.000  
+#>  Mean   :38.45                              Mean   : 651.5   Mean   :2006   Mean   :2004   Mean   :2009   Mean   :2.853  
+#>  3rd Qu.:56.00                              3rd Qu.: 476.0   3rd Qu.:2007   3rd Qu.:2004   3rd Qu.:2009   3rd Qu.:4.000  
+#>  Max.   :77.00                              Max.   :1560.0   Max.   :2008   Max.   :2008   Max.   :2009   Max.   :5.000  
+#>   obslifespan        sizea1             sizeb1            sizec1       size1added        repstra1          repstrb1       
+#>  Min.   :0.000   Min.   :0.000000   Min.   : 0.0000   Min.   : 0.0   Min.   : 0.000   Min.   : 0.0000   Min.   :0.000000  
+#>  1st Qu.:5.000   1st Qu.:0.000000   1st Qu.: 0.0000   1st Qu.: 0.0   1st Qu.: 0.000   1st Qu.: 0.0000   1st Qu.:0.000000  
+#>  Median :5.000   Median :0.000000   Median : 0.0000   Median : 1.0   Median : 2.000   Median : 0.0000   Median :0.000000  
+#>  Mean   :4.556   Mean   :0.009375   Mean   : 0.7469   Mean   : 1.9   Mean   : 2.656   Mean   : 0.7469   Mean   :0.009375  
+#>  3rd Qu.:5.000   3rd Qu.:0.000000   3rd Qu.: 1.0000   3rd Qu.: 3.0   3rd Qu.: 4.000   3rd Qu.: 1.0000   3rd Qu.:0.000000  
+#>  Max.   :5.000   Max.   :1.000000   Max.   :18.0000   Max.   :13.0   Max.   :21.000   Max.   :18.0000   Max.   :1.000000  
+#>   repstr1added         feca1          fec1added        obsstatus1       repstatus1       fecstatus1       matstatus1    
+#>  Min.   : 0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1.0000  
+#>  Median : 0.0000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000   Median :0.0000   Median :1.0000  
+#>  Mean   : 0.7562   Mean   :0.2656   Mean   :0.2656   Mean   :0.7469   Mean   :0.2875   Mean   :0.1344   Mean   :0.7688  
+#>  3rd Qu.: 1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:1.0000  
+#>  Max.   :18.0000   Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000  
+#>      alive1          stage1           stage1index        sizea2             sizeb2            sizec2         size2added    
+#>  Min.   :0.0000   Length:320         Min.   :0.000   Min.   :0.000000   Min.   : 0.0000   Min.   : 0.000   Min.   : 0.000  
+#>  1st Qu.:1.0000   Class :character   1st Qu.:4.000   1st Qu.:0.000000   1st Qu.: 0.0000   1st Qu.: 1.000   1st Qu.: 1.000  
+#>  Median :1.0000   Mode  :character   Median :6.000   Median :0.000000   Median : 0.0000   Median : 2.000   Median : 2.000  
+#>  Mean   :0.7688                      Mean   :4.772   Mean   :0.009375   Mean   : 0.8969   Mean   : 2.416   Mean   : 3.322  
+#>  3rd Qu.:1.0000                      3rd Qu.:7.000   3rd Qu.:0.000000   3rd Qu.: 1.0000   3rd Qu.: 3.000   3rd Qu.: 4.000  
+#>  Max.   :1.0000                      Max.   :9.000   Max.   :1.000000   Max.   :18.0000   Max.   :13.000   Max.   :24.000  
+#>     repstra2          repstrb2         repstr2added         feca2          fec2added        obsstatus2       repstatus2    
+#>  Min.   : 0.0000   Min.   :0.000000   Min.   : 0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 0.0000   1st Qu.:0.000000   1st Qu.: 0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1.0000   1st Qu.:0.0000  
+#>  Median : 0.0000   Median :0.000000   Median : 0.0000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000  
+#>  Mean   : 0.8969   Mean   :0.009375   Mean   : 0.9062   Mean   :0.2906   Mean   :0.2906   Mean   :0.9531   Mean   :0.3688  
+#>  3rd Qu.: 1.0000   3rd Qu.:0.000000   3rd Qu.: 1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>  Max.   :18.0000   Max.   :1.000000   Max.   :18.0000   Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.0000  
+#>    fecstatus2       matstatus2     alive2     stage2           stage2index        sizea3             sizeb3           sizec3      
+#>  Min.   :0.0000   Min.   :1    Min.   :1   Length:320         Min.   :4.000   Min.   :0.000000   Min.   : 0.000   Min.   : 0.000  
+#>  1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character   1st Qu.:5.000   1st Qu.:0.000000   1st Qu.: 0.000   1st Qu.: 1.000  
+#>  Median :0.0000   Median :1    Median :1   Mode  :character   Median :6.000   Median :0.000000   Median : 0.000   Median : 1.000  
+#>  Mean   :0.1562   Mean   :1    Mean   :1                      Mean   :6.125   Mean   :0.009375   Mean   : 1.069   Mean   : 2.209  
+#>  3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1                      3rd Qu.:7.000   3rd Qu.:0.000000   3rd Qu.: 1.000   3rd Qu.: 3.000  
+#>  Max.   :1.0000   Max.   :1    Max.   :1                      Max.   :9.000   Max.   :1.000000   Max.   :18.000   Max.   :13.000  
+#>    size3added        repstra3         repstrb3         repstr3added        feca3          fec3added        obsstatus3 
+#>  Min.   : 0.000   Min.   : 0.000   Min.   :0.000000   Min.   : 0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0  
+#>  1st Qu.: 1.000   1st Qu.: 0.000   1st Qu.:0.000000   1st Qu.: 0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1.0  
+#>  Median : 2.000   Median : 0.000   Median :0.000000   Median : 0.000   Median :0.0000   Median :0.0000   Median :1.0  
+#>  Mean   : 3.288   Mean   : 1.069   Mean   :0.009375   Mean   : 1.078   Mean   :0.4562   Mean   :0.4562   Mean   :0.9  
+#>  3rd Qu.: 4.000   3rd Qu.: 1.000   3rd Qu.:0.000000   3rd Qu.: 1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0  
+#>  Max.   :24.000   Max.   :18.000   Max.   :1.000000   Max.   :18.000   Max.   :8.0000   Max.   :8.0000   Max.   :1.0  
+#>    repstatus3    fecstatus3       matstatus3     alive3          stage3           stage3index  
+#>  Min.   :0.0   Min.   :0.0000   Min.   :1    Min.   :0.0000   Length:320         Min.   :0.00  
+#>  1st Qu.:0.0   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.0000   Class :character   1st Qu.:5.00  
+#>  Median :0.0   Median :0.0000   Median :1    Median :1.0000   Mode  :character   Median :6.00  
+#>  Mean   :0.4   Mean   :0.2219   Mean   :1    Mean   :0.9469                      Mean   :5.85  
+#>  3rd Qu.:1.0   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.0000                      3rd Qu.:7.00  
+#>  Max.   :1.0   Max.   :1.0000   Max.   :1    Max.   :1.0000                      Max.   :9.00
+```
+  
+  <p style="text-indent: 20px">Here we find that our new dataset includes 320 rows, 57 variables, taking blocks of 3 consecutive years at a shot and showing the fate of each individual across that time. Let's do the same for *C. parviflorum*.</p>
+
+``` r
+cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+  individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+  sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+  NRasRep = TRUE)
+summary_hfv(cyparaw_v1)
+#> 
+#> This hfv dataset contains 6871 rows, 51 variables, 1 population, 
+#> 1 patch, 1025 individuals, and 17 time steps.
+#>      rowid           popid             patchid               individ         year2        firstseen       lastseen   
+#>  Min.   :   1.0   Length:6871        Length:6871        K NA     :  62   Min.   :1994   Min.   :1994   Min.   :1994  
+#>  1st Qu.: 291.0   Class :character   Class :character   A NA     :  27   1st Qu.:1999   1st Qu.:1995   1st Qu.:2004  
+#>  Median : 557.0   Mode  :character   Mode  :character   X NA     :  24   Median :2002   Median :1997   Median :2009  
+#>  Mean   : 549.7                                         T NA     :  23   Mean   :2002   Mean   :1997   Mean   :2007  
+#>  3rd Qu.: 804.0                                         Willow NA:  17   3rd Qu.:2005   3rd Qu.:1999   3rd Qu.:2011  
+#>  Max.   :1103.0                                         X 3      :  17   Max.   :2010   Max.   :2010   Max.   :2011  
+#>                                                         (Other)  :6701                                               
+#>      obsage        obslifespan         sizea1           sizeb1         size1added        repstra1       repstr1added   
+#>  Min.   : 1.000   Min.   : 0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.: 2.000   1st Qu.: 6.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Median : 5.000   Median :10.000   Median :0.0000   Median :0.0000   Median :1.0000   Median :0.0000   Median :0.0000  
+#>  Mean   : 5.541   Mean   : 9.452   Mean   :0.3484   Mean   :0.5244   Mean   :0.8728   Mean   :0.3484   Mean   :0.3484  
+#>  3rd Qu.: 8.000   3rd Qu.:14.000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  
+#>  Max.   :17.000   Max.   :17.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                        
+#>      feca1          fec1added        obsstatus1       repstatus1      fecstatus1      matstatus1         alive1      
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:1.0000   1st Qu.:1.0000  
+#>  Median :0.0000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :1.0000   Median :1.0000  
+#>  Mean   :0.3484   Mean   :0.3484   Mean   :0.5472   Mean   :0.247   Mean   :0.247   Mean   :0.8395   Mean   :0.8395  
+#>  3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :1.0000   Max.   :1.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000  
+#>                                                                                                                      
+#>     stage1           stage1index        sizea2           sizeb2         size2added       repstra2       repstr2added   
+#>  Length:6871        Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000  
+#>  Class :character   1st Qu.:4.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000  
+#>  Mode  :character   Median :5.000   Median :0.0000   Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000  
+#>                     Mean   :4.145   Mean   :0.4139   Mean   :0.6656   Mean   :1.079   Mean   :0.4139   Mean   :0.4139  
+#>                     3rd Qu.:5.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000  
+#>                     Max.   :8.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000  
+#>                                                                                                                        
+#>      feca2          fec2added        obsstatus2      repstatus2       fecstatus2       matstatus2     alive2     stage2         
+#>  Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :1   Length:6871       
+#>  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1   Class :character  
+#>  Median :0.0000   Median :0.0000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1   Mode  :character  
+#>  Mean   :0.4139   Mean   :0.4139   Mean   :0.697   Mean   :0.2969   Mean   :0.2969   Mean   :1    Mean   :1                     
+#>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                     
+#>  Max.   :7.0000   Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                     
+#>                                                                                                                                 
+#>   stage2index        sizea3          sizeb3         size3added        repstra3      repstr3added       feca3         fec3added    
+#>  Min.   :4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
+#>  1st Qu.:4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
+#>  Median :5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000   Median :0.000  
+#>  Mean   :4.982   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335   Mean   :0.335  
+#>  3rd Qu.:5.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
+#>  Max.   :8.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
+#>                                                                                                                                   
+#>    obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3           stage3index   
+#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871        Min.   :0.000  
+#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character   1st Qu.:4.000  
+#>  Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character   Median :5.000  
+#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                      Mean   :4.301  
+#>  3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                      3rd Qu.:5.000  
+#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                      Max.   :8.000  
+#> 
+```
+  
+  <p style="text-indent: 20px">This is a much bigger dataset, as we can see, in terms of rows, variables, individuals, and years. Now let's create our MPMs. See our online book, <a href = "https://bookdown.org/cdorm/lefko3gentle/">lefko3: a gentle introduction</a>, for further material on how to construct MPMs properly.</p>
+
+``` r
+cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", "XSm", "Sm", "SD",
+  "P1"),
+  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep", "rep"),
+  eststage3 = c(NA, NA, NA, "D", "XSm", "Sm", NA, NA),
+  eststage2 = c(NA, NA, NA, "XSm", "XSm", "XSm", NA, NA),
+  givenrate = c(0.10, 0.20, 0.25, NA, NA, NA, NA, NA),
+  multiplier = c(NA, NA, NA, NA, NA, NA, 5000, 5000),
+  type =c(1, 1, 1, 1, 1, 1, 3, 3),
+  stageframe = cypframe_raw, historical = FALSE)
+#> Warning: NA values in argument multiplier will be treated as 1 values.
+
+cycamatrix2r <- rlefko2(data = cycaraw_v1, stageframe = cypframe_raw, 
+  year = "all", stages = c("stage3", "stage2", "stage1"),
+  size = c("size3added", "size2added"), supplement = cypsupp2r,
+  yearcol = "year2", indivcol = "individ")
+
+cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
+  year = "all", stages = c("stage3", "stage2", "stage1"),
+  size = c("size3added", "size2added"), supplement = cypsupp2r,
+  yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+
+writeLines("Cypripedium candidum")
+#> Cypripedium candidum
+summary(cycamatrix2r)
+#> 
+#> This ahistorical lefkoMat object contains 5 matrices.
+#> 
+#> Each matrix is square with 9 rows and columns, and a total of 81 elements.
+#> A total of 115 survival transitions were estimated, with 23 per matrix.
+#> A total of 42 fecundity transitions were estimated, with 8.4 per matrix.
+#> This lefkoMat object covers 1 population, 1 patch, and 5 time steps.
+#> 
+#> The dataset contains a total of 74 unique individuals and 320 unique transitions.
+#> 
+#> Survival probability sum check (each matrix represented by column in order):
+#>          [,1]  [,2]  [,3]  [,4]  [,5]
+#> Min.    0.000 0.250 0.250 0.250 0.250
+#> 1st Qu. 0.300 0.870 0.818 0.800 0.857
+#> Median  0.957 0.941 1.000 0.900 0.900
+#> Mean    0.708 0.803 0.804 0.789 0.801
+#> 3rd Qu. 1.000 1.000 1.000 1.000 1.000
+#> Max.    1.000 1.000 1.000 1.000 1.000
+#> 
+#> 
+#> Stages without connections leading to the rest of the life cycle found in matrices: 1
+writeLines("\nCypripedium parviflorum")
+#> 
+#> Cypripedium parviflorum
+summary(cypamatrix2r)
+#> 
+#> This ahistorical lefkoMat object contains 17 matrices.
+#> 
+#> Each matrix is square with 9 rows and columns, and a total of 81 elements.
+#> A total of 371 survival transitions were estimated, with 21.824 per matrix.
+#> A total of 120 fecundity transitions were estimated, with 7.059 per matrix.
+#> This lefkoMat object covers 1 population, 1 patch, and 17 time steps.
+#> 
+#> The dataset contains a total of 1025 unique individuals and 6871 unique transitions.
+#> 
+#> Survival probability sum check (each matrix represented by column in order):
+#>          [,1]  [,2]  [,3]  [,4]  [,5]  [,6]  [,7]  [,8]  [,9] [,10] [,11] [,12] [,13] [,14] [,15] [,16] [,17]
+#> Min.    0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000
+#> 1st Qu. 0.250 0.300 0.300 0.300 0.250 0.300 0.300 0.300 0.300 0.300 0.250 0.300 0.250 0.250 0.250 0.300 0.250
+#> Median  0.500 0.841 0.782 0.862 0.855 0.773 0.771 0.833 0.803 0.792 0.758 0.760 0.686 0.763 0.750 0.728 0.667
+#> Mean    0.483 0.667 0.623 0.662 0.574 0.610 0.637 0.678 0.644 0.641 0.558 0.642 0.514 0.543 0.542 0.562 0.516
+#> 3rd Qu. 0.733 0.909 0.826 0.880 0.904 0.787 0.875 1.000 0.835 0.883 0.952 0.875 0.829 0.806 0.825 0.755 0.788
+#> Max.    1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000
+#> 
+#> 
+#> Stages without connections leading to the rest of the life cycle found in matrices: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
+```
+  
+  <p style="text-indent: 20px">The summary information that we see is full of interesting information. For example, we see that there are incomplete life cycles in some years in the two populations. This suggests that there are years in which certain stages do not appear. It is not the end of the world, though. Let's keep going and see what our analyses suggest.</p>
+  
+  <p style="text-indent: 20px">Our next step will be to create a list with our MPMs, where each element of the list is a single set of MPMs. We can accomplish this as follows.</p>
+
+``` r
+cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)
+```
+  
+  <p style="text-indent: 20px">Now that we have our core MPM list, we will need to clarify some of the assumptions of the projection. First, let's set up starting vectors for each population. We will start our populations with specific numbers of dormant seeds, protocorms, and seedlings, but with more of them in the case of *C. parviflorum*. We will also use the `start_input()` function in package `lefko3` for this purpose, and combine the results in a list with the same order as our MP{M list. Users should consider the starting vector carefully, as the starting condition of the community impacts its trajectory in projection.</p>
+
+``` r
+cyca2_start <- start_input(cycamatrix2r, stage2 = c("SD", "P1", "SL"),
+  value = c(500, 100, 200))
+cypa2_start <- start_input(cypamatrix2r, stage2 = c("SD", "P1", "SL"),
+  value = c(5000, 1000, 2000))
+cyp_start_list <- list(cyca2_start, cypa2_start)
+```
+  
+  <p style="text-indent: 20px">Next we need to clarify how density dependence will operate on these populations. In herbaceous perennial plants, the germination stage is most commonly negatively density dependent. In orchids, germination may be from a fresh seed, or from a previously dormant seed, and we will assume density dependence in both. Determining the exact nature and proper parameterization of density dependence is too great a topic for this vignette, and so we utilize the following two-parameter Ricker function-based approach, which we know works in this case based on our own previous studies. Note that we will also toss this into a list, but essentially replicate it into the list to make sure that both populations use it.</p>
+
+``` r
+cyp2_dv <- density_input(cypamatrix2r, stage3 = c("SD", "P1"),
+  stage2 = c("rep", "rep"), style = c(1, 1), alpha = c(0.5, 1.2),
+  beta = c(1.0, 2.0), type = c(2, 1))
+cyp_dv_list <- list(cyp2_dv, cyp2_dv)
+```
+  
+  <p style="text-indent: 20px">Our next step will be to build an equivalence data frame. This data frame tells `R` how different stages and different species relate to one another in terms of density dependence. If this structure is left out of the projection, then `R` will assume that each individual of any stage of any species is essentially equal to any other individual of any stage of any species. In our case, we wish to specify that dormant seeds do not affect the density dependence experienced by the populations. For this purpose, we will use the `equiv_input` function.</p>  
+
+``` r
+cyp_eq <- equiv_input(cycamatrix2r,
+  stage2 = c("SD", "P1", "SL", "D", "XSm", "Sm", "Md", "Lg", "XLg"),
+  value = c(0, 1, 1, 1, 1, 1, 1, 1, 1))
+
+eq_list <- list(cyp_eq, cyp_eq)
+```
+  
+  <p style="text-indent: 20px">Finally, we can run our communty projection. We do so as follows, projecting the population forward 100 years.</p>
+
+``` r
+cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
+  density = cyp_dv_list, equivalence = eq_list, times = 100, integeronly = TRUE)
+summary(cyp_comm_proj)
+#> 
+#> The input adaptProj object covers 2 populations, 101 projected steps and 1 projected replicate.
+#> The number of replicates with population size above the threshold size of 1 is as in
+#> the following matrix, with populations given by row and milepost times given by column:
+#> $milepost_sums
+#>      1 25 50 75 101
+#> [1,] 1  1  1  1   1
+#> [2,] 1  1  1  1   0
+#> 
+#> $extinction_times
+#> [1] NA
+```
+  
+  <p style="text-indent: 20px">We can see that our projection did not predict extinction in *C. candidum*, but it did in *C. parviflorum*. Let's take a look at a graph of the results, showing the full population sizes over time.</p>
+
+``` r
+plot(cyp_comm_proj)
+```
+
+![plot of chunk ch1-1.12](ch1-1.12-1.png)
+  
+  <p style="text-indent: 20px">The *C. candidum* population stayed relatively low but did not go extinct over the 100 years, while the *C. parviflorum* population exploded in size early on and then dropped. Let's view the actual population sizes over the course of the projection.</p>
+
+``` r
+cyp_comm_proj$N_out
+#> [[1]]
+#>      [,1] [,2]    [,3]   [,4]   [,5]   [,6]   [,7]   [,8]   [,9]  [,10]  [,11]  [,12]  [,13]  [,14]  [,15]  [,16]  [,17] [,18]
+#> [1,]  800  347   82256  21897  13669  11981  11693  10771  10126   9222   8605   8498   8030   7671   7073   6638   6564  6234
+#> [2,] 8000 3215 2747423 728340 483724 419169 357267 317005 286733 252408 224491 198041 169464 145512 129209 120187 100117 86170
+#>      [,19] [,20] [,21] [,22] [,23] [,24] [,25] [,26] [,27] [,28] [,29] [,30] [,31] [,32] [,33] [,34] [,35] [,36] [,37] [,38] [,39]
+#> [1,]  5977  5526  5193  5136  4886  4689  4338  4078  4033  3838  3684  3409  3203  3167  3012  2890  2674  2514  2485  2363  2268
+#> [2,] 65112 60744 52585 48343 44575 38495 34289 31036 27314 24291 21430 18335 15742 13976 12998 10827  9317  7039  6565  5681  5220
+#>      [,40] [,41] [,42] [,43] [,44] [,45] [,46] [,47] [,48] [,49] [,50] [,51] [,52] [,53] [,54] [,55] [,56] [,57] [,58] [,59] [,60]
+#> [1,]  2097  1971  1947  1851  1775  1640  1540  1521  1446  1387  1282  1203  1188  1129  1081   998   936   923   875   838   773
+#> [2,]  4811  4153  3697  3345  2941  2614  2305  1971  1691  1501  1395  1161   998   751   698   602   552   506   434   383   345
+#>      [,61] [,62] [,63] [,64] [,65] [,66] [,67] [,68] [,69] [,70] [,71] [,72] [,73] [,74] [,75] [,76] [,77] [,78] [,79] [,80] [,81]
+#> [1,]   725   714   676   646   595   557   547   517   493   454   424   416   393   375   346   322   316   298   283   259   242
+#> [2,]   301   266   232   197   166   145   132   108    92    67    61    52    46    40    32    26    22    17    13    10     7
+#>      [,82] [,83] [,84] [,85] [,86] [,87] [,88] [,89] [,90] [,91] [,92] [,93] [,94] [,95] [,96] [,97] [,98] [,99] [,100] [,101]
+#> [1,]   236   223   211   192   177   172   161   152   137   126   123   114   106    94    87    83    77    71     63     57
+#> [2,]     5     3     2     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0      0      0
+```
+  
+  <p style="text-indent: 20px">Although *C. parviflorum* started off with an order of magnitude more individuals, it went extinct. And, unfortunately, C. candidum appears to be dropping to extinction, though has not done so at the end of the 100 year projection. No doubt further research is required to understand the results.</p>
+
+
+## Acknowledgements
+
+<p style="text-indent: 20px">
+
+We are grateful to two anonymous reviewers whose scrutiny improved the quality of this vignette. The project resulting in this package and this tutorial was funded by Grant-In-Aid 23H02552 from the Japan Society for the Promotion of Science.
+
+</p>
+
+## Literature cited
+
+::: {#refs}
+:::

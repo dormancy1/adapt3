@@ -4,10 +4,12 @@
 \alias{summary.adaptInv}
 \title{Summarize adaptInv Objects}
 \usage{
-\method{summary}{adaptInv}(object)
+\method{summary}{adaptInv}(object, ...)
 }
 \arguments{
 \item{object}{An \code{adaptInv} object.}
+
+\item{...}{Other parameters currently not utilized.}
 }
 \value{
 This function only produces text summarizing the numbers of variants,

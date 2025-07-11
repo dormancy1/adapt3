@@ -247,6 +247,7 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
 #' @name summary.adaptInv
 #' 
 #' @param object An \code{adaptInv} object.
+#' @param ... Other parameters currently not utilized.
 #' 
 #' @return This function only produces text summarizing the numbers of variants,
 #' time steps, replicates, ESS optima, etc.
@@ -318,7 +319,7 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
 #' summary(cyp_inv)
 #' 
 #' @export
-summary.adaptInv <- function(object) {
+summary.adaptInv <- function(object, ...) {
   
   num_reps <- num_times <- 0
   appended <- FALSE

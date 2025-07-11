@@ -1,3 +1,19 @@
+# adapt 1.0.1 (2025-07-11)
+
+## USER-VISIBLE CHANGES
+
+* Corrections to documentation.
+
+# adapt 1.0.0 (2025-07-10)
+
+## NEW FEATURES
+
+* New community projection vignette.
+
+## USER-VISIBLE CHANGES
+
+* Corrected help files for certain functions.
+
 # adapt 0.9.9 (2025-07-08)
 
 ## USER-VISIBLE CHANGES

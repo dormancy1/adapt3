@@ -85,7 +85,7 @@ summary(cypa_data)
 #> 
 ```
 
-  <p style="text-indent: 20px">This dataset includes information on 1119 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `InfXX` and `VegXX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://bookdown.org/cdorm/lefko3gentle/">*lefko3: a gentle introduction*</a> for more).</p>
+  <p style="text-indent: 20px">This dataset includes information on 1103 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://bookdown.org/cdorm/lefko3gentle/">*lefko3: a gentle introduction*</a> for more).</p>
 
 ### Pairwise invasibility analysis focused on matrix element manipulation
 
@@ -141,7 +141,7 @@ cypframe_raw
 #> 9                NA           NA           NA              NA             NA     0 No description
 ```
   
-  <p style="text-indent: 20px">Next we will create our verticalized dataset, in which our horizontal dataset is restructured to have all data for each individual split into blocks of 3 consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame.</p>
+  <p style="text-indent: 20px">Next we will create our verticalized dataset, in which our horizontal dataset is restructured to have all data for each individual split into blocks of three consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame.</p>
 
 ``` r
 cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
@@ -515,21 +515,29 @@ summary_hfv(cypraw_v2)
 #>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                     
 #>  Max.   :7.0000   Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                     
 #>                                                                                                                                 
-#>   stage2index         sizea3          sizeb3         size3added        repstra3      repstr3added       feca3         fec3added    
-#>  Min.   : 4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
-#>  1st Qu.: 4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
-#>  Median : 5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000   Median :0.000  
-#>  Mean   : 7.158   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335   Mean   :0.335  
-#>  3rd Qu.:12.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
-#>  Max.   :18.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
-#>                                                                                                                                    
-#>    obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3           stage3index    
-#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871        Min.   : 0.000  
-#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character   1st Qu.: 4.000  
-#>  Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character   Median : 5.000  
-#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                      Mean   : 6.057  
-#>  3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                      3rd Qu.: 7.000  
-#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                      Max.   :18.000  
+#>   stage2index         sizea3          sizeb3         size3added        repstra3      repstr3added       feca3      
+#>  Min.   : 4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
+#>  1st Qu.: 4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
+#>  Median : 5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000  
+#>  Mean   : 7.158   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335  
+#>  3rd Qu.:12.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
+#>  Max.   :18.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
+#>                                                                                                                    
+#>    fec3added       obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3         
+#>  Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871       
+#>  1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character  
+#>  Median :0.000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character  
+#>  Mean   :0.335   Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                     
+#>  3rd Qu.:0.000   3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                     
+#>  Max.   :7.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                     
+#>                                                                                                                   
+#>   stage3index    
+#>  Min.   : 0.000  
+#>  1st Qu.: 4.000  
+#>  Median : 5.000  
+#>  Mean   : 6.057  
+#>  3rd Qu.: 7.000  
+#>  Max.   :18.000  
 #> 
 ```
   
@@ -1126,7 +1134,7 @@ plot(cyp_inv3, pip = FALSE, elast = TRUE)
 
 ![plot of chunk ch2.14](ch2.14-1.png)
 
-  <p style="text-indent: 20px">Elasticity plots will only be as good as the resolution of the associated trait axis, and in this case, with only 10 variants, we see that the low resolution suggests 2 potential optima. It is likely that one of these potential optima is actually one that did not converge properly. Regardless, let's take a look at the predicted ESS value of the trait.</p>
+  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in Benton and Grant @benton_optimal_1999, and on the version of it that appears in Roff @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Elasticity plots will only be as good as the resolution of the associated trait axis, and in this case, with only 10 variants, we see that the low resolution suggests 2 potential optima. It is likely that one of these potential optima is actually one that did not converge properly. Regardless, let's take a look at the predicted ESS value of the trait.</p>
 
 ``` r
 cyp_inv3$optim$ESS_values

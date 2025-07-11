@@ -213,6 +213,14 @@ points. Trait optimization is conducted via elasticity analysis of traits
 that are variable within the \code{trait_axis} table. Defaults to
 \code{FALSE}.}
 
+\item{zap_min}{A logical value indicating whether to treat traits and
+fitness as 0 when their absolute values are less than the value given in
+argument \code{threshold}.}
+
+\item{converged_only}{A logical value indicating whether to show predicted
+trait optima only in cases where the Lyapunov coefficient in elasticity
+analysis has converged to 0. Defaults to \code{TRUE}.}
+
 \item{err_check}{A logical value indicating whether to include an extra list
 of output objects for error checking. Can also be set to the text value
 \code{"extreme"}, in which case all \code{err_check} output plus a multiple

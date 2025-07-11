@@ -62,7 +62,8 @@ to the resident.}
 
 \item{plot.title}{A title for the plot.}
 
-\item{plot.axes}{}
+\item{plot.axes}{A generic parameter providing axis information for pairwise
+invasibility plots.}
 
 \item{axes}{A logical value indicating whether to include axis lines.
 Defaults to \code{TRUE}.}

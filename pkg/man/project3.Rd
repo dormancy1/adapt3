@@ -337,10 +337,10 @@ cycaraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
   NRasRep = TRUE)
   
 cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
-  individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
-  sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
-  repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
-  stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
+  individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+  sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+  NRasRep = TRUE)
 
 cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
     "XSm", "Sm", "SD", "P1"),

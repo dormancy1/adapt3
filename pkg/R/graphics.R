@@ -56,10 +56,9 @@
 #'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 #'   NRasRep = TRUE)
 #'   
-#' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 6, firstyear = 2004,
-#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
-#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+#' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+#'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+#'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Pod.94",
 #'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 #'   NRasRep = TRUE)
 #' 
@@ -81,9 +80,9 @@
 #'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
 #' 
 #' cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
-#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
+#'   year = "all", stages = c("stage3", "stage2", "stage1"),
 #'   size = c("size3added", "size2added"), supplement = cypsupp2r_alt,
-#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#'   yearcol = "year2", indivcol = "individ")
 #' 
 #' cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)
 #' 
@@ -146,7 +145,7 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
   used_col <- 1
   
   if (auto_title) {
-    used_string <- paste("pop", x$labels[i, 1], "patch", x$labels[i, 2])
+    used_string <- paste("Community matrix projection")
     further_args$main <- used_string
   }
   
@@ -226,7 +225,8 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' invader fitness is consistently positive, or consistently negative, relative
 #' to the resident.
 #' @param plot.title A title for the plot.
-#' @param plot.axes 
+#' @param plot.axes A generic parameter providing axis information for pairwise
+#' invasibility plots.
 #' @param axes A logical value indicating whether to include axis lines.
 #' Defaults to \code{TRUE}.
 #' @param frame.plot A logical value indicating whether to frame the plot.
@@ -377,7 +377,7 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
     used_col <- 1
     
     if (auto_title) {
-      used_string <- paste("pop", x$labels[i, 1], "patch", x$labels[i, 2])
+      used_string <- paste("Invasibility analysis")
       further_args$main <- used_string
     }
     

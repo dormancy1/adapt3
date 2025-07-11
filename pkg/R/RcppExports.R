@@ -2048,10 +2048,10 @@ NULL
 #'   NRasRep = TRUE)
 #'   
 #' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
-#'   individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
-#'   sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
-#'   repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
-#'   stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
+#'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+#'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+#'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+#'   NRasRep = TRUE)
 #' 
 #' cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
 #'     "XSm", "Sm", "SD", "P1"),
@@ -2236,6 +2236,12 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' points. Trait optimization is conducted via elasticity analysis of traits
 #' that are variable within the \code{trait_axis} table. Defaults to
 #' \code{FALSE}.
+#' @param zap_min A logical value indicating whether to treat traits and
+#' fitness as 0 when their absolute values are less than the value given in
+#' argument \code{threshold}.
+#' @param converged_only A logical value indicating whether to show predicted
+#' trait optima only in cases where the Lyapunov coefficient in elasticity
+#' analysis has converged to 0. Defaults to \code{TRUE}.
 #' @param err_check A logical value indicating whether to include an extra list
 #' of output objects for error checking. Can also be set to the text value
 #' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
@@ -2733,10 +2739,9 @@ ta_skeleton <- function(rows = 10L) {
 #'   propstatus = propvector, immstatus = immvector, indataset = indataset,
 #'   binhalfwidth = binvec)
 #' 
-#' cypraw_v1 <- verticalize3(data = cypa_data, noyears = 6, firstyear = 2004,
-#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
-#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+#' cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+#'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+#'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
 #'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 #'   NRasRep = TRUE)
 #' 

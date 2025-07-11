@@ -1,0 +1,194 @@
+---
+title: "Community matrix projection"
+author: Richard P. Shefferson
+output: rmarkdown::html_vignette
+bibliography: adapt3tutorial.bib
+vignette: >
+  %\VignetteIndexEntry{Community matrix projection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r ch1-1-0, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+  <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset in package `adapt3`, as well as the `cypdata` dataset from package `lefko3`, to illustrate community matrix projection. Package `adapt3` allows both pre-existing MPMs to be utilized, as well as purely function-based MPMs, which must be constructed at each step. Both approaches utilize functions from and structures created by the package `lefko3`, and we encourage users to become familiar with that package to use package `adapt3` properly. Here, we illustrate the community matrix projection with pre-existing MPMs</p>
+
+  <p style="text-indent: 20px">To reduce vignette size, we have prevented some statements from running if they produce long stretches of output. Examples include most `summary()` calls. In these cases, we include hashtagged versions of these calls, and we encourage the user to run these statements without hashtags.</p>
+
+  <p style="text-indent: 20px">This vignette is only a sample analysis. Detailed information and instructions on using `adapt3` will be made available over time. Please check available resources on <a href = "http://www.revolutionarydemography.com/projects.html">the projects page</a> of the `{r}evolutionary demography` website.</p>
+
+### Organisms and populations
+
+  <p style="text-indent: 20px">In this analysis, we will use data for two species that occur sympatrically. *Cypripedium parviflorum* and *Cypripedium candidum* (family Orchidaceae) are long-lived herbaceous perennials, native to North America and particularly common near the Great Lakes. They typically live in wet, calcareous wetlands on the edges of woodlands, with *C. parviflorum* prefering more wooded habitat than *C. candidum* [@shefferson_estimating_2001]. Individuals begin life as dust seeds, which may or may not germinate the year following production. Germination leads to the protocorm stage, a life history stage in which the individual grows underground in a non-photosynthetic, mycoheterotrophic state [@rasmussen_orchids_1995]. They may live in this state for several years prior to becoming a seedling, at which point they may or may not sprout. Maturity involves the production of flowering sprouts, each with several leaves and typically only a single flower, although an individual may produce mostly non-flowering sprouts. Most individuals produce only a single sprout, and vegetative dormancy is common and can occur for overa decade in a single individual [@shefferson_drivers_2018].</p>
+
+  <p style="text-indent: 20px">Data for this study were collected from a population in northeastern Illinois, from 2004 to 2009 [@shefferson_predicting_2017]. Each year at the start of the flowering season, all individuals at the site were located, with previously identified individuals identified based on their previous locations, and new individuals recorded via an exhaustive survey. Plant characteristics including the number of sprouts, which sprouts were flowering vs. non-flowering, and the number of flowers per sprout, were recorded for every individual in every year.</p>
+
+### Dataset preparation
+
+  <p style="text-indent: 20px">Package `adapt3` is built to take advantage of package `lefko3`, which offers a general language and architecture to build and analyze most kinds of matrix projection models, including even discretized integral projection models [@shefferson_lefko3_2021]. To start, we will load both `lefko3` and `adapt3`, and also load the datasets that we will use for examples.</p>
+```{r ch1-1.0}
+library(lefko3)
+library(adapt3)
+
+data(cypa_data)
+data(cypdata)
+```
+
+  <p style="text-indent: 20px">Let's now take a look at the *C. parviflorum* dataset.</p>
+```{r ch1-1.1}
+dim(cypa_data)
+summary(cypa_data)
+```
+
+  <p style="text-indent: 20px">This dataset includes information on 1103 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. We can see that we have data for 18 years here. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://bookdown.org/cdorm/lefko3gentle/">*lefko3: a gentle introduction*</a> for more).</p>
+  
+  <p style="text-indent: 20px">Next let's look at a summary of the *C. candidum* dataset.</p>
+```{r ch1-1.2}
+dim(cypdata)
+summary(cypdata)
+```
+
+  <p style="text-indent: 20px">This is a much smaller dataset, which makes sense given that this population is much smaller than the *C. parviflorum* population. There are data on 77 individuals across six years, and 29 total variables, each named `Inf2.XX`, `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively.</p>
+  
+### Community projection with pre-existing MPMs
+
+  <p style="text-indent: 20px">Our example will focus on developing MPMs for these populations, and using these MPMs to run community projections in which the two species exhibit density dependent responses in their vital rates. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
+  
+  <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below. Because these species share very similar life histories, we will use the same life history for both. Note, however, that we do not need to do this, and can use completely different life histories and associated stageframes.</p>
+```{r ch1-1.3}
+sizevector <- c(0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)
+stagevector <- c("SD", "P1", "SL", "D", "XSm", "Sm", "Md", "Lg", "XLg")
+repvector <- c(0, 0, 0, 0, 1, 1, 1, 1, 1)
+obsvector <- c(0, 0, 0, 0, 1, 1, 1, 1, 1)
+matvector <- c(0, 0, 0, 1, 1, 1, 1, 1, 1)
+immvector <- c(0, 1, 1, 0, 0, 0, 0, 0, 0)
+propvector <- c(1, 0, 0, 0, 0, 0, 0, 0, 0)
+indataset <- c(0, 0, 0, 1, 1, 1, 1, 1, 1)
+binvec <- c(0, 0, 0, 0.5, 0.5, 1, 1, 2.5, 7)
+
+cypframe_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
+  repstatus = repvector, obsstatus = obsvector, matstatus = matvector,
+  propstatus = propvector, immstatus = immvector, indataset = indataset,
+  binhalfwidth = binvec)
+cypframe_raw
+```
+  
+  <p style="text-indent: 20px">Next we will create our verticalized datasets, in which our horizontal datasets are restructured to have all data for each individual split into blocks of three consecutive monitoring occasions, as below. Note that, because we are using the `stageassign` argument, we can have `R` assign stages to each individual in each occasion. Note also our use of the `summary_hfv()` function, which provides specialized, useful output for this style of data frame. First, the *C.candidum* dataset.</p>
+```{r ch1-1.4}
+cycaraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
+  patchidcol = "patch", individcol = "plantid", blocksize = 4,
+  sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
+  repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+  NRasRep = TRUE)
+summary_hfv(cycaraw_v1)
+```
+  
+  <p style="text-indent: 20px">Here we find that our new dataset includes 320 rows, 57 variables, taking blocks of 3 consecutive years at a shot and showing the fate of each individual across that time. Let's do the same for *C. parviflorum*.</p>
+```{r ch1-1.5}
+cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+  individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+  sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+  stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+  NRasRep = TRUE)
+summary_hfv(cyparaw_v1)
+```
+  
+  <p style="text-indent: 20px">This is a much bigger dataset, as we can see, in terms of rows, variables, individuals, and years. Now let's create our MPMs. See our online book, <a href = "https://bookdown.org/cdorm/lefko3gentle/">lefko3: a gentle introduction</a>, for further material on how to construct MPMs properly.</p>
+```{r ch1-1.6}
+cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", "XSm", "Sm", "SD",
+  "P1"),
+  stage2 = c("SD", "SD", "P1", "SL", "SL", "SL", "rep", "rep"),
+  eststage3 = c(NA, NA, NA, "D", "XSm", "Sm", NA, NA),
+  eststage2 = c(NA, NA, NA, "XSm", "XSm", "XSm", NA, NA),
+  givenrate = c(0.10, 0.20, 0.25, NA, NA, NA, NA, NA),
+  multiplier = c(NA, NA, NA, NA, NA, NA, 5000, 5000),
+  type =c(1, 1, 1, 1, 1, 1, 3, 3),
+  stageframe = cypframe_raw, historical = FALSE)
+
+cycamatrix2r <- rlefko2(data = cycaraw_v1, stageframe = cypframe_raw, 
+  year = "all", stages = c("stage3", "stage2", "stage1"),
+  size = c("size3added", "size2added"), supplement = cypsupp2r,
+  yearcol = "year2", indivcol = "individ")
+
+cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
+  year = "all", stages = c("stage3", "stage2", "stage1"),
+  size = c("size3added", "size2added"), supplement = cypsupp2r,
+  yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+
+writeLines("Cypripedium candidum")
+summary(cycamatrix2r)
+writeLines("\nCypripedium parviflorum")
+summary(cypamatrix2r)
+```
+  
+  <p style="text-indent: 20px">The summary information that we see is full of interesting information. For example, we see that there are incomplete life cycles in some years in the two populations. This suggests that there are years in which certain stages do not appear. It is not the end of the world, though. Let's keep going and see what our analyses suggest.</p>
+  
+  <p style="text-indent: 20px">Our next step will be to create a list with our MPMs, where each element of the list is a single set of MPMs. We can accomplish this as follows.</p>
+```{r ch1-1.7}
+cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)
+```
+  
+  <p style="text-indent: 20px">Now that we have our core MPM list, we will need to clarify some of the assumptions of the projection. First, let's set up starting vectors for each population. We will start our populations with specific numbers of dormant seeds, protocorms, and seedlings, but with more of them in the case of *C. parviflorum*. We will also use the `start_input()` function in package `lefko3` for this purpose, and combine the results in a list with the same order as our MP{M list. Users should consider the starting vector carefully, as the starting condition of the community impacts its trajectory in projection.</p>
+```{r ch1-1.8}
+cyca2_start <- start_input(cycamatrix2r, stage2 = c("SD", "P1", "SL"),
+  value = c(500, 100, 200))
+cypa2_start <- start_input(cypamatrix2r, stage2 = c("SD", "P1", "SL"),
+  value = c(5000, 1000, 2000))
+cyp_start_list <- list(cyca2_start, cypa2_start)
+```
+  
+  <p style="text-indent: 20px">Next we need to clarify how density dependence will operate on these populations. In herbaceous perennial plants, the germination stage is most commonly negatively density dependent. In orchids, germination may be from a fresh seed, or from a previously dormant seed, and we will assume density dependence in both. Determining the exact nature and proper parameterization of density dependence is too great a topic for this vignette, and so we utilize the following two-parameter Ricker function-based approach, which we know works in this case based on our own previous studies. Note that we will also toss this into a list, but essentially replicate it into the list to make sure that both populations use it.</p>
+```{r ch1-1.9}
+cyp2_dv <- density_input(cypamatrix2r, stage3 = c("SD", "P1"),
+  stage2 = c("rep", "rep"), style = c(1, 1), alpha = c(0.5, 1.2),
+  beta = c(1.0, 2.0), type = c(2, 1))
+cyp_dv_list <- list(cyp2_dv, cyp2_dv)
+```
+  
+  <p style="text-indent: 20px">Our next step will be to build an equivalence data frame. This data frame tells `R` how different stages and different species relate to one another in terms of density dependence. If this structure is left out of the projection, then `R` will assume that each individual of any stage of any species is essentially equal to any other individual of any stage of any species. In our case, we wish to specify that dormant seeds do not affect the density dependence experienced by the populations. For this purpose, we will use the `equiv_input` function.</p>  
+```{r ch1-1.10}
+cyp_eq <- equiv_input(cycamatrix2r,
+  stage2 = c("SD", "P1", "SL", "D", "XSm", "Sm", "Md", "Lg", "XLg"),
+  value = c(0, 1, 1, 1, 1, 1, 1, 1, 1))
+
+eq_list <- list(cyp_eq, cyp_eq)
+```
+  
+  <p style="text-indent: 20px">Finally, we can run our communty projection. We do so as follows, projecting the population forward 100 years.</p>
+```{r ch1-1.11}
+cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
+  density = cyp_dv_list, equivalence = eq_list, times = 100, integeronly = TRUE)
+summary(cyp_comm_proj)
+```
+  
+  <p style="text-indent: 20px">We can see that our projection did not predict extinction in *C. candidum*, but it did in *C. parviflorum*. Let's take a look at a graph of the results, showing the full population sizes over time.</p>
+```{r ch1-1.12}
+plot(cyp_comm_proj)
+```
+  
+  <p style="text-indent: 20px">The *C. candidum* population stayed relatively low but did not go extinct over the 100 years, while the *C. parviflorum* population exploded in size early on and then dropped. Let's view the actual population sizes over the course of the projection.</p>
+```{r ch1-1.13}
+cyp_comm_proj$N_out
+```
+  
+  <p style="text-indent: 20px">Although *C. parviflorum* started off with an order of magnitude more individuals, it went extinct. And, unfortunately, C. candidum appears to be dropping to extinction, though has not done so at the end of the 100 year projection. No doubt further research is required to understand the results.</p>
+
+
+## Acknowledgements
+
+<p style="text-indent: 20px">
+
+We are grateful to two anonymous reviewers whose scrutiny improved the quality of this vignette. The project resulting in this package and this tutorial was funded by Grant-In-Aid 23H02552 from the Japan Society for the Promotion of Science.
+
+</p>
+
+## Literature cited
+
+::: {#refs}
+:::

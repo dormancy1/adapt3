@@ -2304,8 +2304,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     if (is<NumericVector>(equivalence)) {
       equivalence_vec = as<NumericVector>(equivalence);
       
-      int trial_count = mpm_count;
-      if (vrm_count > mpm_count) trial_count = vrm_count;
+      //int trial_count = mpm_count;
+      //if (vrm_count > mpm_count) trial_count = vrm_count;
       
       equivalence_count = static_cast<int>(equivalence_vec.length());
       
@@ -3609,7 +3609,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         _["mainparams"] = mainparams, _["modelparams"] = modelparams);
       
       CharacterVector current_mainyears = as<CharacterVector>(year_list(i));
-      unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+      //unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
       
       CharacterVector current_maingroups = as<CharacterVector>(group2_frame["groups"]);
       CharacterVector current_mainpatches = as<CharacterVector>(patch_frame["patches"]);
@@ -3756,14 +3756,14 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       List current_vrm_unextract = as<List>(vrm_list(i));
       DataFrame current_stageframe = as<DataFrame>(stageframe_list(i));
       
-      int ehrlen_format {1}; // This will need to be dealt with differently later
+      //int ehrlen_format {1}; // This will need to be dealt with differently later
       
-      int mpm_style {1};
-      if (format_vec(i) < 3) {
-        mpm_style = 0;
-      } else if (format_vec(i) == 4) {
-        mpm_style = 2;
-      }
+      //int mpm_style {1};
+      //if (format_vec(i) < 3) {
+      //  mpm_style = 0;
+      //} else if (format_vec(i) == 4) {
+      //  mpm_style = 2;
+      //}
       
       DataFrame current_mpm_allstages = as<DataFrame>(allstages_all(i));
       
@@ -4732,7 +4732,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 
   //Rcout << "Entered project3_fb_core          ";
   
-  int year_counter {0};
+  //int year_counter {0};
   IntegerVector inda_num_terms_counter (vrm_count);
   IntegerVector indb_num_terms_counter (vrm_count);
   IntegerVector indc_num_terms_counter (vrm_count);
@@ -4875,14 +4875,14 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           List current_vrm_extract = as<List>(allmodels_all(i));
           List current_vrm_unextract = as<List>(vrm_list(i));
           DataFrame current_stageframe = as<DataFrame>(stageframe_list(i));
-          int ehrlen_format {1}; // This will need to be dealt with differently later
+          //int ehrlen_format {1}; // This will need to be dealt with differently later
           
-          int mpm_style {1};
-          if (format_vec(i) < 3) {
-            mpm_style = 0;
-          } else if (format_vec(i) == 4) {
-            mpm_style = 2;
-          }
+          //int mpm_style {1};
+          //if (format_vec(i) < 3) {
+          //  mpm_style = 0;
+          //} else if (format_vec(i) == 4) {
+          //  mpm_style = 2;
+          //}
           
           DataFrame current_mpm_allstages = as<DataFrame>(allstages_all(i));
           
@@ -5495,10 +5495,10 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //'   NRasRep = TRUE)
 //'   
 //' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
-//'   individcol = "plant_id", blocksize = 3, sizeacol = "Inf2.94",
-//'   sizebcol = "Inf.94", sizeccol = "Veg.94", repstracol = "Inf.94",
-//'   repstrbcol = "Inf2.94", fecacol = "Inf.94", stageassign = cypframe_raw,
-//'   stagesize = "sizeadded", NAas0 = TRUE, NRasRep = TRUE)
+//'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+//'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+//'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+//'   NRasRep = TRUE)
 //' 
 //' cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
 //'     "XSm", "Sm", "SD", "P1"),
@@ -5572,7 +5572,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   
   int mpm_count {0};
   int vrm_count {0};
-  int total_mpms {0};  // This includes all MPMs and VRMs
+  //int total_mpms {0};  // This includes all MPMs and VRMs
   int stageframe_count {0};
   int stageframe_notNull_count {0};
   int supplement_count {0};
@@ -5585,9 +5585,9 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   int sparse_vec_count {0};
   int found_fleslie {0};
   
-  bool inda_char {false};
-  bool indb_char {false};
-  bool indc_char {false};
+  //bool inda_char {false};
+  //bool indb_char {false};
+  //bool indc_char {false};
   bool err_check_bool {false};
   bool err_check_extreme {false};
   
@@ -5742,7 +5742,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   fb_mpmout = as<List>(cleaned_input(71));
   
   List final_out_matrices;
-  total_mpms = mpm_count + vrm_count;
+  //total_mpms = mpm_count + vrm_count;
   
   //Rcout << "b ";
   
@@ -9871,7 +9871,7 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
   IntegerVector ESS_var_traits_corresponding_indices = {11, 12, 13, 16, 17, 18,
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
   
-  int Lyapunov_optim_rows = Lyapunov_optim.nrows();
+  //int Lyapunov_optim_rows = Lyapunov_optim.nrows();
   int found_variables {1};
   
   int main_loop_breakpoint = opt_res;
@@ -10028,7 +10028,7 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
         sparse_bool, A_only, stages_not_equal, integeronly, dens_yn_bool, zap_min);
       
       NumericVector current_round_fitness_values = as<NumericVector>(ESS_out_values["fitness"]);
-      double main_fitness = current_round_fitness_values(0);
+      //double main_fitness = current_round_fitness_values(0);
       double e995_fitness = current_round_fitness_values(1); 
 
       NumericVector ref_fitness_values = as<NumericVector>(reference_variants["fitness"]);
@@ -10313,8 +10313,8 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
     CharacterVector df1_names = as<CharacterVector>(df1.names());
     CharacterVector df2_names = as<CharacterVector>(df2.names());
     
-    int df1_rows = static_cast<int>(df1.nrows());
-    int df2_rows = static_cast<int>(df2.nrows());
+    //int df1_rows = static_cast<int>(df1.nrows());
+    //int df2_rows = static_cast<int>(df2.nrows());
     
     DataFrame final_output_df_pre = AdaptUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
     
@@ -10529,7 +10529,7 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
   List running_popvecs_startonly; //  = clone(start_list)
   arma::mat N_mpm (2, (times + 1)); // rows = vars, cols = times
   
-  int year_counter {0};
+  //int year_counter {0};
   
   CharacterVector stage3_nta = as<CharacterVector>(base_trait_axis["stage3"]);
   CharacterVector stage2_nta = as<CharacterVector>(base_trait_axis["stage2"]);
@@ -10618,16 +10618,16 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
 
           List current_vrm_extract = allmodels_all; // (i)
           List current_vrm_unextract = vrm_list; // (i)
-          int ehrlen_format {1}; // This will need to be dealt with differently later
+          //int ehrlen_format {1}; // This will need to be dealt with differently later
           
           //Rcout << "ifosr A7       ";
-          int mpm_style {1};
-          if (format_int < 3) {
-            mpm_style = 0;
-            if (format_int == 2) ehrlen_format = 2;
-          } else if (format_int == 4) {
-            mpm_style = 2;
-          }
+          //int mpm_style {1};
+          //if (format_int < 3) {
+          //  mpm_style = 0;
+          //  if (format_int == 2) ehrlen_format = 2;
+          //} else if (format_int == 4) {
+          //  mpm_style = 2;
+          //}
           
           //Rcout << "ifosr A8       ";
           DataFrame current_mpm_allstages = allstages_all; // (i)
@@ -10651,7 +10651,7 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
           
           //Rcout << "ifosr A10       ";
           CharacterVector current_mainyears = year_vec;
-          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          //unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
           
           StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
           
@@ -11039,7 +11039,7 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
     //Rcout << "ifosr C3              ";
     errcheck_mpm_times(j) = errcheck_mpm_times_vtr;
     errcheck_mpmout_times(j) = errcheck_mpmout_times_vtr;
-    year_counter++;
+    //year_counter++;
   } // j loop
   //Rcout << "ifosr C5              ";
   N_out = N_mpm;
@@ -11319,7 +11319,7 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
   IntegerVector ESS_var_traits_corresponding_indices = {11, 12, 13, 16, 17, 18,
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
   
-  int Lyapunov_optim_rows = Lyapunov_optim.nrows();
+  //int Lyapunov_optim_rows = Lyapunov_optim.nrows();
   int found_variables {1};
   
   int main_loop_breakpoint = opt_res;
@@ -11535,7 +11535,7 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
       //Rcout << "ESS_optimizer_fb Z" << endl;
       NumericVector current_round_fitness_values = as<NumericVector>(ESS_out_values["fitness"]);
       //Rcout << "current_round_fitness_values: " << current_round_fitness_values << endl;
-      double main_fitness = current_round_fitness_values(0);
+      //double main_fitness = current_round_fitness_values(0);
       double e995_fitness = current_round_fitness_values(1); 
       //Rcout << "new invader main_fitness: " << main_fitness << endl;
       //Rcout << "new invader e995_fitness: " << e995_fitness << endl;
@@ -11832,8 +11832,8 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
     CharacterVector df1_names = as<CharacterVector>(df1.names());
     CharacterVector df2_names = as<CharacterVector>(df2.names());
     
-    int df1_rows = static_cast<int>(df1.nrows());
-    int df2_rows = static_cast<int>(df2.nrows());
+    //int df1_rows = static_cast<int>(df1.nrows());
+    //int df2_rows = static_cast<int>(df2.nrows());
     
     DataFrame final_output_df_pre = AdaptUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
     
@@ -12886,7 +12886,7 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
     AdaptUtils::optim_ta_setup(new_trait_axis, ESS_trait_axis, optim_trait_axis,
       optim_trait_axis_995, ESS_var_traits, opt_res, elast_mult);
     
-    int var_traits = sum(ESS_var_traits);
+    //int var_traits = sum(ESS_var_traits);
     if (opt_res_squared) opt_res_true = opt_res * opt_res; /////
   }
   
@@ -13120,7 +13120,7 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
     List all_used_times_per_run (var_per_run);
     for (int m = 0; m < var_per_run; m++) {
       //Rcout << "invade3_pre_core l          ";
-      int current_variant_index = var_run_mat(i, m);
+      //int current_variant_index = var_run_mat(i, m);
       
       List pop_reps (nreps);
       List used_times_reps (nreps);
@@ -13549,16 +13549,16 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
           
           List current_vrm_extract = allmodels_all; // (i)
           List current_vrm_unextract = vrm_list; // (i)
-          int ehrlen_format {1}; // This will need to be dealt with differently later
+          //int ehrlen_format {1}; // This will need to be dealt with differently later
           
           //Rcout << "invfb_project A6          ";
-          int mpm_style {1};
-          if (format_int < 3) {
-            mpm_style = 0;
-            if (format_int == 2) ehrlen_format = 2;
-          } else if (format_int == 4) {
-            mpm_style = 2;
-          }
+          //int mpm_style {1};
+          //if (format_int < 3) {
+          //  mpm_style = 0;
+          //  if (format_int == 2) ehrlen_format = 2;
+          //} else if (format_int == 4) {
+          //  mpm_style = 2;
+          //}
           
           //Rcout << "invfb_project A7          ";
           DataFrame current_mpm_allstages = allstages_all; // (i)
@@ -13582,7 +13582,7 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
           
           //Rcout << "invfb_project A9          ";
           CharacterVector current_mainyears = year_vec;
-          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          //unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
           
           StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
           
@@ -14326,16 +14326,16 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
             
           List current_vrm_extract = allmodels_all; // (i)
           List current_vrm_unextract = vrm_list; // (i)
-          int ehrlen_format {1}; // This will need to be dealt with differently later
+          //int ehrlen_format {1}; // This will need to be dealt with differently later
           
           //Rcout << "invfb_optim A7       ";
-          int mpm_style {1};
-          if (format_int < 3) {
-            mpm_style = 0;
-            if (format_int == 2) ehrlen_format = 2;
-          } else if (format_int == 4) {
-            mpm_style = 2;
-          }
+          //int mpm_style {1};
+          //if (format_int < 3) {
+          //  mpm_style = 0;
+          //  if (format_int == 2) ehrlen_format = 2;
+          //} else if (format_int == 4) {
+          //  mpm_style = 2;
+          //}
           
           //Rcout << "invfb_optim A8       ";
           DataFrame current_mpm_allstages = allstages_all; // (i)
@@ -14359,7 +14359,7 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
           
           //Rcout << "invfb_optim A10       ";
           CharacterVector current_mainyears = year_vec;
-          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          //unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
           
           StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
           
@@ -14834,16 +14834,16 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
           
           List current_vrm_extract = allmodels_all; // (i)
           List current_vrm_unextract = vrm_list; // (i)
-          int ehrlen_format {1}; // This will need to be dealt with differently later
+          //int ehrlen_format {1}; // This will need to be dealt with differently later
           
           //Rcout << "invfb_optim B7       ";
-          int mpm_style {1};
-          if (format_int < 3) {
-            mpm_style = 0;
-            if (format_int == 2) ehrlen_format = 2;
-          } else if (format_int == 4) {
-            mpm_style = 2;
-          }
+          //int mpm_style {1};
+          //if (format_int < 3) {
+          //  mpm_style = 0;
+          //  if (format_int == 2) ehrlen_format = 2;
+          //} else if (format_int == 4) {
+          //  mpm_style = 2;
+          //}
           
           //Rcout << "invfb_optim B8       ";
           DataFrame current_mpm_allstages = allstages_all; // (i)
@@ -14867,7 +14867,7 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
           
           //Rcout << "invfb_optim B10       ";
           CharacterVector current_mainyears = year_vec;
-          unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
+          //unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
           
           StringVector cveu_names = as<StringVector>(current_vrm_unextract.names()); // Remove later
           
@@ -15610,7 +15610,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
     AdaptUtils::optim_ta_setup(new_trait_axis, ESS_trait_axis, optim_trait_axis,
       optim_trait_axis_995, ESS_var_traits, opt_res, elast_mult);
     
-    int var_traits = sum(ESS_var_traits);
+    //int var_traits = sum(ESS_var_traits);
     if (opt_res_squared) opt_res_true = opt_res * opt_res; /////
   }
   
@@ -15658,7 +15658,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
     
     // This next loop sets up the structure for comm_out_pre_optim
     for (int i = 0; i < opt_res_true; i++) {
-      int year_length = static_cast<int>(year_vec.length());
+      //int year_length = static_cast<int>(year_vec.length());
       //IntegerVector year_int_vec = seq(0, (year_length - 1));
       
       List all_pops_per_run (var_per_run);
@@ -15969,7 +15969,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
     List all_pops_per_run (var_per_run);
     List all_used_times_per_run (var_per_run);
     for (int m = 0; m < var_per_run; m++) {
-      int current_variant_index = var_run_mat(i, m);
+      //int current_variant_index = var_run_mat(i, m);
       
       List pop_reps (nreps);
       List used_times_reps (nreps);
@@ -16379,6 +16379,12 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' points. Trait optimization is conducted via elasticity analysis of traits
 //' that are variable within the \code{trait_axis} table. Defaults to
 //' \code{FALSE}.
+//' @param zap_min A logical value indicating whether to treat traits and
+//' fitness as 0 when their absolute values are less than the value given in
+//' argument \code{threshold}.
+//' @param converged_only A logical value indicating whether to show predicted
+//' trait optima only in cases where the Lyapunov coefficient in elasticity
+//' analysis has converged to 0. Defaults to \code{TRUE}.
 //' @param err_check A logical value indicating whether to include an extra list
 //' of output objects for error checking. Can also be set to the text value
 //' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
@@ -16602,9 +16608,9 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   bool fitness_table_bool {true};
   bool trait_optima_bool {false};
   
-  bool inda_char {false};
-  bool indb_char {false};
-  bool indc_char {false};
+  //bool inda_char {false};
+  //bool indb_char {false};
+  //bool indc_char {false};
   bool historical {false};
   bool sparse_bool {false};
   bool zap_min_bool {true};
@@ -16754,7 +16760,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       if (var_per_run < 1) {
         throw Rcpp::exception("Argument var_per_run must be a positive integer.", false);
       }
-      double exp_permutes = pow(variant_count, var_per_run);
+      //double exp_permutes = pow(variant_count, var_per_run);
       
       var_run_mat = AdaptUtils::exp_grid_single(variant_count, var_per_run); // Rows = runs, Cols = variants
       

@@ -390,10 +390,9 @@ DataFrame ta_skeleton (int rows = 10) {
 //'   propstatus = propvector, immstatus = immvector, indataset = indataset,
 //'   binhalfwidth = binvec)
 //' 
-//' cypraw_v1 <- verticalize3(data = cypa_data, noyears = 6, firstyear = 2004,
-//'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
-//'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
-//'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+//' cypraw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
+//'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+//'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
 //'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 //'   NRasRep = TRUE)
 //' 
