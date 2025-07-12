@@ -58,7 +58,7 @@
 #'   
 #' cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
 #'   individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
-#'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Pod.94",
+#'   sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
 #'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
 #'   NRasRep = TRUE)
 #' 
@@ -75,13 +75,13 @@
 #' cyp_supp_list1 <- list(cypsupp2r, cypsupp2r)
 #' 
 #' cycamatrix2r <- rlefko2(data = cycaraw_v1, stageframe = cypframe_raw, 
-#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
+#'   year = "all", stages = c("stage3", "stage2", "stage1"),
 #'   size = c("size3added", "size2added"), supplement = cypsupp2r,
-#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#'   yearcol = "year2", indivcol = "individ")
 #' 
 #' cypamatrix2r <- rlefko2(data = cyparaw_v1, stageframe = cypframe_raw, 
 #'   year = "all", stages = c("stage3", "stage2", "stage1"),
-#'   size = c("size3added", "size2added"), supplement = cypsupp2r_alt,
+#'   size = c("size3added", "size2added"), supplement = cypsupp2r,
 #'   yearcol = "year2", indivcol = "individ")
 #' 
 #' cyp_mpm_list <- list(cycamatrix2r, cypamatrix2r)

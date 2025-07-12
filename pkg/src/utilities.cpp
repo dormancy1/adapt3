@@ -372,6 +372,8 @@ DataFrame ta_skeleton (int rows = 10) {
 //' @seealso \code{\link{ta_skeleton}()}
 //' 
 //' @examples
+//' library(lefko3)
+//' 
 //' data(cypa_data)
 //' 
 //' sizevector <- c(0, 0, 0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)

@@ -2721,6 +2721,8 @@ ta_skeleton <- function(rows = 10L) {
 #' @seealso \code{\link{ta_skeleton}()}
 #' 
 #' @examples
+#' library(lefko3)
+#' 
 #' data(cypa_data)
 #' 
 #' sizevector <- c(0, 0, 0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)

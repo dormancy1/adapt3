@@ -300,6 +300,8 @@ performed later.
 }
 
 \examples{
+library(lefko3)
+
 data(cypa_data)
 
 sizevector <- c(0, 0, 0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)
