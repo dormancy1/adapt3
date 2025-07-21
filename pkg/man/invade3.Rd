@@ -269,13 +269,15 @@ allowed per ESS during ESS optimization. Defaults to 150.}
 }
 \value{
 A list of class \code{adaptInv}, with the following elements:
-\item{fitness}{A data frame giving the Lyapunov coefficients estimated for
-each variant, per replicate.}
+\item{fitness}{A data frame giving the resident and invasion fitness
+estimated for each variant, per replicate. In typical cases, the user will
+be interested in the invasion fitness, which corresponds to the Lyapunov
+coefficient of the invader in invasibility analysis.}
 \item{variants_out}{A two-level list with the top level list having number of
-elements equal to the number of variants, and the lower level
-corresponding to the number of replicates. Each element of the lower level
-list is a matrix showing the number of individuals in each stage (row) at each
-time (column).}
+elements equal to the number of variants, and the lower level corresponding
+to the number of replicates. Each element of the lower level list is a
+matrix showing the number of individuals in each stage (row) at each time
+(column).}
 \item{N_out}{A list with the number of elements equal to the number of
 replicates. Each element within this list is data frame showing the number
 of individuals of each species or genotype alive at each time. The number of
@@ -284,8 +286,8 @@ time steps.}
 \item{stageframe_list}{A list in which each element is the stageframe for
 each MPM used.}
 \item{hstages_list}{A list giving the used \code{hstages} data frames, which
-identify the correct stage pairing for each row / column in each
-historical MPM utilized.}
+identify the correct stage pairing for each row / column in each historical
+MPM utilized.}
 \item{agestages_list}{A list giving the used \code{agestages} data frames,
 which identify the correct age-stage pairing for each row / column in each
 age-by-stage MPM utilized.}
@@ -304,7 +306,12 @@ indices used to identify matrix elements for density dependence; and
 \code{density_vr_list}, which gives the \code{density_vr} inputs utilized.}
 }
 \description{
-Function \code{invade3} runs pairwise and multiple invasion analyses.
+Function \code{invade3} runs pairwise and multiple invasion analyses, and
+provides output to analyze all aspects of the dynamics of generic variants.
+The output includes invasion fitness for all variants included, as well as
+resident fitness in all simulations run. When used with the
+\code{\link{plot.adaptInv}()} function, can be used to develop pairwise
+invasibility plots (PIPs).
 }
 \section{Notes}{
 
@@ -323,11 +330,12 @@ communicated in Roff (2010, Modeling evolution: an introduction to numerical
 methods, Oxford University Press). In essence, function \code{invade3}
 determines which traits vary among all traits noted in the input trait axis.
 A new trait axis is then created with values of variable traits multiplied
-by 0.995, and this new trait axis is composed entirely of invaders that will
-be paired against each respective row in the original trait axis. These two
-trait axis frames are then used to conduct pairwise invasibility elasticity
-analyses, particularly noting where fitness values and trends invert. Note
-that this optimization approach really only works with one variable trait.
+by \code{0.995}, although this can be reset with the \code{elast_mult}. This
+new trait axis is composed entirely of invaders that will be paired against
+each respective row in the original trait axis. These two trait axis frames
+are then used to conduct pairwise invasibility elasticity analyses,
+particularly noting where fitness values and trends invert. Note that this
+optimization approach really only works with one variable trait.
 }
 
 \examples{

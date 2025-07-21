@@ -254,9 +254,10 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' By default, function \code{plot.adaptInv} produces a filled contour plot in
 #' which grey regions show where the invader has positive fitness relative to
 #' the resident, and white regions show where the invader has negative fitness
-#' relative to the resident. Fitness here refers to the Lyapunov coefficient,
-#' calculated over the final \code{fitness_times} in the original call to
-#' function \code{\link{invade3}()}.
+#' relative to the resident. Fitness here refers to the Lyapunov coefficient of
+#' the invader relative to the resident, calculated over the final
+#' \code{fitness_times} in the original call to function
+#' \code{\link{invade3}()}.
 #' 
 #' @examples
 #' library(lefko3)

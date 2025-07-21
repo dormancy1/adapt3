@@ -48,11 +48,20 @@ is a data frame with the following variables:
 \item{value}{Number of individuals in corresponding stage or stage-pair.}
 }
 \description{
-Function \code{equiv_input()} creates a data frame summarizing the degree to
-which an individual in each stage of a life history is equivalent to a
-standard individual.
+Function \code{equiv_input()} creates a data frame summarizing the weighting
+of individuals of different species, populations, and stages relative to one
+another in terms of the overall community size or population size.
+Equivalance values can be thought of as Lotka-Volterra coefficients.
 }
 \section{Notes}{
+
+Users should generally consider which species, population, and / or stage to
+set as the reference, which should be designated with a value of \code{1}.
+
+In some life histories, certain stages may not count against population size
+with regards to the kind and value of density dependence decided on. An
+example might be the dormant seed stage in some plant species. These
+equivalence values should be set to \code{0}.
 
 Entries in \code{stage2}, and \code{stage1} can include abbreviations for
 groups of stages. Use \code{rep} if all reproductive stages are to be used,

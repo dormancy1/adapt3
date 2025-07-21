@@ -1,3 +1,9 @@
+# adapt 1.0.2 (2025-XX-XX)
+
+## USER-VISIBLE CHANGES
+
+* Corrections to documentation.
+
 # adapt 1.0.1 (2025-07-11)
 
 ## USER-VISIBLE CHANGES

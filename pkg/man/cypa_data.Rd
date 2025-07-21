@@ -61,9 +61,9 @@ in three dormancy-prone orchid species. \emph{Royal Society Open Science}
 data(cypa_data)
 }
 \description{
-A dataset containing the states and fates of \emph{Cypripedium parviflorum}
-(small yellow lady's slipper orchids), family Orchidaceae, from a population
-in Illinois, USA, resulting from monitoring that occurred annually between
+A dataset containing the states and fates of a population of the terrestrial
+orchid species \emph{Cypripedium parviflorum} (small yellow lady's slipper
+orchids) in Illinois, USA. The dataset resulted from annual monitoring from
 1994 and 2011.
 }
 \examples{
