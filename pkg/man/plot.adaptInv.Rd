@@ -6,8 +6,6 @@
 \usage{
 \method{plot}{adaptInv}(
   x,
-  xlab = "Resident",
-  ylab = "Invader",
   res_variant = 1,
   inv_variant = 2,
   repl = 1,
@@ -29,12 +27,6 @@
 \arguments{
 \item{x}{An \code{adaptInv} object, created with function
 \code{\link{invade3}()}.}
-
-\item{xlab}{The x axis label forthe contour plot. Defaults to
-\code{Resident}.}
-
-\item{ylab}{The y axis label forthe contour plot. Defaults to
-\code{Invader}.}
 
 \item{res_variant}{The number of the variant representing the resident
 subpopulation.}
@@ -96,9 +88,10 @@ A contour plot showing the overall fitness dynamics of the invader
 variant, assuming a pairwise invasibility analysis.
 }
 \description{
-Function \code{plot.adaptInv} plots pairwise invasibility contour plots. This
-function is based on code derived from Roff's Modeling Evolution: An
-Introduction to Numerical Methods (2010, Oxford University Press).
+Function \code{plot.adaptInv} plots pairwise invasibility contour plots,
+diagnostic population plots, and elasticity plot. This function is based on
+code derived from Roff's Modeling Evolution: An Introduction to Numerical
+Methods (2010, Oxford University Press).
 }
 \section{Notes}{
 

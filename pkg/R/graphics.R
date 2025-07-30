@@ -195,18 +195,15 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 
 #' Create Contour Plot of Pairwise Invasibility Analysis Results
 #' 
-#' Function \code{plot.adaptInv} plots pairwise invasibility contour plots. This
-#' function is based on code derived from Roff's Modeling Evolution: An
-#' Introduction to Numerical Methods (2010, Oxford University Press).
+#' Function \code{plot.adaptInv} plots pairwise invasibility contour plots,
+#' diagnostic population plots, and elasticity plot. This function is based on
+#' code derived from Roff's Modeling Evolution: An Introduction to Numerical
+#' Methods (2010, Oxford University Press).
 #' 
 #' @name plot.adaptInv
 #' 
 #' @param x An \code{adaptInv} object, created with function
 #' \code{\link{invade3}()}.
-#' @param xlab The x axis label forthe contour plot. Defaults to
-#' \code{Resident}.
-#' @param ylab The y axis label forthe contour plot. Defaults to
-#' \code{Invader}.
 #' @param res_variant The number of the variant representing the resident
 #' subpopulation.
 #' @param inv_variant The number of the variant representing the mutant
@@ -326,10 +323,10 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
 #' plot(cyp_inv)
 #' 
 #' @export
-plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
-  res_variant = 1, inv_variant = 2, repl = 1, pip = TRUE, elast = FALSE,
-  run = 1, filled = TRUE, plot.title, plot.axes, axes = TRUE, frame.plot = TRUE,
-  auto_ylim = TRUE, auto_col = TRUE, auto_lty = TRUE, auto_title = FALSE, ...) {
+plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
+  pip = TRUE, elast = FALSE, run = 1, filled = TRUE, plot.title, plot.axes,
+  axes = TRUE, frame.plot = TRUE, auto_ylim = TRUE, auto_col = TRUE,
+  auto_lty = TRUE, auto_title = FALSE, ...) {
   
   asp <- NA
   las <- 1
@@ -449,10 +446,10 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
     
     if (is.element("xlab", found_terms)) {
       xlab <- further_args$xlab
-    } else xlab <- "Resident Value"
+    } else xlab <- "Resident Variant"
     if (is.element("ylab", found_terms)) {
       ylab <- further_args$ylab
-    } else ylab <- "Invader Value"
+    } else ylab <- "Invader Variant"
     
     if (is.element("col", found_terms)) {
       found_colours <- further_args$col
@@ -578,7 +575,7 @@ plot.adaptInv <- function(x, xlab = "Resident", ylab = "Invader",
       further_args$ylab <- "Invader fitness"
     }
     if (!is.element("xlab", names(further_args))) {
-      further_args$xlab <- "Trait value"
+      further_args$xlab <- "Variant"
     }
     
     used_col <- 1

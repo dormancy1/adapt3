@@ -338,10 +338,10 @@ summary.adaptInv <- function(object, ...) {
   num_runs <- dim(object$N_out[[1]])[3]
   
   all_fitness_vars <- names(object$fitness)
+  fitness_variant1 <- object$fitness$variant1
+  total_variants <- length(unique(fitness_variant1))
   found_entrytime_vars <- grep("entry", all_fitness_vars)
   found_fitness_vars <- grep("fitness", all_fitness_vars)
-  
-  total_variants <- length(found_entrytime_vars)
   
   if (total_variants == 1) variant_text <- "variant"
   if (num_run_variants == 1) run_variant_text <- "variant per run"

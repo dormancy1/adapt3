@@ -4,6 +4,14 @@
 
 * Corrections to documentation.
 
+* Corrected default axis labels in function plot.adaptInv().
+
+## BUGS FIXED
+
+* Function plot.adaptInv() now correctly labels axes with user-supplied values.
+
+* Function summary.adaptInv() now gives the correct number of variants tested.
+
 # adapt 1.0.1 (2025-07-11)
 
 ## USER-VISIBLE CHANGES
