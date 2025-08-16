@@ -1,5 +1,10 @@
 # adapt 1.0.2 (2025-XX-XX)
 
+## NEW FEATURES
+
+* ESS trait value optimization now handled via Golden section Nelder-Mead
+  search algorithm.
+
 ## USER-VISIBLE CHANGES
 
 * Corrections to documentation.
@@ -7,6 +12,12 @@
 * Corrected default axis labels in function plot.adaptInv().
 
 ## BUGS FIXED
+
+* Corrected optimization trait axis calculations in cases where traits span both
+  positive and negative values.
+
+* Corrected ESS trait value calculations in cases where traits span both
+  positive and negative values.
 
 * Function plot.adaptInv() now correctly labels axes with user-supplied values.
 

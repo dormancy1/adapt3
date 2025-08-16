@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{invade3}
 \alias{invade3}
-\title{Run Pairwise and Multiple Invasion Analysis}
+\title{Run Pairwise and Multiple Invasibility Analysis}
 \usage{
 invade3(
   axis = NULL,
@@ -218,8 +218,8 @@ fitness as 0 when their absolute values are less than the value given in
 argument \code{threshold}.}
 
 \item{converged_only}{A logical value indicating whether to show predicted
-trait optima only in cases where the Lyapunov coefficient in elasticity
-analysis has converged to 0. Defaults to \code{TRUE}.}
+trait optima only in cases where the elasticity analysis has converged.
+Defaults to \code{FALSE}.}
 
 \item{err_check}{A logical value indicating whether to include an extra list
 of output objects for error checking. Can also be set to the text value
@@ -306,12 +306,13 @@ indices used to identify matrix elements for density dependence; and
 \code{density_vr_list}, which gives the \code{density_vr} inputs utilized.}
 }
 \description{
-Function \code{invade3} runs pairwise and multiple invasion analyses, and
-provides output to analyze all aspects of the dynamics of generic variants.
-The output includes invasion fitness for all variants included, as well as
-resident fitness in all simulations run. When used with the
-\code{\link{plot.adaptInv}()} function, can be used to develop pairwise
-invasibility plots (PIPs).
+Function \code{invade3} runs pairwise and multiple invasisibility analyses,
+and provides output to analyze all aspects of the dynamics of generic
+variants. The output includes invasion fitness for all variants included, as
+well as resident fitness in all simulations run. Forms the core data plotted
+by the \code{\link{plot.adaptInv}()} function to plot pairwise
+invasibility plots (PIPs) and elasticity plots. Also estimates trait optima,
+if any occur.
 }
 \section{Notes}{
 
@@ -334,8 +335,18 @@ by \code{0.995}, although this can be reset with the \code{elast_mult}. This
 new trait axis is composed entirely of invaders that will be paired against
 each respective row in the original trait axis. These two trait axis frames
 are then used to conduct pairwise invasibility elasticity analyses,
-particularly noting where fitness values and trends invert. Note that this
-optimization approach really only works with one variable trait.
+particularly noting where fitness values and trends invert. Elasticity plots
+show the results of these elasticity simulations, using R's line segment
+default in the \code{plot.default()} function. Results are then used to
+determine golden sections for further evaluation, within which the bounded
+Nelder-Mead algorithm is used to determine the optimum value. Note that this
+optimization approach typically works properly with only one variable trait.
+Also note that if a trait spans both negative and positive values, then
+elasticity calculation is altered such that invader values for negative
+values are calculated as the sum of the old trait value and the difference
+between that value and the value when multiplied by the elasticity value.
+This is done to ensure that all elasticity values are consistently lower
+than the original values.
 }
 
 \examples{

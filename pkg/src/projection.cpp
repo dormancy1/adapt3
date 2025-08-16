@@ -9780,6 +9780,8 @@ inline void invpre_optim_singlerun (DataFrame& out_df,
 //' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
 //' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
 //' 16, jrepst_dev; and 17, jmatst_dev.
+//' @param flipped_traits An integer vector with 17 elements, giving the
+//' identities of variables with both positive and negative values.
 //' @param new_stageexpansion_list A list with stage expansions for all
 //' variant data used in ESS evaluation. This list includes an extra layer of
 //' list elements, corresponding to the optim_ta and optim_ta_995 data.
@@ -9851,7 +9853,7 @@ inline void invpre_optim_singlerun (DataFrame& out_df,
 inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
   DataFrame& ESS_trait_axis, DataFrame& Lyapunov_optim,
   DataFrame& optim_trait_axis, IntegerVector& ESS_var_traits,
-  List& new_stageexpansion_list, List& used_times,
+  IntegerVector& flipped_traits, List& new_stageexpansion_list, List& used_times,
   List& zero_stage_vec_list, const List start_list, const List equivalence_list,
   const List A_list, const List U_list, const List F_list,
   const DataFrame density_df, const DataFrame dens_index_df,
@@ -9872,25 +9874,18 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
   
   //int Lyapunov_optim_rows = Lyapunov_optim.nrows();
-  int found_variables {1};
-  
-  int main_loop_breakpoint = opt_res;
-  if (opt_res != opt_res_orig) main_loop_breakpoint = opt_res_orig;
+  int main_loop_breakpoint = static_cast<int>(inv_fitness.n_elem);
   
   //Rcout << "ESS_optimizer_pre B" << endl;
-  
-  for (int i = 0; i < found_variables; i++) {
-    for (int j = 0; j < (main_loop_breakpoint - 1); j++) {
-      double base_inv_fit = inv_fitness((i * main_loop_breakpoint) + j);
-      double next_inv_fit = inv_fitness((i * main_loop_breakpoint) + j + 1);
-      
-      if (base_inv_fit < 0. && next_inv_fit > 0.) potential_optima((i * main_loop_breakpoint) + j) = 1;
-      if (base_inv_fit > 0. && next_inv_fit < 0.) potential_optima((i * main_loop_breakpoint) + j) = 1;
-    }
+  for (int j = 0; j < (main_loop_breakpoint - 1); j++) {
+    double base_inv_fit = inv_fitness(j);
+    double next_inv_fit = inv_fitness(j + 1);
+    
+    if (base_inv_fit < 0. && next_inv_fit >= 0.) potential_optima(j) = 1;
+    if (base_inv_fit >= 0. && next_inv_fit < 0.) potential_optima(j) = 1;
   }
   
   //Rcout << "ESS_optimizer_pre C" << endl;
-  
   unsigned int total_optima = arma::sum(potential_optima);
   
   arma::uvec potential_optima_indices = find(potential_optima);
@@ -9899,13 +9894,18 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
   arma::uvec ESS_vta_indices = find(ESS_var_traits_arma);
   int vars_to_alter = static_cast<int>(ESS_vta_indices.n_elem);
   
+  if (vars_to_alter > 1) {
+    Rf_warningcall(R_NilValue, "Trait optimization may not run properly with more than 1 tested trait.");
+  }
+  //Rcout << "total_optima (potential): " << total_optima << endl;
   List final_output (total_optima);
-  LogicalVector converged (total_optima);
+  //LogicalVector converged (total_optima); // This line does not exist in fb version and so might be unnecessary
   //Rcout << "ESS_optimizer_pre D" << endl;
   
   for (int i = 0; i < total_optima; i++) {
-    //Rcout << "ESS_optimizer_pre E i: " << i << endl;
-    converged(i) = 0;
+    //Rcout << "ESS_optimizer_pre E entered optimization trait loop i: " << i << endl;
+    //converged(i) = 0; // This line does not exist in fb version and so might be unnecessary
+    bool found_converged {false};
     
     arma::mat N_out;
     List comm_out (2);
@@ -9922,39 +9922,72 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
     DataFrame reference_variants = clone(core_trait_axis_instance);
     NumericVector ref_fitness = {static_cast<double>(inv_fitness(potential_optima_indices(i))), 
       static_cast<double>(inv_fitness(potential_optima_indices(i) + 1))};
+    //Rcout << "ref_fitness (lower bound invasion fitness, higher bound invasion fitness): " << ref_fitness << endl;
     
-    reference_variants.push_back(ref_fitness, "fitness");
+    reference_variants["fitness"] = ref_fitness;
+    //reference_variants.push_back(ref_fitness, "fitness");
     
-    DataFrame old_reference_variants = clone(reference_variants);
+    //DataFrame old_reference_variants = clone(reference_variants); // This should be remarked out
     bool opt_needed {false};
     
     if (abs(static_cast<double>(inv_fitness(potential_optima_indices(i)))) < conv_threshold) {
+      //Rcout << "abs of lower bound invader fitness < threshold, so no further optimization needed" << endl;
       IntegerVector chosen_one = {0};
       DataFrame optim_point = AdaptUtils::df_indices(reference_variants, chosen_one);
       
-      LogicalVector found_conv {1};
-      optim_point.push_back(found_conv, "converged");
+      found_converged = true;
+      LogicalVector found_converged_vec = {found_converged};
+      optim_point["converged"] = found_converged_vec;
+      
       final_output(i) = optim_point;
-      converged(i) = 1;
+      //converged(i) = 1;
     } else if (abs(static_cast<double>(inv_fitness(potential_optima_indices(i) + 1))) < conv_threshold) {
+      //Rcout << "abs of higher bound invader fitness < threshold, so no further optimization needed" << endl;
       IntegerVector chosen_one = {1};
       DataFrame optim_point = AdaptUtils::df_indices(reference_variants, chosen_one);
       
-      LogicalVector found_conv {1};
-      optim_point.push_back(found_conv, "converged");
+      found_converged = true;
+      LogicalVector found_converged_vec = {found_converged};
+      optim_point["converged"] = found_converged_vec;
+      
       final_output(i) = optim_point;
-      converged(i) = 1;
+      //converged(i) = 1;
     } else {
+      //Rcout << "lower and upper bound invader fitness above threshold, so further optimization needed" << endl;
       opt_needed = true;
     }
     
     DataFrame variants_to_test = clone(reference_variants); // These values will be overwritten in the cloned data frame
     
-    //Rcout << "ESS_optimizer_pre H" << endl;
-    int search_mode = {0};
-    int loop_tracker {0};
+    DataFrame variant_L_bound;
+    DataFrame variant_H_bound;
     
-    while (opt_needed && loop_tracker < loop_max) {
+    if (inv_fitness(potential_optima_indices(i)) < inv_fitness(potential_optima_indices(i) + 1)) {
+      IntegerVector chosen_low = {0};
+      IntegerVector chosen_high = {1};
+      DataFrame variant_L_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_low);
+      DataFrame variant_H_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_high);
+      
+      variant_L_bound = variant_L_bound_pre;
+      variant_H_bound = variant_H_bound_pre;
+    } else {
+      IntegerVector chosen_low = {1};
+      IntegerVector chosen_high = {0};
+      DataFrame variant_L_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_low);
+      DataFrame variant_H_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_high);
+      
+      variant_L_bound = variant_L_bound_pre;
+      variant_H_bound = variant_H_bound_pre;
+    }
+    
+    //Rcout << "ESS_optimizer_pre H" << endl;
+    
+    // Initial point set-up and fitness check
+    DataFrame point_1; // Will be set to 1/3 distance from first bound to second bound
+    DataFrame point_2; // Will be set to 2/3 distance from first bound to second bound
+    
+    { // Point 1 initialization
+      //Rcout << "ESS_optimizer_pre I point_1 initialization " << endl;
       
       arma::uvec variant_nta_new = {1, 2};
       arma::vec givenrate_nta_new;
@@ -9964,27 +9997,30 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
       NumericVector variants_vars_to_test;
       
       for (int j = 0; j < vars_to_alter; j++) {
+        //Rcout << "ESS_optimizer_pre J" << endl;
         double base_mean = {0.};
         
         // New optim_ta
         NumericVector core_var = as<NumericVector>(core_trait_axis_instance(
             ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        int flipped_trait_status = flipped_traits(ESS_vta_indices(j));
         double high_value = static_cast<double>(core_var(0));
         double low_value = static_cast<double>(core_var(1));
         
         //Rcout << "ESS_optimizer_pre K" << endl;
         NumericVector base_values = {high_value, low_value};
-        if (search_mode == 0) {
-          base_mean = Rcpp::mean(base_values);
-        } else if (search_mode == 1) {
-          NumericVector new_breakpoint = Rcpp::runif(1, 0.0, 1.0);
-          
-          base_mean = low_value + new_breakpoint(0) * (high_value - low_value);
-        }
+        double current_mult = 1./3.;
+        base_mean = low_value + current_mult * (high_value - low_value);
+        
         variants_vars_to_test = as<NumericVector>(variants_to_test(
             ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
         variants_vars_to_test(0) = base_mean;
-        variants_vars_to_test(1) = base_mean * 0.995;
+        
+        if (base_mean < 0. && flipped_trait_status == 1) {
+          variants_vars_to_test(1) = base_mean + (base_mean - (base_mean * elast_mult));
+        } else {
+          variants_vars_to_test(1) = base_mean * elast_mult;
+        }
       }
       //Rcout << "ESS_optimizer_pre L" << endl;
       
@@ -10009,7 +10045,86 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
       DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
         as<RObject>(chosen_int), false, true, false, false, true,
         as<RObject>(focused_var));
+      //Rcout << "ESS_optimizer_pre M" << endl;
+      
+      DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+        as<RObject>(chosen_int), false, true, false, false, true,
+        as<RObject>(focused_var));
+      
+      List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+        _["e995"] = stageexpansion_995_reduced);
+      
+      //Rcout << "ESS_optimizer_pre N" << endl;
+      DataFrame ESS_out_values;
+      
+      invpre_optim_singlerun (point_1, variants_to_test, N_out, comm_out, sge_to_test, used_times,
+        zero_stage_vec_list, start_list, equivalence_list, A_list, U_list,
+        F_list, density_df, dens_index_df, entry_time_vec, times, fitness_times, format_int,
+        firstage_int, finalage_int, substoch, exp_tol, theta_tol, conv_threshold,
+        sparse_bool, A_only, stages_not_equal, integeronly, dens_yn_bool, zap_min);
+      
+    }
+    
+    { // Point 2 initialization
+      //Rcout << "ESS_optimizer_pre O point_2 initialization " << endl;
+      
+      arma::uvec variant_nta_new = {1, 2};
+      arma::vec givenrate_nta_new;
+      arma::vec offset_nta_new;
+      arma::vec multiplier_nta_new;
+      
+      NumericVector variants_vars_to_test;
+      
+      for (int j = 0; j < vars_to_alter; j++) {
+        //Rcout << "ESS_optimizer_pre P" << endl;
+        double base_mean = {0.};
+        
+        // New optim_ta
+        NumericVector core_var = as<NumericVector>(core_trait_axis_instance(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        int flipped_trait_status = flipped_traits(ESS_vta_indices(j));
+        double high_value = static_cast<double>(core_var(0));
+        double low_value = static_cast<double>(core_var(1));
+        
+        //Rcout << "ESS_optimizer_pre Q" << endl;
+        NumericVector base_values = {high_value, low_value};
+        double current_mult = 2./3.;
+        base_mean = low_value + current_mult * (high_value - low_value);
+        
+        variants_vars_to_test = as<NumericVector>(variants_to_test(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        variants_vars_to_test(0) = base_mean;
+        
+        if (base_mean < 0. && flipped_trait_status == 1) {
+          variants_vars_to_test(1) = base_mean + (base_mean - (base_mean * elast_mult));
+        } else {
+          variants_vars_to_test(1) = base_mean * elast_mult;
+        }
+      }
       //Rcout << "ESS_optimizer_pre R" << endl;
+      
+      givenrate_nta_new = as<arma::vec>(variants_to_test(11));
+      offset_nta_new = as<arma::vec>(variants_to_test(12));
+      multiplier_nta_new = as<arma::vec>(variants_to_test(13));
+      
+      // New stageexpansion
+      IntegerVector chosen_int = {0};
+      DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+      DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+      
+      DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+        variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+        filter);
+      DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+        variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+        filter);
+      
+      chosen_int = 1;
+      StringVector focused_var = {"mpm_altered"};
+      DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+        as<RObject>(chosen_int), false, true, false, false, true,
+        as<RObject>(focused_var));
+      //Rcout << "ESS_optimizer_pre S" << endl;
       
       DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
         as<RObject>(chosen_int), false, true, false, false, true,
@@ -10021,287 +10136,567 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
       //Rcout << "ESS_optimizer_pre T" << endl;
       DataFrame ESS_out_values;
       
-      invpre_optim_singlerun (ESS_out_values, variants_to_test, N_out, comm_out, sge_to_test, used_times,
+      invpre_optim_singlerun (point_2, variants_to_test, N_out, comm_out, sge_to_test, used_times,
         zero_stage_vec_list, start_list, equivalence_list, A_list, U_list,
         F_list, density_df, dens_index_df, entry_time_vec, times, fitness_times, format_int,
         firstage_int, finalage_int, substoch, exp_tol, theta_tol, conv_threshold,
         sparse_bool, A_only, stages_not_equal, integeronly, dens_yn_bool, zap_min);
+    }
+    
+    int search_mode {0};
+    int loop_tracker {0};
+    
+    DataFrame variant_L; // This single row dataframe will mark the test point with the lower abs fitness
+    DataFrame variant_H; // This single row dataframe will mark the test point with the higher abs fitness
+    DataFrame variant_C; // Centroid
+    
+    int worst_point {2};
+    double x1 {0.};
+    double x2 {0.};
+    double conv_test {0.};
+    double xR {0.}; // test value to keep in memory from previous reflection round
+    double xE {0.}; // test value to keep in memory from previous expansion round
+    double xC_new {0.}; // test value to keep in memory from previous contraction round
+    
+    double xR_fitness {0.}; // fitness associated with test value to keep in memory from previous reflection round
+    double xE_fitness {0.}; // fitness associated with test value to keep in memory from previous reflection round
+    double xC_new_fitness {0.}; // fitness associated with test value to keep in memory from previous reflection round
+    
+    double e995_fitness_1 {0.};
+    double e995_fitness_2 {0.};
+    double e995_fitness_L {0.};
+    double e995_fitness_H {0.};
+    
+    DataFrame variant_R;
+    DataFrame variant_E;
+    DataFrame variant_C_new;
+    
+    DataFrame ESS_test_values;
+    DataFrame ESS_out_values;
+    
+    while (opt_needed && loop_tracker < loop_max) {
+      //Rcout << "\n\n\nESS_optimizer_pre U entered optimization main loop, with loop_tracker = " << loop_tracker << endl;
       
-      NumericVector current_round_fitness_values = as<NumericVector>(ESS_out_values["fitness"]);
-      //double main_fitness = current_round_fitness_values(0);
-      double e995_fitness = current_round_fitness_values(1); 
-
-      NumericVector ref_fitness_values = as<NumericVector>(reference_variants["fitness"]);
-      NumericVector abs_fitness_values = abs(ref_fitness_values);
-      LogicalVector converged = as<LogicalVector>(ESS_out_values["converged"]);
+      arma::uvec variant_nta_new = {1, 2};
+      arma::vec givenrate_nta_new;
+      arma::vec offset_nta_new;
+      arma::vec multiplier_nta_new;
       
-      if (abs(e995_fitness) < conv_threshold) {
-        //Rcout << "ESS_optimizer_pre Y" << endl;
-        IntegerVector next_chosen_one = {0};
-        ESS_out_values = AdaptUtils::df_indices(ESS_out_values, next_chosen_one);
+      NumericVector variants_vars_to_test;
+      
+      for (int j = 0; j < vars_to_alter; j++) {
+        //Rcout << "ESS_optimizer_pre V j: " << j << endl;
+        double base_mean = {0.};
         
-        final_output(i) = ESS_out_values;
-        converged(0) = 1;
-        opt_needed = false;
-        break;
-      }
-      
-      //Rcout << "ESS_optimizer_pre Z" << endl;
-      CharacterVector ref_var_names = as<CharacterVector>(reference_variants.names());
-      CharacterVector old_ref_var_names = as<CharacterVector>(old_reference_variants.names());
-      
-      IntegerVector ref_variant_nta = as<IntegerVector>(reference_variants["variant"]);
-      
-      CharacterVector ref_stage3_nta = as<CharacterVector>(reference_variants["stage3"]);
-      CharacterVector ref_stage2_nta = as<CharacterVector>(reference_variants["stage2"]);
-      CharacterVector ref_stage1_nta = as<CharacterVector>(reference_variants["stage1"]);
-      IntegerVector ref_age3_nta = as<IntegerVector>(reference_variants["age3"]);
-      IntegerVector ref_age2_nta = as<IntegerVector>(reference_variants["age2"]);
-      
-      CharacterVector ref_eststage3_nta = as<CharacterVector>(reference_variants["eststage3"]);
-      CharacterVector ref_eststage2_nta = as<CharacterVector>(reference_variants["eststage2"]);
-      CharacterVector ref_eststage1_nta = as<CharacterVector>(reference_variants["eststage1"]);
-      IntegerVector ref_estage3_nta = as<IntegerVector>(reference_variants["estage3"]);
-      IntegerVector ref_estage2_nta = as<IntegerVector>(reference_variants["estage2"]);
-      
-      NumericVector ref_givenrate_nta = as<NumericVector>(reference_variants["givenrate"]);
-      NumericVector ref_offset_nta = as<NumericVector>(reference_variants["offset"]);
-      NumericVector ref_multiplier_nta = as<NumericVector>(reference_variants["multiplier"]);
-      IntegerVector ref_convtype_nta = as<IntegerVector>(reference_variants["convtype"]);
-      IntegerVector ref_convtype_t12_nta = as<IntegerVector>(reference_variants["convtype_t12"]);
-      
-      NumericVector ref_surv_dev_nta = as<NumericVector>(reference_variants["surv_dev"]);
-      NumericVector ref_obs_dev_nta = as<NumericVector>(reference_variants["obs_dev"]);
-      NumericVector ref_size_dev_nta = as<NumericVector>(reference_variants["size_dev"]);
-      NumericVector ref_sizeb_dev_nta = as<NumericVector>(reference_variants["sizeb_dev"]);
-      NumericVector ref_sizec_dev_nta = as<NumericVector>(reference_variants["sizec_dev"]);
-      NumericVector ref_repst_dev_nta = as<NumericVector>(reference_variants["repst_dev"]);
-      NumericVector ref_fec_dev_nta = as<NumericVector>(reference_variants["fec_dev"]);
-      
-      NumericVector ref_jsurv_dev_nta = as<NumericVector>(reference_variants["jsurv_dev"]);
-      NumericVector ref_jobs_dev_nta = as<NumericVector>(reference_variants["jobs_dev"]);
-      NumericVector ref_jsize_dev_nta = as<NumericVector>(reference_variants["jsize_dev"]);
-      NumericVector ref_jsizeb_dev_nta = as<NumericVector>(reference_variants["jsizeb_dev"]);
-      NumericVector ref_jsizec_dev_nta = as<NumericVector>(reference_variants["jsizec_dev"]);
-      NumericVector ref_jrepst_dev_nta = as<NumericVector>(reference_variants["jrepst_dev"]);
-      NumericVector ref_jmatst_dev_nta = as<NumericVector>(reference_variants["jmatst_dev"]);
-      
-      CharacterVector ref_year2_nta = as<CharacterVector>(reference_variants["year2"]);
-      NumericVector ref_mpm_altered_nta = as<NumericVector>(reference_variants["mpm_altered"]);
-      NumericVector ref_vrm_altered_nta = as<NumericVector>(reference_variants["vrm_altered"]);
-      
-      IntegerVector old_ref_variant_nta = as<IntegerVector>(old_reference_variants["variant"]);
-      
-      CharacterVector old_ref_stage3_nta = as<CharacterVector>(old_reference_variants["stage3"]);
-      CharacterVector old_ref_stage2_nta = as<CharacterVector>(old_reference_variants["stage2"]);
-      CharacterVector old_ref_stage1_nta = as<CharacterVector>(old_reference_variants["stage1"]);
-      IntegerVector old_ref_age3_nta = as<IntegerVector>(old_reference_variants["age3"]);
-      IntegerVector old_ref_age2_nta = as<IntegerVector>(old_reference_variants["age2"]);
-      
-      CharacterVector old_ref_eststage3_nta = as<CharacterVector>(old_reference_variants["eststage3"]);
-      CharacterVector old_ref_eststage2_nta = as<CharacterVector>(old_reference_variants["eststage2"]);
-      CharacterVector old_ref_eststage1_nta = as<CharacterVector>(old_reference_variants["eststage1"]);
-      IntegerVector old_ref_estage3_nta = as<IntegerVector>(old_reference_variants["estage3"]);
-      IntegerVector old_ref_estage2_nta = as<IntegerVector>(old_reference_variants["estage2"]);
-      
-      NumericVector old_ref_givenrate_nta = as<NumericVector>(old_reference_variants["givenrate"]);
-      NumericVector old_ref_offset_nta = as<NumericVector>(old_reference_variants["offset"]);
-      NumericVector old_ref_multiplier_nta = as<NumericVector>(old_reference_variants["multiplier"]);
-      IntegerVector old_ref_convtype_nta = as<IntegerVector>(old_reference_variants["convtype"]);
-      IntegerVector old_ref_convtype_t12_nta = as<IntegerVector>(old_reference_variants["convtype_t12"]);
-      
-      NumericVector old_ref_surv_dev_nta = as<NumericVector>(old_reference_variants["surv_dev"]);
-      NumericVector old_ref_obs_dev_nta = as<NumericVector>(old_reference_variants["obs_dev"]);
-      NumericVector old_ref_size_dev_nta = as<NumericVector>(old_reference_variants["size_dev"]);
-      NumericVector old_ref_sizeb_dev_nta = as<NumericVector>(old_reference_variants["sizeb_dev"]);
-      NumericVector old_ref_sizec_dev_nta = as<NumericVector>(old_reference_variants["sizec_dev"]);
-      NumericVector old_ref_repst_dev_nta = as<NumericVector>(old_reference_variants["repst_dev"]);
-      NumericVector old_ref_fec_dev_nta = as<NumericVector>(old_reference_variants["fec_dev"]);
-      
-      NumericVector old_ref_jsurv_dev_nta = as<NumericVector>(old_reference_variants["jsurv_dev"]);
-      NumericVector old_ref_jobs_dev_nta = as<NumericVector>(old_reference_variants["jobs_dev"]);
-      NumericVector old_ref_jsize_dev_nta = as<NumericVector>(old_reference_variants["jsize_dev"]);
-      NumericVector old_ref_jsizeb_dev_nta = as<NumericVector>(old_reference_variants["jsizeb_dev"]);
-      NumericVector old_ref_jsizec_dev_nta = as<NumericVector>(old_reference_variants["jsizec_dev"]);
-      NumericVector old_ref_jrepst_dev_nta = as<NumericVector>(old_reference_variants["jrepst_dev"]);
-      NumericVector old_ref_jmatst_dev_nta = as<NumericVector>(old_reference_variants["jmatst_dev"]);
-      
-      CharacterVector old_ref_year2_nta = as<CharacterVector>(old_reference_variants["year2"]);
-      NumericVector old_ref_mpm_altered_nta = as<NumericVector>(old_reference_variants["mpm_altered"]);
-      NumericVector old_ref_vrm_altered_nta = as<NumericVector>(old_reference_variants["vrm_altered"]);
-      
-      IntegerVector ESS_out_variant_nta = as<IntegerVector>(ESS_out_values["variant"]);
-      
-      CharacterVector ESS_out_stage3_nta = as<CharacterVector>(ESS_out_values["stage3"]);
-      CharacterVector ESS_out_stage2_nta = as<CharacterVector>(ESS_out_values["stage2"]);
-      CharacterVector ESS_out_stage1_nta = as<CharacterVector>(ESS_out_values["stage1"]);
-      IntegerVector ESS_out_age3_nta = as<IntegerVector>(ESS_out_values["age3"]);
-      IntegerVector ESS_out_age2_nta = as<IntegerVector>(ESS_out_values["age2"]);
-      
-      CharacterVector ESS_out_eststage3_nta = as<CharacterVector>(ESS_out_values["eststage3"]);
-      CharacterVector ESS_out_eststage2_nta = as<CharacterVector>(ESS_out_values["eststage2"]);
-      CharacterVector ESS_out_eststage1_nta = as<CharacterVector>(ESS_out_values["eststage1"]);
-      IntegerVector ESS_out_estage3_nta = as<IntegerVector>(ESS_out_values["estage3"]);
-      IntegerVector ESS_out_estage2_nta = as<IntegerVector>(ESS_out_values["estage2"]);
-      
-      NumericVector ESS_out_givenrate_nta = as<NumericVector>(ESS_out_values["givenrate"]);
-      NumericVector ESS_out_offset_nta = as<NumericVector>(ESS_out_values["offset"]);
-      NumericVector ESS_out_multiplier_nta = as<NumericVector>(ESS_out_values["multiplier"]);
-      IntegerVector ESS_out_convtype_nta = as<IntegerVector>(ESS_out_values["convtype"]);
-      IntegerVector ESS_out_convtype_t12_nta = as<IntegerVector>(ESS_out_values["convtype_t12"]);
-      
-      NumericVector ESS_out_surv_dev_nta = as<NumericVector>(ESS_out_values["surv_dev"]);
-      NumericVector ESS_out_obs_dev_nta = as<NumericVector>(ESS_out_values["obs_dev"]);
-      NumericVector ESS_out_size_dev_nta = as<NumericVector>(ESS_out_values["size_dev"]);
-      NumericVector ESS_out_sizeb_dev_nta = as<NumericVector>(ESS_out_values["sizeb_dev"]);
-      NumericVector ESS_out_sizec_dev_nta = as<NumericVector>(ESS_out_values["sizec_dev"]);
-      NumericVector ESS_out_repst_dev_nta = as<NumericVector>(ESS_out_values["repst_dev"]);
-      NumericVector ESS_out_fec_dev_nta = as<NumericVector>(ESS_out_values["fec_dev"]);
-      
-      NumericVector ESS_out_jsurv_dev_nta = as<NumericVector>(ESS_out_values["jsurv_dev"]);
-      NumericVector ESS_out_jobs_dev_nta = as<NumericVector>(ESS_out_values["jobs_dev"]);
-      NumericVector ESS_out_jsize_dev_nta = as<NumericVector>(ESS_out_values["jsize_dev"]);
-      NumericVector ESS_out_jsizeb_dev_nta = as<NumericVector>(ESS_out_values["jsizeb_dev"]);
-      NumericVector ESS_out_jsizec_dev_nta = as<NumericVector>(ESS_out_values["jsizec_dev"]);
-      NumericVector ESS_out_jrepst_dev_nta = as<NumericVector>(ESS_out_values["jrepst_dev"]);
-      NumericVector ESS_out_jmatst_dev_nta = as<NumericVector>(ESS_out_values["jmatst_dev"]);
-      
-      CharacterVector ESS_out_year2_nta = as<CharacterVector>(ESS_out_values["year2"]);
-      NumericVector ESS_out_mpm_altered_nta = ref_mpm_altered_nta;
-      NumericVector ESS_out_vrm_altered_nta = ref_vrm_altered_nta;
-      
-      bool found_optimum {true};
-      
-      if ((abs(e995_fitness) < abs_fitness_values(0) || abs(e995_fitness) < abs_fitness_values(1))) {
-        //Rcout << "current elasticity fitness lower than at least one reference fitness" << endl;
-        search_mode = 0;
+        NumericVector point1_fitness_values = as<NumericVector>(point_1["fitness"]);
+        NumericVector point2_fitness_values = as<NumericVector>(point_2["fitness"]);
+        e995_fitness_1 = point1_fitness_values(1); 
+        e995_fitness_2 = point2_fitness_values(1); 
         
-        double diff0 = abs(abs(e995_fitness) - abs_fitness_values(0));
-        double diff1 = abs(abs(e995_fitness) - abs_fitness_values(1));
-        
-        if (diff0 < diff1) {
-          ref_variant_nta(1) = ESS_out_variant_nta(0);
-          
-          ref_stage3_nta(1) = ESS_out_stage3_nta(0);
-          ref_stage2_nta(1) = ESS_out_stage2_nta(0);
-          ref_stage1_nta(1) = ESS_out_stage1_nta(0);
-          ref_age3_nta(1) = ESS_out_age3_nta(0);
-          ref_age2_nta(1) = ESS_out_age2_nta(0);
-          
-          ref_eststage3_nta(1) = ESS_out_eststage3_nta(0);
-          ref_eststage2_nta(1) = ESS_out_eststage2_nta(0);
-          ref_eststage1_nta(1) = ESS_out_eststage1_nta(0);
-          ref_estage3_nta(1) = ESS_out_estage3_nta(0);
-          ref_estage2_nta(1) = ESS_out_estage2_nta(0);
-          
-          ref_givenrate_nta(1) = ESS_out_givenrate_nta(0);
-          ref_offset_nta(1) = ESS_out_offset_nta(0);
-          ref_multiplier_nta(1) = ESS_out_multiplier_nta(0);
-          ref_convtype_nta(1) = ESS_out_convtype_nta(0);
-          ref_convtype_t12_nta(1) = ESS_out_convtype_t12_nta(0);
-          
-          ref_surv_dev_nta(1) = ESS_out_surv_dev_nta(0);
-          ref_obs_dev_nta(1) = ESS_out_obs_dev_nta(0);
-          ref_size_dev_nta(1) = ESS_out_size_dev_nta(0);
-          ref_sizeb_dev_nta(1) = ESS_out_sizeb_dev_nta(0);
-          ref_sizec_dev_nta(1) = ESS_out_sizec_dev_nta(0);
-          ref_repst_dev_nta(1) = ESS_out_repst_dev_nta(0);
-          ref_fec_dev_nta(1) = ESS_out_fec_dev_nta(0);
-          
-          ref_jsurv_dev_nta(1) = ESS_out_jsurv_dev_nta(0);
-          ref_jobs_dev_nta(1) = ESS_out_jobs_dev_nta(0);
-          ref_jsize_dev_nta(1) = ESS_out_jsize_dev_nta(0);
-          ref_jsizeb_dev_nta(1) = ESS_out_jsizeb_dev_nta(0);
-          ref_jsizec_dev_nta(1) = ESS_out_jsizec_dev_nta(0);
-          ref_jrepst_dev_nta(1) = ESS_out_jrepst_dev_nta(0);
-          ref_jmatst_dev_nta(1) = ESS_out_jmatst_dev_nta(0);
-          
-          ref_year2_nta(1) = ESS_out_year2_nta(0);
-          ref_mpm_altered_nta(1) = ESS_out_mpm_altered_nta(0);
-          ref_vrm_altered_nta(1) = ESS_out_vrm_altered_nta(0);
-          
-          ref_fitness_values(1) = e995_fitness;
+        //Rcout << "ESS_optimizer_pre W" << endl;
+        if (abs(e995_fitness_1) < abs(e995_fitness_2)) {
+          variant_L = clone(point_1);
+          variant_H = clone(point_2);
+          e995_fitness_L = e995_fitness_1;
+          e995_fitness_H = e995_fitness_2;
+          worst_point = 2;
         } else {
-          //Rcout << "replacing first reference value with new replacement value" << endl;
-          ref_variant_nta(0) = ESS_out_variant_nta(0);
-          
-          ref_stage3_nta(0) = ESS_out_stage3_nta(0);
-          ref_stage2_nta(0) = ESS_out_stage2_nta(0);
-          ref_stage1_nta(0) = ESS_out_stage1_nta(0);
-          ref_age3_nta(0) = ESS_out_age3_nta(0);
-          ref_age2_nta(0) = ESS_out_age2_nta(0);
-          
-          ref_eststage3_nta(0) = ESS_out_eststage3_nta(0);
-          ref_eststage2_nta(0) = ESS_out_eststage2_nta(0);
-          ref_eststage1_nta(0) = ESS_out_eststage1_nta(0);
-          ref_estage3_nta(0) = ESS_out_estage3_nta(0);
-          ref_estage2_nta(0) = ESS_out_estage2_nta(0);
-          
-          ref_givenrate_nta(0) = ESS_out_givenrate_nta(0);
-          ref_offset_nta(0) = ESS_out_offset_nta(0);
-          ref_multiplier_nta(0) = ESS_out_multiplier_nta(0);
-          ref_convtype_nta(1) = ESS_out_convtype_nta(0);
-          ref_convtype_t12_nta(1) = ESS_out_convtype_t12_nta(0);
-          
-          ref_surv_dev_nta(0) = ESS_out_surv_dev_nta(0);
-          ref_obs_dev_nta(0) = ESS_out_obs_dev_nta(0);
-          ref_size_dev_nta(0) = ESS_out_size_dev_nta(0);
-          ref_sizeb_dev_nta(0) = ESS_out_sizeb_dev_nta(0);
-          ref_sizec_dev_nta(0) = ESS_out_sizec_dev_nta(0);
-          ref_repst_dev_nta(0) = ESS_out_repst_dev_nta(0);
-          ref_fec_dev_nta(0) = ESS_out_fec_dev_nta(0);
-          
-          ref_jsurv_dev_nta(0) = ESS_out_jsurv_dev_nta(0);
-          ref_jobs_dev_nta(0) = ESS_out_jobs_dev_nta(0);
-          ref_jsize_dev_nta(0) = ESS_out_jsize_dev_nta(0);
-          ref_jsizeb_dev_nta(0) = ESS_out_jsizeb_dev_nta(0);
-          ref_jsizec_dev_nta(0) = ESS_out_jsizec_dev_nta(0);
-          ref_jrepst_dev_nta(0) = ESS_out_jrepst_dev_nta(0);
-          ref_jmatst_dev_nta(0) = ESS_out_jmatst_dev_nta(0);
-          
-          ref_year2_nta(0) = ESS_out_year2_nta(0);
-          ref_mpm_altered_nta(0) = ESS_out_mpm_altered_nta(0);
-          ref_vrm_altered_nta(0) = ESS_out_vrm_altered_nta(0);
-          
-          ref_fitness_values(0) = e995_fitness;
+          variant_H = clone(point_1);
+          variant_L = clone(point_2);
+          e995_fitness_L = e995_fitness_2;
+          e995_fitness_H = e995_fitness_1;
+          worst_point = 1;
         }
-        search_mode = 0;
         
-      } else {
-        //Rcout << "current elasticity fitness greater than or equal to both reference fitness values" << endl;
-        search_mode = 1;
+        //Rcout << "ESS_optimizer_pre X" << endl;
+        variant_C = clone(variant_L);
+        double base_test_value = {0.};
         
-        if (loop_tracker == (loop_max - 1)) {
-          if (ref_fitness_values(0) < ref_fitness_values(1)) {
-            //Rcout << "ref_fitness_values(0) < ref_fitness_values(1)" << endl;
-            IntegerVector next_chosen_one = {0};
-            ESS_out_values = AdaptUtils::df_indices(old_reference_variants, next_chosen_one);
-          } else {
-            //Rcout << "ref_fitness_values(0) >= ref_fitness_values(1)" << endl;
-            IntegerVector next_chosen_one = {1};
-            ESS_out_values = AdaptUtils::df_indices(old_reference_variants, next_chosen_one);
+        //Rcout << "ESS_optimizer_pre X1" << endl;
+        NumericVector core_var_C = as<NumericVector>(variant_C(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_pre X2" << endl;
+        NumericVector core_var_H = as<NumericVector>(variant_H(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_pre X3" << endl;
+        NumericVector core_var_L_bound = as<NumericVector>(variant_L_bound(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_pre X4" << endl;
+        NumericVector core_var_H_bound = as<NumericVector>(variant_H_bound(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_pre X5" << endl;
+        int flipped_trait_status = flipped_traits(ESS_vta_indices(j));
+        //Rcout << "ESS_optimizer_pre X6" << endl;
+        NumericVector point_1_trait = as<NumericVector>(point_1(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j)))); // Not necessary - used for testing
+        //Rcout << "ESS_optimizer_pre X7" << endl;
+        NumericVector point_2_trait = as<NumericVector>(point_2(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j)))); // Not necessary - used for testing
+        //Rcout << "ESS_optimizer_pre X8" << endl;
+        
+        double xC = static_cast<double>(core_var_C(0));
+        double xL = xC;
+        double xH = static_cast<double>(core_var_H(0)); // Used to be index 1
+        double low_value_bound = static_cast<double>(core_var_L_bound(0));
+        double high_value_bound = static_cast<double>(core_var_H_bound(0)); // Used to be index 1
+        
+        x1 = xL;
+        x2 = xH;
+        conv_test = abs(x1 - x2);
+        
+        //Rcout << "\nESS_optimizer_pre Y search mode choice" << endl;
+        //Rcout << "original low_value_bound: " << low_value_bound << endl;
+        //Rcout << "original high_value_bound: " << high_value_bound << endl;
+        //Rcout << "original point_1 trait value: " << point_1_trait << endl;
+        //Rcout << "original point_2 trait value: " << point_2_trait << endl;
+        //Rcout << "worst_point: " << worst_point << endl;
+        //Rcout << "original xC: " << xC << endl;
+        //Rcout << "original xL: " << xL << endl;
+        //Rcout << "original xH: " << xH << endl;
+        //Rcout << "original xR: " << xR << endl;
+        //Rcout << "original xE: " << xE << endl;
+        //Rcout << "original xC_new: " << xC_new << endl;
+        //Rcout << "original point_1 invasion fitness: " << e995_fitness_1 << endl;
+        //Rcout << "original point_2 invasion fitness: " << e995_fitness_2 << endl;
+        //Rcout << "original e995_fitness_L: " << e995_fitness_L << endl;
+        //Rcout << "original e995_fitness_H: " << e995_fitness_H << endl;
+        //Rcout << "original xR_fitness: " << xR_fitness << endl;
+        //Rcout << "original xE_fitness: " << xE_fitness << endl;
+        //Rcout << "original xC_new_fitness: " << xC_new_fitness << endl;
+        
+        //Rcout << "ESS_optimizer_pre Z" << endl;
+        //NumericVector base_values = {high_value, low_value};
+        if (search_mode == 0) { // Reflection
+          //Rcout << "\nReflection mode (search mode = 0)" << endl;
+          
+          double alpha = 0.8;
+          base_test_value = xC + alpha * (xC - xH);
+          
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          xR = base_test_value;
+          
+          //Rcout << "value of xC (used in base_test_value calculation): " << xC << endl;
+          //Rcout << "value of xH (used in base_test_value calculation): " << xH << endl;
+          //Rcout << "value of xR (calculated during reflection): " << xR << endl;
+          
+        } else if (search_mode == 1) { // Expansion
+          //Rcout << "\nExpansion mode (search mode = 1)" << endl;
+          
+          double gamma = 2.0;
+          base_test_value = xC + gamma * (xR - xC);
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          xE = base_test_value;
+          
+          //Rcout << "value of xC (used in base_test_value calculation): " << xC << endl;
+          //Rcout << "value of xR (used in base_test_value calculation): " << xR << endl;
+          //Rcout << "value of xE (calculated during expansion): " << xE << endl;
+          
+        } else if (search_mode == 2) { // Contraction
+          //Rcout << "\nContraction mode (search mode = 2)" << endl;
+          
+          double rho = 0.5;
+          
+          if (worst_point == 1) {
+            if (abs(xR_fitness) < abs(e995_fitness_1)) {
+              base_test_value = xC + rho * (xR - xC);
+            } else if (abs(xR_fitness) >= abs(e995_fitness_1)) {
+              base_test_value = xC + rho * (xH - xC);
+            }
+          } else if (worst_point == 2) {
+            if (abs(xR_fitness) < abs(e995_fitness_2)) {
+              base_test_value = xC + rho * (xR - xC);
+            } else if (abs(xR_fitness) >= abs(e995_fitness_2)) {
+              base_test_value = xC + rho * (xH - xC);
+            }
           }
-          LogicalVector exit_unconverged = {0};
-          ESS_out_values["converged"] = exit_unconverged; // ESS_out_values.push_back(exit_unconverged, "converged");
-          found_optimum = false;
+          
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          xC_new = base_test_value;
+          
+          //Rcout << "value of xC (used in base_test_value calculation): " << xC << endl;
+          //Rcout << "value of xH (used in base_test_value calculation): " << xH << endl;
+          //Rcout << "value of xC_new (calculated during contraction): " << xC_new << endl;
+          
+        } else if (search_mode == 3) { // Shrinking
+          //Rcout << "\nShrinking mode (search mode = 3)" << endl;
+          
+          double sigma = 0.5;
+          
+          NumericVector core_var_p1 = as<NumericVector>(point_1(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          NumericVector core_var_p2 = as<NumericVector>(point_2(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          
+          double p1 = static_cast<double>(core_var_p1(0));
+          double p2 = static_cast<double>(core_var_p2(0));
+          
+          base_test_value = xL + sigma * (p1 - xL);
+          double base_test_value2 = xL + sigma * (p2 - xL);
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          
+          NumericVector maximal_test2 = {base_test_value2, low_value_bound};
+          NumericVector minimal_test2 = {maximal_test2(0), high_value_bound};
+          
+          base_test_value2 = minimal_test2(0);
+          
+          //Rcout << "value of xL (used in base_test_value calculation and base_test_value2): " << xL << endl;
+          //Rcout << "value of p1 (used in base_test_value calculation and base_test_value2): " << p1 << endl;
+          //Rcout << "value of p2 (used in base_test_value calculation and base_test_value2): " << p2 << endl;
+          //Rcout << "value of base_test_value (calculated during shrinking): " << base_test_value << endl;
+          //Rcout << "value of base_test_value2 (calculated during shrinking): " << base_test_value2 << endl;
+          
+          variants_vars_to_test = as<NumericVector>(variants_to_test(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          variants_vars_to_test(0) = base_test_value;
+          
+          if (base_test_value < 0. && flipped_trait_status == 1) {
+            variants_vars_to_test(1) = base_test_value + (base_test_value - (base_test_value * elast_mult));
+          } else {
+            variants_vars_to_test(1) = base_test_value * elast_mult;
+          }
+          
+          givenrate_nta_new = as<arma::vec>(variants_to_test(11));
+          offset_nta_new = as<arma::vec>(variants_to_test(12));
+          multiplier_nta_new = as<arma::vec>(variants_to_test(13));
+          
+          // New stageexpansion
+          IntegerVector chosen_int = {0};
+          DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+          DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+          
+          DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          
+          chosen_int = 1;
+          StringVector focused_var = {"mpm_altered"};
+          DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_pre Z1" << endl;
+          
+          DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          
+          List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+            _["e995"] = stageexpansion_995_reduced);
+          
+          //Rcout << "ESS_optimizer_pre Z2" << endl;
+          DataFrame ESS_out_values;
+          
+          invpre_optim_singlerun (point_1, variants_to_test, N_out, comm_out, sge_to_test, used_times,
+            zero_stage_vec_list, start_list, equivalence_list, A_list, U_list,
+            F_list, density_df, dens_index_df, entry_time_vec, times, fitness_times, format_int,
+            firstage_int, finalage_int, substoch, exp_tol, theta_tol, conv_threshold,
+            sparse_bool, A_only, stages_not_equal, integeronly, dens_yn_bool, zap_min);
+          
+          variants_vars_to_test = as<NumericVector>(variants_to_test(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          variants_vars_to_test(0) = base_test_value2;
+          
+          if (base_test_value2 < 0. && flipped_trait_status == 1) {
+            variants_vars_to_test(1) = base_test_value2 + (base_test_value2 - (base_test_value2 * elast_mult));
+          } else {
+            variants_vars_to_test(1) = base_test_value2 * elast_mult;
+          }
+          
+          givenrate_nta_new = as<arma::vec>(variants_to_test(11));
+          offset_nta_new = as<arma::vec>(variants_to_test(12));
+          multiplier_nta_new = as<arma::vec>(variants_to_test(13));
+          
+          // New stageexpansion
+          chosen_int = {0};
+          variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+          variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+          
+          stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          
+          chosen_int = 1;
+          focused_var = {"mpm_altered"};
+          stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_pre Z3" << endl;
+          
+          stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          
+          sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+            _["e995"] = stageexpansion_995_reduced);
+          
+          //Rcout << "ESS_optimizer_pre Z4" << endl;
+          invpre_optim_singlerun (point_2, variants_to_test, N_out, comm_out, sge_to_test, used_times,
+            zero_stage_vec_list, start_list, equivalence_list, A_list, U_list,
+            F_list, density_df, dens_index_df, entry_time_vec, times, fitness_times, format_int,
+            firstage_int, finalage_int, substoch, exp_tol, theta_tol, conv_threshold,
+            sparse_bool, A_only, stages_not_equal, integeronly, dens_yn_bool, zap_min);
+          
         }
-      }
-      
-      if (loop_tracker == (loop_max - 1)) {
-        //Rcout << "entered data frame finalization phase" << endl;
-        if (found_optimum) {
-          IntegerVector next_chosen_one = {0};
-          ESS_out_values = AdaptUtils::df_indices(ESS_out_values, next_chosen_one);
-        }
-        //Rcout << "ESS_optimizer_pre AH" << endl;
         
-        LogicalVector exit_unconverged = {0};
-        ESS_out_values["converged"] = exit_unconverged; // ESS_out_values.push_back(exit_unconverged, "converged");
-        final_output(i) = ESS_out_values;
+        variants_vars_to_test = as<NumericVector>(variants_to_test(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        variants_vars_to_test(0) = base_mean;
+        
+        if (base_mean < 0. && flipped_trait_status == 1) {
+          variants_vars_to_test(1) = base_mean + (base_mean - (base_mean * elast_mult));
+        } else {
+          variants_vars_to_test(1) = base_mean * elast_mult;
+        }
+      //}
+        //Rcout << "ESS_optimizer_pre AA" << endl;
+        
+        if (search_mode < 3) {
+          //Rcout << "ESS_optimizer_pre AB" << endl;
+          givenrate_nta_new = as<arma::vec>(variants_to_test(11));
+          offset_nta_new = as<arma::vec>(variants_to_test(12));
+          multiplier_nta_new = as<arma::vec>(variants_to_test(13));
+          
+          givenrate_nta_new = as<arma::vec>(variants_to_test(11));
+          offset_nta_new = as<arma::vec>(variants_to_test(12));
+          multiplier_nta_new = as<arma::vec>(variants_to_test(13));
+          
+          // New stageexpansion
+          IntegerVector chosen_int = {0};
+          DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+          DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+          
+          DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          
+          chosen_int = 1;
+          StringVector focused_var = {"mpm_altered"};
+          DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_pre AC" << endl;
+          
+          DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          
+          List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+            _["e995"] = stageexpansion_995_reduced);
+          
+          //Rcout << "ESS_optimizer_pre AD" << endl;
+          DataFrame ESS_out_values;
+          
+          invpre_optim_singlerun (ESS_out_values, variants_to_test, N_out, comm_out, sge_to_test, used_times,
+            zero_stage_vec_list, start_list, equivalence_list, A_list, U_list,
+            F_list, density_df, dens_index_df, entry_time_vec, times, fitness_times, format_int,
+            firstage_int, finalage_int, substoch, exp_tol, theta_tol, conv_threshold,
+            sparse_bool, A_only, stages_not_equal, integeronly, dens_yn_bool, zap_min);
+          
+          //Rcout << "ESS_optimizer_fb T" << endl;
+          NumericVector current_round_fitness_values = as<NumericVector>(ESS_test_values["fitness"]);
+          //Rcout << "current_round_fitness_values: " << current_round_fitness_values << endl;
+          double res_fitness_test = current_round_fitness_values(0);
+          double e995_fitness_test = current_round_fitness_values(1); 
+          //Rcout << "new invader res_fitness_test: " << res_fitness_test << endl;
+          //Rcout << "new invader e995_fitness_test: " << e995_fitness_test << endl;
+          
+          NumericVector ref_fitness_values = as<NumericVector>(reference_variants["fitness"]);
+          NumericVector abs_fitness_values = abs(ref_fitness_values);
+          
+          LogicalVector converged = as<LogicalVector>(ESS_test_values["converged"]);
+          //Rcout << "ref_fitness_values: " << ref_fitness_values << endl;
+          //Rcout << "abs_fitness_values: " << abs_fitness_values << endl;
+          
+          //Rcout << "Entered search mode determination section" << endl;
+          if (search_mode == 0) { // Reflection
+            variant_R = clone(ESS_test_values);
+            xR_fitness = e995_fitness_test;
+            //Rcout << "xR_fitness: " << xR_fitness << endl;
+            //Rcout << "e995_fitness_L: " << e995_fitness_L << endl;
+            //Rcout << "e995_fitness_H: " << e995_fitness_H << endl;
+            if (abs(xR_fitness) < abs(e995_fitness_L)) {
+              //Rcout << "ESS_optimizer_pre AD1 search mode 0, moving to search mode 1" << endl;
+              search_mode = 1;
+            } else if (abs(xR_fitness) < abs(e995_fitness_H)) {
+              //Rcout << "ESS_optimizer_pre AD2 search mode 0, staying in search mode 0" << endl;
+              variant_H = clone(ESS_test_values);
+              e995_fitness_H = xR_fitness;
+              
+              if (worst_point == 2) {
+                point_2 = clone(variant_H);
+                e995_fitness_2 = e995_fitness_H;
+              } else if (worst_point == 1) {
+                point_1 = clone(variant_H);
+                e995_fitness_1 = e995_fitness_H;
+              }
+            } else {
+              //Rcout << "ESS_optimizer_pre AD3 search mode 0, moving to search mode 2" << endl;
+              search_mode = 2;
+            }
+            
+          } else if (search_mode == 1) { // Expansion
+            //Rcout << "ESS_optimizer_pre AD4 search mode 1, moving to search mode 0" << endl;
+            variant_E = clone(ESS_test_values);
+            xE_fitness = e995_fitness_test;
+            //Rcout << "xE_fitness: " << xE_fitness << endl;
+            //Rcout << "xR_fitness: " << xR_fitness << endl;
+            //Rcout << "e995_fitness_L: " << e995_fitness_L << endl;
+            //Rcout << "e995_fitness_H: " << e995_fitness_H << endl;
+            if (abs(xE_fitness) < abs(xR_fitness)) {
+              //Rcout << "abs(xE_fitness) < abs(xR_fitness)" << endl;
+              if (worst_point == 2) {
+                //Rcout << "Replacing point_2 with xE" << endl;
+                point_2 = clone(variant_E);
+                e995_fitness_2 = xE_fitness;
+              } else if (worst_point == 1) {
+                //Rcout << "Replacing point_1 with xE" << endl;
+                point_1 = clone(variant_E);
+                e995_fitness_1 = xE_fitness;
+              }
+              
+              //variant_H = clone(variant_E);
+              //e995_fitness_H = xE_fitness;
+            } else {
+              //Rcout << "abs(xE_fitness) >= abs(xR_fitness)" << endl;
+              if (worst_point == 2) {
+                //Rcout << "Replacing point_2 with xR" << endl;
+                point_2 = clone(variant_R);
+                e995_fitness_2 = xR_fitness;
+              } else if (worst_point == 1) {
+                //Rcout << "Replacing point_1 with xR" << endl;
+                point_1 = clone(variant_R);
+                e995_fitness_1 = xR_fitness;
+              }
+              
+              //variant_H = clone(variant_R);
+              //e995_fitness_H = xR_fitness;
+            }
+            search_mode = 0;
+            
+          } else if (search_mode == 2) { // Contraction
+            variant_C_new = clone(ESS_test_values);
+            xC_new_fitness = e995_fitness_test;
+            //Rcout << "xC_new_fitness: " << xC_new_fitness << endl;
+            //Rcout << "e995_fitness_L: " << e995_fitness_L << endl;
+            //Rcout << "e995_fitness_H: " << e995_fitness_H << endl;
+            
+            if (worst_point == 1) {
+              if ((abs(xC_new_fitness) < abs(xR_fitness)) && (abs(xR_fitness) < abs(e995_fitness_1))) {
+                //Rcout << "ESS_optimizer_pre AD5 search mode 2, moving to search mode 0" << endl;
+                point_1 = clone(variant_C_new);
+                e995_fitness_1 = xC_new_fitness;
+                search_mode = 0;
+              } else if ((abs(xC_new_fitness) < abs(e995_fitness_1)) && (abs(xR_fitness) >= abs(e995_fitness_1))) {
+                //Rcout << "ESS_optimizer_pre AD6 search mode 2, moving to search mode 0" << endl;
+                point_1 = clone(variant_C_new);
+                e995_fitness_1 = xC_new_fitness;
+                search_mode = 0;
+              } else search_mode = 3;
+            } else if (worst_point == 2) {
+              if ((abs(xC_new_fitness) < abs(xR_fitness)) && (abs(xR_fitness) < abs(e995_fitness_2))) {
+                //Rcout << "ESS_optimizer_pre AD7 search mode 2, moving to search mode 0" << endl;
+                point_2 = clone(variant_C_new);
+                e995_fitness_2 = xC_new_fitness;
+                search_mode = 0;
+              } else if ((abs(xC_new_fitness) < abs(e995_fitness_2)) && (abs(xR_fitness) >= abs(e995_fitness_2))) {
+                //Rcout << "ESS_optimizer_pre AD8 search mode 2, moving to search mode 0" << endl;
+                point_2 = clone(variant_C_new);
+                e995_fitness_2 = xC_new_fitness;
+                search_mode = 0;
+              } else search_mode = 3;
+            }
+          }
+          
+        } else if (search_mode == 3) {
+          //Rcout << "ESS_optimizer_pre AD9 search mode 3, moving to search mode 0" << endl;
+          search_mode = 0;
+          
+          NumericVector point1_fitness_values = as<NumericVector>(point_1["fitness"]);
+          NumericVector point2_fitness_values = as<NumericVector>(point_2["fitness"]);
+          e995_fitness_1 = point1_fitness_values(1); 
+          e995_fitness_2 = point2_fitness_values(1); 
+          
+          if (abs(e995_fitness_1) < abs(e995_fitness_2)) {
+            variant_L = clone(point_1);
+            variant_H = clone(point_2);
+            e995_fitness_L = e995_fitness_1;
+            e995_fitness_H = e995_fitness_2;
+          } else {
+            variant_H = clone(point_1);
+            variant_L = clone(point_2);
+            e995_fitness_L = e995_fitness_2;
+            e995_fitness_H = e995_fitness_1;
+          }
+            
+          variant_C = clone(variant_L);
+        }
+        
+        //Rcout << "ESS_optimizer_pre AD10" << endl;
       }
       
       loop_tracker++;
+      //Rcout << "ESS_optimizer_pre AE " << endl;
+      
+      if (abs(e995_fitness_1) <= conv_threshold || abs(e995_fitness_2) <= conv_threshold ||
+          abs(e995_fitness_1 - e995_fitness_2) <= conv_threshold) {
+        //bool found_optimum {true};
+        if (abs(e995_fitness_1) <= conv_threshold || abs(e995_fitness_1 - e995_fitness_2) <= conv_threshold) {
+          //Rcout << "Exporting point 1 on convergence" << endl;
+          ESS_test_values = clone(point_1);
+        } else {
+          //Rcout << "Exporting point 2 on convergence" << endl;
+          ESS_test_values = clone(point_2);
+        }
+        
+        IntegerVector next_chosen_one = {0};
+        ESS_out_values = AdaptUtils::df_indices(ESS_test_values, next_chosen_one);
+        IntegerVector further_one = {1};
+        DataFrame NeededFitnessRow = AdaptUtils::df_indices(ESS_test_values, further_one);
+        
+        NumericVector true_fitness_vec = as<NumericVector>(NeededFitnessRow["fitness"]);
+        ESS_out_values["fitness"] = true_fitness_vec;
+        
+        found_converged = true;
+        LogicalVector found_converged_vec = {found_converged};
+        ESS_out_values["converged"] = found_converged_vec;
+        
+        opt_needed = false;
+        break;
+      }
     }
+    //Rcout << "ESS_optimizer_pre AF" << endl;
+    //IntegerVector next_chosen_one = {0};
+    //ESS_out_values = AdaptUtils::df_indices(ESS_test_values, next_chosen_one);
+    
+    final_output(i) = ESS_out_values;
   }
   
   //Rcout << "ESS_optimizer_pre AI" << endl;
@@ -10345,15 +10740,6 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
   
   int optim_rows = static_cast<int>(final_output_df.nrows());
   
-  if (optim_rows > 0){
-    NumericVector fop_fitness = final_output_df["fitness"];
-    LogicalVector fop_converged = final_output_df["converged"];
-    
-    for (int i = 0; i < optim_rows; i++) {
-      if (abs(fop_fitness(i)) <= conv_threshold) fop_converged(i) = 1;
-    }
-  }
-  //Rcout << "ESS_optimizer_pre AL" << endl;
   ESS_Lyapunov = final_output_df;
 }
 
@@ -10530,7 +10916,6 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
   arma::mat N_mpm (2, (times + 1)); // rows = vars, cols = times
   
   //int year_counter {0};
-  
   CharacterVector stage3_nta = as<CharacterVector>(base_trait_axis["stage3"]);
   CharacterVector stage2_nta = as<CharacterVector>(base_trait_axis["stage2"]);
   CharacterVector stage1_nta = as<CharacterVector>(base_trait_axis["stage1"]);
@@ -10777,7 +11162,6 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
           }
           dev_num_counter(m) = dev_num_counter(m) + 1;
           
-
           bool dvr_bool {false};
           
           LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -11008,7 +11392,6 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
           }
           
           //Rcout << "ifosr A36        ";
-          
           if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
           double N_current = arma::sum(running_popvec_vrm);
           N_mpm(m, (j + 1)) = N_current;
@@ -11150,6 +11533,8 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
 //' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
 //' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
 //' 16, jrepst_dev; and 17, jmatst_dev.
+//' @param flipped_traits An integer vector with 17 elements, giving the
+//' identities of variables with both positive and negative values.
 //' @param surv_dev_nta The survival column in the reassessed trait axis.
 //' @param obs_dev_nta The observation status column in the reassessed trait
 //' axis.
@@ -11282,10 +11667,11 @@ inline void invfb_optim_singlerun (DataFrame& out_df, arma::vec& surv_dev_nta,
 //' @noRd
 inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis,
   DataFrame& Lyapunov_optim, DataFrame& optim_trait_axis,
-  IntegerVector& ESS_var_traits, arma::vec& surv_dev_nta, arma::vec& obs_dev_nta,
-  arma::vec& size_dev_nta, arma::vec& sizeb_dev_nta, arma::vec& sizec_dev_nta,
-  arma::vec& repst_dev_nta, arma::vec& fec_dev_nta, arma::vec& jsurv_dev_nta,
-  arma::vec& jobs_dev_nta, arma::vec& jsize_dev_nta, arma::vec& jsizeb_dev_nta,
+  IntegerVector& ESS_var_traits, IntegerVector& flipped_traits,
+  arma::vec& surv_dev_nta, arma::vec& obs_dev_nta, arma::vec& size_dev_nta,
+  arma::vec& sizeb_dev_nta, arma::vec& sizec_dev_nta, arma::vec& repst_dev_nta,
+  arma::vec& fec_dev_nta, arma::vec& jsurv_dev_nta, arma::vec& jobs_dev_nta,
+  arma::vec& jsize_dev_nta, arma::vec& jsizeb_dev_nta,
   arma::vec& jsizec_dev_nta, arma::vec& jrepst_dev_nta,
   arma::vec& jmatst_dev_nta, arma::ivec& variant_nta,
   List& new_stageexpansion_list, List& used_times, List& errcheck_mpm,
@@ -11313,6 +11699,7 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
   const bool errcheck, double elast_mult, const bool zap_min) {
   
   //Rcout << "Entered ESS_optimizer_fb" << endl;
+  //Rcout << "flipped_traits: " << flipped_traits << endl;
   
   arma::uvec potential_optima (opt_res, fill::zeros);
   arma::vec inv_fitness = as<NumericVector>(Lyapunov_optim["fitness_variant2_e995"]);
@@ -11320,20 +11707,16 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
   
   //int Lyapunov_optim_rows = Lyapunov_optim.nrows();
-  int found_variables {1};
-  
-  int main_loop_breakpoint = opt_res;
+  int main_loop_breakpoint = static_cast<int>(inv_fitness.n_elem);
   if (opt_res != opt_res_orig) main_loop_breakpoint = opt_res_orig;
   
   //Rcout << "ESS_optimizer_fb A" << endl;
-  for (int i = 0; i < found_variables; i++) {
-    for (int j = 0; j < (main_loop_breakpoint - 1); j++) {
-      double base_inv_fit = inv_fitness((i * main_loop_breakpoint) + j);
-      double next_inv_fit = inv_fitness((i * main_loop_breakpoint) + j + 1);
-      
-      if (base_inv_fit < 0. && next_inv_fit > 0.) potential_optima((i * main_loop_breakpoint) + j) = 1;
-      if (base_inv_fit > 0. && next_inv_fit < 0.) potential_optima((i * main_loop_breakpoint) + j) = 1;
-    }
+  for (int j = 0; j < (main_loop_breakpoint - 1); j++) {
+    double base_inv_fit = inv_fitness(j);
+    double next_inv_fit = inv_fitness(j + 1);
+    
+    if (base_inv_fit < 0. && next_inv_fit >= 0.) potential_optima(j) = 1;
+    if (base_inv_fit >= 0. && next_inv_fit < 0.) potential_optima(j) = 1;
   }
   
   unsigned int total_optima = arma::sum(potential_optima);
@@ -11342,13 +11725,18 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
   arma::uvec ESS_vta_indices = find(ESS_var_traits_arma);
   int vars_to_alter = static_cast<int>(ESS_vta_indices.n_elem);
   
-  //Rcout << "ESS_optimizer_fb C" << endl;
+  if (vars_to_alter > 1) {
+    Rf_warningcall(R_NilValue, "Trait optimization may not run properly with more than 1 tested trait.");
+  }
+  //Rcout << "ESS_optimizer_fb B" << endl;
+  //Rcout << "total_optima (potential): " << total_optima << endl;
   
   List final_output (total_optima);
   for (int i = 0; i < total_optima; i++) {
-
+    //Rcout << "ESS_optimizer_fb C entered optimization trait loop" << endl;
     arma::mat N_out;
     List comm_out (2);
+    bool found_converged {false};
     
     for (int m = 0; m < 2; m++) {
       arma::mat pops_out (stagecounts, (times + 1), fill::zeros);
@@ -11359,38 +11747,339 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
       (static_cast<int>(potential_optima_indices(i) + 1))};
     DataFrame core_trait_axis_instance = AdaptUtils::df_indices(optim_trait_axis, core_index_list);
     
-    //Rcout << "ESS_optimizer_fb E" << endl;
     DataFrame reference_variants = clone(core_trait_axis_instance);
     NumericVector ref_fitness = {static_cast<double>(inv_fitness(potential_optima_indices(i))), 
       static_cast<double>(inv_fitness(potential_optima_indices(i) + 1))};
+    //Rcout << "ref_fitness (lower bound invasion fitness, higher bound invasion fitness): " << ref_fitness << endl;
+    
     reference_variants["fitness"] = ref_fitness;
-    DataFrame old_reference_variants = clone(reference_variants);
+    //DataFrame old_reference_variants = clone(reference_variants);
     bool opt_needed {false};
     
     if (abs(static_cast<double>(inv_fitness(potential_optima_indices(i)))) < conv_threshold) {
-      //Rcout << "abs of invader fitness < threshold, so no further optimization needed" << endl;
+      //Rcout << "abs of lower bound invader fitness < threshold, so no further optimization needed" << endl;
       IntegerVector chosen_one = {0};
       DataFrame optim_point = AdaptUtils::df_indices(reference_variants, chosen_one);
       
+      found_converged = true;
+      LogicalVector found_converged_vec = {found_converged};
+      optim_point["converged"] = found_converged_vec;
+      
       final_output(i) = optim_point;
     } else if (abs(static_cast<double>(inv_fitness(potential_optima_indices(i) + 1))) < conv_threshold) {
-      //Rcout << "abs of 0.995 invader fitness < threshold, so no further optimization needed" << endl;
+      //Rcout << "abs of higher bound invader fitness < threshold, so no further optimization needed" << endl;
       IntegerVector chosen_one = {1};
       DataFrame optim_point = AdaptUtils::df_indices(reference_variants, chosen_one);
       
+      found_converged = true;
+      LogicalVector found_converged_vec = {found_converged};
+      optim_point["converged"] = found_converged_vec;
+      
       final_output(i) = optim_point;
     } else {
-      //Rcout << "invader and 0.995 invader fitness above threshold, so further optimization needed" << endl;
+      //Rcout << "lower and upper bound invader fitness above threshold, so further optimization needed" << endl;
       opt_needed = true;
     }
     
     int loop_tracker {0};
     DataFrame variants_to_test = clone(reference_variants); // These values will be overwritten in the cloned data frame
     
-    int search_mode = {0};
+    DataFrame variant_L_bound; // These dataframes are single row
+    DataFrame variant_H_bound; // They mark the boundaries of the search
     
-    //Rcout << "ESS_optimizer_fb K" << endl;
+    if (inv_fitness(potential_optima_indices(i)) < inv_fitness(potential_optima_indices(i) + 1)) {
+      IntegerVector chosen_low = {0};
+      IntegerVector chosen_high = {1};
+      DataFrame variant_L_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_low);
+      DataFrame variant_H_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_high);
+      
+      variant_L_bound = variant_L_bound_pre;
+      variant_H_bound = variant_H_bound_pre;
+    } else {
+      IntegerVector chosen_low = {1};
+      IntegerVector chosen_high = {0};
+      DataFrame variant_L_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_low);
+      DataFrame variant_H_bound_pre = AdaptUtils::df_indices(variants_to_test, chosen_high);
+      
+      variant_L_bound = variant_L_bound_pre;
+      variant_H_bound = variant_H_bound_pre;
+    }
+    
+    //Rcout << "ESS_optimizer_fb D" << endl;
+    DataFrame variant_L; // Test point with lower abs fitness
+    DataFrame variant_H; // Test point with higher abs fitness
+    DataFrame variant_C; // Centroid
+    
+    // Initial point set-up and fitness check
+    DataFrame point_1; // 1/3 distance from low bound to high bound
+    DataFrame point_2; // 2/3 distance from low bound to high bound
+    
+    {
+      { // Point 1 initialization
+        //Rcout << "ESS_optimizer_fb E point_1 initialization " << endl;
+        arma::uvec variant_nta_new = {1, 2};
+        arma::vec surv_dev_nta_new;
+        arma::vec obs_dev_nta_new;
+        arma::vec size_dev_nta_new;
+        arma::vec sizeb_dev_nta_new;
+        arma::vec sizec_dev_nta_new;
+        arma::vec repst_dev_nta_new;
+        arma::vec fec_dev_nta_new;
+        arma::vec jsurv_dev_nta_new;
+        arma::vec jobs_dev_nta_new;
+        arma::vec jsize_dev_nta_new;
+        arma::vec jsizeb_dev_nta_new;
+        arma::vec jsizec_dev_nta_new;
+        arma::vec jrepst_dev_nta_new;
+        arma::vec jmatst_dev_nta_new;
+        
+        NumericVector variants_vars_to_test;
+        
+        for (int j = 0; j < vars_to_alter; j++) {
+          double base_mean {0.};
+          
+          //Rcout << "ESS_optimizer_fb E1 j: " << j << endl;
+          NumericVector core_var = as<NumericVector>(reference_variants(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          int flipped_trait_status = flipped_traits(ESS_vta_indices(j));
+          //Rcout << "ESS_optimizer_fb E2" << endl;
+          double low_value = static_cast<double>(core_var(0));
+          double high_value = static_cast<double>(core_var(1));
+          
+          //Rcout << "ESS_optimizer_fb E3" << endl;
+          NumericVector base_values = {high_value, low_value};
+          double current_mult {1./3.};
+          base_mean = low_value + current_mult * (high_value - low_value);
+          
+          variants_vars_to_test = as<NumericVector>(variants_to_test(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          variants_vars_to_test(0) = base_mean;
+          
+          if (base_mean < 0. && flipped_trait_status == 1) {
+            variants_vars_to_test(1) = base_mean + (base_mean - (base_mean * elast_mult));
+          } else {
+            variants_vars_to_test(1) = base_mean * elast_mult;
+          }
+        }
+        
+        //Rcout << "ESS_optimizer_fb E4" << endl;
+        surv_dev_nta_new = as<arma::vec>(variants_to_test(16));
+        obs_dev_nta_new = as<arma::vec>(variants_to_test(17));
+        size_dev_nta_new = as<arma::vec>(variants_to_test(18));
+        sizeb_dev_nta_new = as<arma::vec>(variants_to_test(19));
+        sizec_dev_nta_new = as<arma::vec>(variants_to_test(20));
+        repst_dev_nta_new = as<arma::vec>(variants_to_test(21));
+        fec_dev_nta_new = as<arma::vec>(variants_to_test(22));
+        jsurv_dev_nta_new = as<arma::vec>(variants_to_test(23));
+        jobs_dev_nta_new = as<arma::vec>(variants_to_test(24));
+        jsize_dev_nta_new = as<arma::vec>(variants_to_test(25));
+        jsizeb_dev_nta_new = as<arma::vec>(variants_to_test(26));
+        jsizec_dev_nta_new = as<arma::vec>(variants_to_test(27));
+        jrepst_dev_nta_new = as<arma::vec>(variants_to_test(28));
+        jmatst_dev_nta_new = as<arma::vec>(variants_to_test(29));
+        
+        //Rcout << "ESS_optimizer_fb E5" << endl;
+        
+        // New stageexpansion
+        IntegerVector chosen_int = {0};
+        DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+        //Rcout << "ESS_optimizer_fb E6" << endl;
+        DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+        
+        DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+          variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+          filter);
+        //Rcout << "ESS_optimizer_fb E7" << endl;
+        DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+          variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+          filter);
+        
+        //Rcout << "ESS_optimizer_fb E8" << endl;
+        
+        chosen_int = 1;
+        StringVector focused_var = {"mpm_altered"};
+        DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+          as<RObject>(chosen_int), false, true, false, false, true,
+          as<RObject>(focused_var));
+        //Rcout << "ESS_optimizer_fb E9" << endl;
+        
+        DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+          as<RObject>(chosen_int), false, true, false, false, true,
+          as<RObject>(focused_var));
+        //Rcout << "ESS_optimizer_fb E10" << endl;
+        
+        List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+          _["e995"] = stageexpansion_995_reduced);
+        //Rcout << "ESS_optimizer_fb E11" << endl;
+        
+        invfb_optim_singlerun (point_1, surv_dev_nta_new, obs_dev_nta_new,
+          size_dev_nta_new, sizeb_dev_nta_new, sizec_dev_nta_new, repst_dev_nta_new, 
+          fec_dev_nta_new, jsurv_dev_nta_new, jobs_dev_nta_new, jsize_dev_nta_new, 
+          jsizeb_dev_nta_new, jsizec_dev_nta_new, jrepst_dev_nta_new,
+          jmatst_dev_nta_new, variant_nta_new, variants_to_test, N_out, comm_out,
+          errcheck_mpm, errcheck_mpmout, sge_to_test, used_times, allmodels_all,
+          vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
+          ind_terms_cat_list, stageexpansion_ta_devterms_by_variant, sp_density_list,
+          start_list, equivalence_list, density_vr_list, current_stageframe,
+          current_supplement, density_df, dens_index_df, entry_time_vec,
+          sp_density_num_vec, inda_terms_num_vec, indb_terms_num_vec,
+          indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
+          indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec, year_vec, patch_vec,
+          times, fitness_times, format_int, firstage_int, finalage_int,
+          dev_terms_times_int, substoch, opt_res, opt_res_orig, exp_tol,
+          theta_tol, conv_threshold, sparse_bool, A_only, stages_not_equal,
+          integeronly, dens_yn_bool, errcheck, zap_min);
+        
+        //Rcout << "ESS_optimizer_fb E12" << endl;
+      }
+        
+      { // Point 2 initialization
+        //Rcout << "ESS_optimizer_fb F point_2 initialization" << endl;
+        arma::uvec variant_nta_new = {1, 2};
+        arma::vec surv_dev_nta_new;
+        arma::vec obs_dev_nta_new;
+        arma::vec size_dev_nta_new;
+        arma::vec sizeb_dev_nta_new;
+        arma::vec sizec_dev_nta_new;
+        arma::vec repst_dev_nta_new;
+        arma::vec fec_dev_nta_new;
+        arma::vec jsurv_dev_nta_new;
+        arma::vec jobs_dev_nta_new;
+        arma::vec jsize_dev_nta_new;
+        arma::vec jsizeb_dev_nta_new;
+        arma::vec jsizec_dev_nta_new;
+        arma::vec jrepst_dev_nta_new;
+        arma::vec jmatst_dev_nta_new;
+        
+        NumericVector variants_vars_to_test;
+        
+        for (int j = 0; j < vars_to_alter; j++) {
+          double base_mean {0.};
+          
+          NumericVector core_var = as<NumericVector>(reference_variants(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          int flipped_trait_status = flipped_traits(ESS_vta_indices(j));
+          //Rcout << "ESS_optimizer_fb F1" << endl;
+          double low_value = static_cast<double>(core_var(0));
+          double high_value = static_cast<double>(core_var(1));
+          
+          //Rcout << "ESS_optimizer_fb F2" << endl;
+          NumericVector base_values = {high_value, low_value};
+          double current_mult {2./3.};
+          base_mean = low_value + current_mult * (high_value - low_value);
+          
+          variants_vars_to_test = as<NumericVector>(variants_to_test(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          variants_vars_to_test(0) = base_mean;
+          
+          if (base_mean < 0. && flipped_trait_status == 1) {
+            variants_vars_to_test(1) = base_mean + (base_mean - (base_mean * elast_mult));
+          } else {
+            variants_vars_to_test(1) = base_mean * elast_mult;
+          }
+        }
+        
+        //Rcout << "ESS_optimizer_fb F3" << endl;
+        surv_dev_nta_new = as<arma::vec>(variants_to_test(16));
+        obs_dev_nta_new = as<arma::vec>(variants_to_test(17));
+        size_dev_nta_new = as<arma::vec>(variants_to_test(18));
+        sizeb_dev_nta_new = as<arma::vec>(variants_to_test(19));
+        sizec_dev_nta_new = as<arma::vec>(variants_to_test(20));
+        repst_dev_nta_new = as<arma::vec>(variants_to_test(21));
+        fec_dev_nta_new = as<arma::vec>(variants_to_test(22));
+        jsurv_dev_nta_new = as<arma::vec>(variants_to_test(23));
+        jobs_dev_nta_new = as<arma::vec>(variants_to_test(24));
+        jsize_dev_nta_new = as<arma::vec>(variants_to_test(25));
+        jsizeb_dev_nta_new = as<arma::vec>(variants_to_test(26));
+        jsizec_dev_nta_new = as<arma::vec>(variants_to_test(27));
+        jrepst_dev_nta_new = as<arma::vec>(variants_to_test(28));
+        jmatst_dev_nta_new = as<arma::vec>(variants_to_test(29));
+        
+        //Rcout << "ESS_optimizer_fb F4" << endl;
+        
+        // New stageexpansion
+        IntegerVector chosen_int = {0};
+        DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+        //Rcout << "ESS_optimizer_fb F5" << endl;
+        DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+        
+        DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+          variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+          filter);
+        //Rcout << "ESS_optimizer_fb F6" << endl;
+        DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+          variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+          filter);
+        
+        //Rcout << "ESS_optimizer_fb F7" << endl;
+        
+        chosen_int = 1;
+        StringVector focused_var = {"mpm_altered"};
+        DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+          as<RObject>(chosen_int), false, true, false, false, true,
+          as<RObject>(focused_var));
+        //Rcout << "ESS_optimizer_fb F8" << endl;
+        
+        DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+          as<RObject>(chosen_int), false, true, false, false, true,
+          as<RObject>(focused_var));
+        //Rcout << "ESS_optimizer_fb F9" << endl;
+        
+        List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+          _["e995"] = stageexpansion_995_reduced);
+        //Rcout << "ESS_optimizer_fb F10" << endl;
+        
+        invfb_optim_singlerun (point_2, surv_dev_nta_new, obs_dev_nta_new,
+          size_dev_nta_new, sizeb_dev_nta_new, sizec_dev_nta_new, repst_dev_nta_new, 
+          fec_dev_nta_new, jsurv_dev_nta_new, jobs_dev_nta_new, jsize_dev_nta_new, 
+          jsizeb_dev_nta_new, jsizec_dev_nta_new, jrepst_dev_nta_new,
+          jmatst_dev_nta_new, variant_nta_new, variants_to_test, N_out, comm_out,
+          errcheck_mpm, errcheck_mpmout, sge_to_test, used_times, allmodels_all,
+          vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
+          ind_terms_cat_list, stageexpansion_ta_devterms_by_variant, sp_density_list,
+          start_list, equivalence_list, density_vr_list, current_stageframe,
+          current_supplement, density_df, dens_index_df, entry_time_vec,
+          sp_density_num_vec, inda_terms_num_vec, indb_terms_num_vec,
+          indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
+          indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec, year_vec, patch_vec,
+          times, fitness_times, format_int, firstage_int, finalage_int,
+          dev_terms_times_int, substoch, opt_res, opt_res_orig, exp_tol,
+          theta_tol, conv_threshold, sparse_bool, A_only, stages_not_equal,
+          integeronly, dens_yn_bool, errcheck, zap_min);
+        
+        //Rcout << "ESS_optimizer_fb F11" << endl;
+      }
+    }
+    
+    //Rcout << "ESS_optimizer_fb G" << endl;
+    int search_mode {0};
+    int worst_point {2};
+    double x1 {0.};
+    double x2 {0.};
+    double conv_test {0.};
+    double xR {0.}; // test value to keep in memory from previous reflection round
+    double xE {0.}; // test value to keep in memory from previous expansion round
+    double xC_new {0.}; // test value to keep in memory from previous contraction round
+    
+    double xR_fitness {0.}; // fitness associated with test value to keep in memory from previous reflection round
+    double xE_fitness {0.}; // fitness associated with test value to keep in memory from previous reflection round
+    double xC_new_fitness {0.}; // fitness associated with test value to keep in memory from previous reflection round
+    
+    double e995_fitness_1 {0.};
+    double e995_fitness_2 {0.};
+    double e995_fitness_L {0.};
+    double e995_fitness_H {0.};
+    
+    DataFrame variant_R;
+    DataFrame variant_E;
+    DataFrame variant_C_new;
+    
+    DataFrame ESS_test_values;
+    DataFrame ESS_out_values;
+    
     while (opt_needed && loop_tracker < loop_max) {
+      //Rcout << "\n\n\nESS_optimizer_fb H entered optimization main loop, with loop_tracker = " << loop_tracker << endl;
+      
       arma::uvec variant_nta_new = {1, 2};
       arma::vec surv_dev_nta_new;
       arma::vec obs_dev_nta_new;
@@ -11410,420 +12099,606 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
       NumericVector variants_vars_to_test;
       
       for (int j = 0; j < vars_to_alter; j++) {
-        double base_mean = {0.};
+        //Rcout << "ESS_optimizer_fb I j: " << j << endl;
         
-        //Rcout << "ESS_optimizer_fb M j: " << j << endl;
-        NumericVector core_var = as<NumericVector>(reference_variants(
-            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
-        //Rcout << "ESS_optimizer_fb N" << endl;
-        double high_value = static_cast<double>(core_var(0));
-        double low_value = static_cast<double>(core_var(1));
+        NumericVector point1_fitness_values = as<NumericVector>(point_1["fitness"]);
+        NumericVector point2_fitness_values = as<NumericVector>(point_2["fitness"]);
+        e995_fitness_1 = point1_fitness_values(1); 
+        e995_fitness_2 = point2_fitness_values(1); 
         
-        //Rcout << "ESS_optimizer_fb O" << endl;
-        //Rcout << "search_mode: " << search_mode << endl;
-        NumericVector base_values = {high_value, low_value};
-        if (search_mode == 0 || search_mode > 12) {
-          base_mean = Rcpp::mean(base_values);
-        } else if (search_mode == 1) {
-          base_mean = low_value + 0.25 * (high_value - low_value);
-        } else if (search_mode == 2) {
-          base_mean = low_value + 0.75 * (high_value - low_value);
-        } else if (search_mode == 3) {
-          base_mean = low_value + 0.10 * (high_value - low_value);
-        } else if (search_mode == 4) {
-          base_mean = low_value + 0.90 * (high_value - low_value);
-        } else if (search_mode == 5) {
-          base_mean = low_value + 0.05 * (high_value - low_value);
-        } else if (search_mode == 6) {
-          base_mean = low_value + 0.95 * (high_value - low_value);
-        } else if (search_mode == 7) {
-          base_mean = low_value + 0.01 * (high_value - low_value);
-        } else if (search_mode == 8) {
-          base_mean = low_value + 0.99 * (high_value - low_value);
-        } else if (search_mode == 9) {
-          base_mean = low_value + 0.001 * (high_value - low_value);
-        } else if (search_mode == 10) {
-          base_mean = low_value + 0.999 * (high_value - low_value);
-        } else if (search_mode == 11) {
-          base_mean = low_value + 0.0001 * (high_value - low_value);
-        } else if (search_mode == 12) {
-          base_mean = low_value + 0.9999 * (high_value - low_value);
+        //Rcout << "ESS_optimizer_fb J" << endl;
+        if (abs(e995_fitness_1) < abs(e995_fitness_2)) {
+          variant_L = clone(point_1);
+          variant_H = clone(point_2);
+          e995_fitness_L = e995_fitness_1;
+          e995_fitness_H = e995_fitness_2;
+          worst_point = 2;
+        } else {
+          variant_H = clone(point_1);
+          variant_L = clone(point_2);
+          e995_fitness_L = e995_fitness_2;
+          e995_fitness_H = e995_fitness_1;
+          worst_point = 1;
         }
         
-        //Rcout << "new variant base_values: (high, low): " << base_values << endl;
+        //Rcout << "ESS_optimizer_fb J1" << endl;
+        variant_C = clone(variant_L);
+        double base_test_value = {0.};
         
-        //Rcout << "ESS_optimizer_fb P" << endl;
+        //Rcout << "ESS_optimizer_fb J2" << endl;
+        NumericVector core_var_C = as<NumericVector>(variant_C(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_fb J3" << endl;
+        NumericVector core_var_H = as<NumericVector>(variant_H(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_fb J4" << endl;
+        NumericVector core_var_L_bound = as<NumericVector>(variant_L_bound(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_fb J5" << endl;
+        NumericVector core_var_H_bound = as<NumericVector>(variant_H_bound(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+        //Rcout << "ESS_optimizer_fb J6" << endl;
+        int flipped_trait_status = flipped_traits(ESS_vta_indices(j));
+        //Rcout << "ESS_optimizer_fb J7" << endl;
+        NumericVector point_1_trait = as<NumericVector>(point_1(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j)))); // Not necessary - used for testing
+        //Rcout << "ESS_optimizer_fb J8" << endl;
+        NumericVector point_2_trait = as<NumericVector>(point_2(
+            ESS_var_traits_corresponding_indices(ESS_vta_indices(j)))); // Not necessary - used for testing
+        //Rcout << "ESS_optimizer_fb J9" << endl;
+        
+        double xC = static_cast<double>(core_var_C(0));
+        double xL = xC;
+        double xH = static_cast<double>(core_var_H(0)); // Used to be index 1
+        double low_value_bound = static_cast<double>(core_var_L_bound(0));
+        double high_value_bound = static_cast<double>(core_var_H_bound(0)); // Used to be index 1
+        
+        x1 = xL;
+        x2 = xH;
+        conv_test = abs(x1 - x2);
+        
+        //Rcout << "\nESS_optimizer_fb K search mode choice" << endl;
+        //Rcout << "original low_value_bound: " << low_value_bound << endl;
+        //Rcout << "original high_value_bound: " << high_value_bound << endl;
+        //Rcout << "original point_1 trait value: " << point_1_trait << endl;
+        //Rcout << "original point_2 trait value: " << point_2_trait << endl;
+        //Rcout << "worst_point: " << worst_point << endl;
+        //Rcout << "original xC: " << xC << endl;
+        //Rcout << "original xL: " << xL << endl;
+        //Rcout << "original xH: " << xH << endl;
+        //Rcout << "original xR: " << xR << endl;
+        //Rcout << "original xE: " << xE << endl;
+        //Rcout << "original xC_new: " << xC_new << endl;
+        //Rcout << "original point_1 invasion fitness: " << e995_fitness_1 << endl;
+        //Rcout << "original point_2 invasion fitness: " << e995_fitness_2 << endl;
+        //Rcout << "original e995_fitness_L: " << e995_fitness_L << endl;
+        //Rcout << "original e995_fitness_H: " << e995_fitness_H << endl;
+        //Rcout << "original xR_fitness: " << xR_fitness << endl;
+        //Rcout << "original xE_fitness: " << xE_fitness << endl;
+        //Rcout << "original xC_new_fitness: " << xC_new_fitness << endl;
+        
+        //NumericVector base_values = {high_value, low_value};
+        if (search_mode == 0) { // Reflection
+          //Rcout << "\nReflection mode (search mode = 0)" << endl;
+          
+          double alpha = 0.8;
+          base_test_value = xC + alpha * (xC - xH);
+          
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          xR = base_test_value;
+          
+          //Rcout << "value of xC (used in base_test_value calculation): " << xC << endl;
+          //Rcout << "value of xH (used in base_test_value calculation): " << xH << endl;
+          //Rcout << "value of xR (calculated during reflection): " << xR << endl;
+          
+        } else if (search_mode == 1) { // Expansion
+          //Rcout << "\nExpansion mode (search mode = 1)" << endl;
+          
+          double gamma = 2.0;
+          base_test_value = xC + gamma * (xR - xC);
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          xE = base_test_value;
+          
+          //Rcout << "value of xC (used in base_test_value calculation): " << xC << endl;
+          //Rcout << "value of xR (used in base_test_value calculation): " << xR << endl;
+          //Rcout << "value of xE (calculated during expansion): " << xE << endl;
+          
+        } else if (search_mode == 2) { // Contraction
+          //Rcout << "\nContraction mode (search mode = 2)" << endl;
+          
+          double rho = 0.5;
+          
+          if (worst_point == 1) {
+            if (abs(xR_fitness) < abs(e995_fitness_1)) {
+              base_test_value = xC + rho * (xR - xC);
+            } else if (abs(xR_fitness) >= abs(e995_fitness_1)) {
+              base_test_value = xC + rho * (xH - xC);
+            }
+          } else if (worst_point == 2) {
+            if (abs(xR_fitness) < abs(e995_fitness_2)) {
+              base_test_value = xC + rho * (xR - xC);
+            } else if (abs(xR_fitness) >= abs(e995_fitness_2)) {
+              base_test_value = xC + rho * (xH - xC);
+            }
+          }
+          
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          xC_new = base_test_value;
+          
+          //Rcout << "value of xC (used in base_test_value calculation): " << xC << endl;
+          //Rcout << "value of xH (used in base_test_value calculation): " << xH << endl;
+          //Rcout << "value of xC_new (calculated during contraction): " << xC_new << endl;
+          
+        } else if (search_mode == 3) { // Shrinking
+          //Rcout << "\nShrinking mode (search mode = 3)" << endl;
+          
+          double sigma = 0.5;
+          
+          NumericVector core_var_p1 = as<NumericVector>(point_1(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          NumericVector core_var_p2 = as<NumericVector>(point_2(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          
+          double p1 = static_cast<double>(core_var_p1(0));
+          double p2 = static_cast<double>(core_var_p2(0));
+          
+          base_test_value = xL + sigma * (p1 - xL);
+          double base_test_value2 = xL + sigma * (p2 - xL);
+          NumericVector maximal_test_vec = {base_test_value, low_value_bound};
+          double maximal_test = max(maximal_test_vec);
+          NumericVector minimal_test_vec = {maximal_test, high_value_bound};
+          double minimal_test = min(minimal_test_vec);
+          
+          base_test_value = minimal_test;
+          
+          NumericVector maximal_test2 = {base_test_value2, low_value_bound};
+          NumericVector minimal_test2 = {maximal_test2(0), high_value_bound};
+          
+          base_test_value2 = minimal_test2(0);
+          
+          //Rcout << "value of xL (used in base_test_value calculation and base_test_value2): " << xL << endl;
+          //Rcout << "value of p1 (used in base_test_value calculation and base_test_value2): " << p1 << endl;
+          //Rcout << "value of p2 (used in base_test_value calculation and base_test_value2): " << p2 << endl;
+          //Rcout << "value of base_test_value (calculated during shrinking): " << base_test_value << endl;
+          //Rcout << "value of base_test_value2 (calculated during shrinking): " << base_test_value2 << endl;
+          
+          //Rcout << "ESS_optimizer_fb K1" << endl;
+          
+          variants_vars_to_test = as<NumericVector>(variants_to_test(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          variants_vars_to_test(0) = base_test_value;
+          
+          if (base_test_value < 0. && flipped_trait_status == 1) {
+            variants_vars_to_test(1) = base_test_value + (base_test_value - (base_test_value * elast_mult));
+          } else {
+            variants_vars_to_test(1) = base_test_value * elast_mult;
+          }
+          
+          //Rcout << "ESS_optimizer_fb K2" << endl;
+          
+          surv_dev_nta_new = as<arma::vec>(variants_to_test(16));
+          obs_dev_nta_new = as<arma::vec>(variants_to_test(17));
+          size_dev_nta_new = as<arma::vec>(variants_to_test(18));
+          sizeb_dev_nta_new = as<arma::vec>(variants_to_test(19));
+          sizec_dev_nta_new = as<arma::vec>(variants_to_test(20));
+          repst_dev_nta_new = as<arma::vec>(variants_to_test(21));
+          fec_dev_nta_new = as<arma::vec>(variants_to_test(22));
+          jsurv_dev_nta_new = as<arma::vec>(variants_to_test(23));
+          jobs_dev_nta_new = as<arma::vec>(variants_to_test(24));
+          jsize_dev_nta_new = as<arma::vec>(variants_to_test(25));
+          jsizeb_dev_nta_new = as<arma::vec>(variants_to_test(26));
+          jsizec_dev_nta_new = as<arma::vec>(variants_to_test(27));
+          jrepst_dev_nta_new = as<arma::vec>(variants_to_test(28));
+          jmatst_dev_nta_new = as<arma::vec>(variants_to_test(29));
+          
+          //Rcout << "ESS_optimizer_fb K3" << endl;
+          
+          // New stageexpansion
+          IntegerVector chosen_int = {0};
+          DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+          //Rcout << "ESS_optimizer_fb K4" << endl;
+          DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+          
+          DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          //Rcout << "ESS_optimizer_fb K5" << endl;
+          DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          
+          //Rcout << "ESS_optimizer_fb K6" << endl;
+          
+          chosen_int = 1;
+          StringVector focused_var = {"mpm_altered"};
+          DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_fb K7" << endl;
+          
+          DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_fb K8" << endl;
+          
+          List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+            _["e995"] = stageexpansion_995_reduced);
+          //Rcout << "ESS_optimizer_fb K9" << endl;
+          
+          invfb_optim_singlerun (point_1, surv_dev_nta_new, obs_dev_nta_new,
+            size_dev_nta_new, sizeb_dev_nta_new, sizec_dev_nta_new, repst_dev_nta_new, 
+            fec_dev_nta_new, jsurv_dev_nta_new, jobs_dev_nta_new, jsize_dev_nta_new, 
+            jsizeb_dev_nta_new, jsizec_dev_nta_new, jrepst_dev_nta_new,
+            jmatst_dev_nta_new, variant_nta_new, variants_to_test, N_out, comm_out,
+            errcheck_mpm, errcheck_mpmout, sge_to_test, used_times, allmodels_all,
+            vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
+            ind_terms_cat_list, stageexpansion_ta_devterms_by_variant, sp_density_list,
+            start_list, equivalence_list, density_vr_list, current_stageframe,
+            current_supplement, density_df, dens_index_df, entry_time_vec,
+            sp_density_num_vec, inda_terms_num_vec, indb_terms_num_vec,
+            indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
+            indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec, year_vec, patch_vec,
+            times, fitness_times, format_int, firstage_int, finalage_int,
+            dev_terms_times_int, substoch, opt_res, opt_res_orig, exp_tol,
+            theta_tol, conv_threshold, sparse_bool, A_only, stages_not_equal,
+            integeronly, dens_yn_bool, errcheck, zap_min);
+          
+          //Rcout << "ESS_optimizer_fb K10" << endl;
+          variants_vars_to_test = as<NumericVector>(variants_to_test(
+              ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
+          variants_vars_to_test(0) = base_test_value2;
+          
+          if (base_test_value2 < 0. && flipped_trait_status == 1) {
+            variants_vars_to_test(1) = base_test_value2 + (base_test_value2 - (base_test_value2 * elast_mult));
+          } else {
+            variants_vars_to_test(1) = base_test_value2 * elast_mult;
+          }
+          
+          //Rcout << "ESS_optimizer_fb K11" << endl;
+          surv_dev_nta_new = as<arma::vec>(variants_to_test(16));
+          obs_dev_nta_new = as<arma::vec>(variants_to_test(17));
+          size_dev_nta_new = as<arma::vec>(variants_to_test(18));
+          sizeb_dev_nta_new = as<arma::vec>(variants_to_test(19));
+          sizec_dev_nta_new = as<arma::vec>(variants_to_test(20));
+          repst_dev_nta_new = as<arma::vec>(variants_to_test(21));
+          fec_dev_nta_new = as<arma::vec>(variants_to_test(22));
+          jsurv_dev_nta_new = as<arma::vec>(variants_to_test(23));
+          jobs_dev_nta_new = as<arma::vec>(variants_to_test(24));
+          jsize_dev_nta_new = as<arma::vec>(variants_to_test(25));
+          jsizeb_dev_nta_new = as<arma::vec>(variants_to_test(26));
+          jsizec_dev_nta_new = as<arma::vec>(variants_to_test(27));
+          jrepst_dev_nta_new = as<arma::vec>(variants_to_test(28));
+          jmatst_dev_nta_new = as<arma::vec>(variants_to_test(29));
+          
+          //Rcout << "ESS_optimizer_fb K12" << endl;
+          // New stageexpansion
+          chosen_int = {0};
+          variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+          //Rcout << "ESS_optimizer_fb K13" << endl;
+          variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+          
+          stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          //Rcout << "ESS_optimizer_fb K14" << endl;
+          stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          
+          //Rcout << "ESS_optimizer_fb K15" << endl;
+          chosen_int = 1;
+          focused_var = {"mpm_altered"};
+          stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_fb K16" << endl;
+          
+          stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_fb K17" << endl;
+          
+          sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+            _["e995"] = stageexpansion_995_reduced);
+          //Rcout << "ESS_optimizer_fb K18" << endl;
+          
+          invfb_optim_singlerun (point_2, surv_dev_nta_new, obs_dev_nta_new,
+            size_dev_nta_new, sizeb_dev_nta_new, sizec_dev_nta_new, repst_dev_nta_new, 
+            fec_dev_nta_new, jsurv_dev_nta_new, jobs_dev_nta_new, jsize_dev_nta_new, 
+            jsizeb_dev_nta_new, jsizec_dev_nta_new, jrepst_dev_nta_new,
+            jmatst_dev_nta_new, variant_nta_new, variants_to_test, N_out, comm_out,
+            errcheck_mpm, errcheck_mpmout, sge_to_test, used_times, allmodels_all,
+            vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
+            ind_terms_cat_list, stageexpansion_ta_devterms_by_variant, sp_density_list,
+            start_list, equivalence_list, density_vr_list, current_stageframe,
+            current_supplement, density_df, dens_index_df, entry_time_vec,
+            sp_density_num_vec, inda_terms_num_vec, indb_terms_num_vec,
+            indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
+            indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec, year_vec, patch_vec,
+            times, fitness_times, format_int, firstage_int, finalage_int,
+            dev_terms_times_int, substoch, opt_res, opt_res_orig, exp_tol,
+            theta_tol, conv_threshold, sparse_bool, A_only, stages_not_equal,
+            integeronly, dens_yn_bool, errcheck, zap_min);
+          
+          //Rcout << "ESS_optimizer_fb K19" << endl;
+        }
+        
         variants_vars_to_test = as<NumericVector>(variants_to_test(
             ESS_var_traits_corresponding_indices(ESS_vta_indices(j))));
-        //Rcout << "ESS_optimizer_fb Q" << endl;
-        //Rcout << "old values of variants_vars_to_test: " << variants_vars_to_test << endl;
-        variants_vars_to_test(0) = base_mean;
-        variants_vars_to_test(1) = base_mean * 0.995;
-        //Rcout << "new values of variants_vars_to_test: " << variants_vars_to_test << endl;
+        variants_vars_to_test(0) = base_test_value;
+        
+        if (base_test_value < 0. && flipped_trait_status == 1) {
+          variants_vars_to_test(1) = base_test_value + (base_test_value - (base_test_value * elast_mult));
+        } else {
+          variants_vars_to_test(1) = base_test_value * elast_mult;
+        }
+        //Rcout << "ESS_optimizer_fb K20" << endl;
+        
+      //}
+        
+        if (search_mode < 3) {
+          //Rcout << "ESS_optimizer_fb L" << endl;
+          surv_dev_nta_new = as<arma::vec>(variants_to_test(16));
+          obs_dev_nta_new = as<arma::vec>(variants_to_test(17));
+          size_dev_nta_new = as<arma::vec>(variants_to_test(18));
+          sizeb_dev_nta_new = as<arma::vec>(variants_to_test(19));
+          sizec_dev_nta_new = as<arma::vec>(variants_to_test(20));
+          repst_dev_nta_new = as<arma::vec>(variants_to_test(21));
+          fec_dev_nta_new = as<arma::vec>(variants_to_test(22));
+          jsurv_dev_nta_new = as<arma::vec>(variants_to_test(23));
+          jobs_dev_nta_new = as<arma::vec>(variants_to_test(24));
+          jsize_dev_nta_new = as<arma::vec>(variants_to_test(25));
+          jsizeb_dev_nta_new = as<arma::vec>(variants_to_test(26));
+          jsizec_dev_nta_new = as<arma::vec>(variants_to_test(27));
+          jrepst_dev_nta_new = as<arma::vec>(variants_to_test(28));
+          jmatst_dev_nta_new = as<arma::vec>(variants_to_test(29));
+          
+          //Rcout << "ESS_optimizer_fb M" << endl;
+          // New stageexpansion
+          IntegerVector chosen_int = {0};
+          DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
+          //Rcout << "ESS_optimizer_fb N" << endl;
+          DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
+          
+          DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          //Rcout << "ESS_optimizer_fb O" << endl;
+          DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
+            variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
+            filter);
+          
+          //Rcout << "ESS_optimizer_fb P" << endl;
+          chosen_int = 1;
+          StringVector focused_var = {"mpm_altered"};
+          DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_fb Q" << endl;
+          
+          DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
+            as<RObject>(chosen_int), false, true, false, false, true,
+            as<RObject>(focused_var));
+          //Rcout << "ESS_optimizer_fb R" << endl;
+          
+          List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
+            _["e995"] = stageexpansion_995_reduced);
+          //Rcout << "ESS_optimizer_fb S" << endl;
+          
+          DataFrame ESS_test_values;
+          
+          invfb_optim_singlerun (ESS_test_values, surv_dev_nta_new, obs_dev_nta_new,
+            size_dev_nta_new, sizeb_dev_nta_new, sizec_dev_nta_new, repst_dev_nta_new, 
+            fec_dev_nta_new, jsurv_dev_nta_new, jobs_dev_nta_new, jsize_dev_nta_new, 
+            jsizeb_dev_nta_new, jsizec_dev_nta_new, jrepst_dev_nta_new,
+            jmatst_dev_nta_new, variant_nta_new, variants_to_test, N_out, comm_out,
+            errcheck_mpm, errcheck_mpmout, sge_to_test, used_times, allmodels_all,
+            vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
+            ind_terms_cat_list, stageexpansion_ta_devterms_by_variant, sp_density_list,
+            start_list, equivalence_list, density_vr_list, current_stageframe,
+            current_supplement, density_df, dens_index_df, entry_time_vec,
+            sp_density_num_vec, inda_terms_num_vec, indb_terms_num_vec,
+            indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
+            indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec, year_vec, patch_vec,
+            times, fitness_times, format_int, firstage_int, finalage_int,
+            dev_terms_times_int, substoch, opt_res, opt_res_orig, exp_tol,
+            theta_tol, conv_threshold, sparse_bool, A_only, stages_not_equal,
+            integeronly, dens_yn_bool, errcheck, zap_min);
+          
+          //Rcout << "ESS_optimizer_fb T" << endl;
+          NumericVector current_round_fitness_values = as<NumericVector>(ESS_test_values["fitness"]);
+          //Rcout << "current_round_fitness_values: " << current_round_fitness_values << endl;
+          double res_fitness_test = current_round_fitness_values(0);
+          double e995_fitness_test = current_round_fitness_values(1); 
+          //Rcout << "new invader res_fitness_test: " << res_fitness_test << endl;
+          //Rcout << "new invader e995_fitness_test: " << e995_fitness_test << endl;
+          
+          NumericVector ref_fitness_values = as<NumericVector>(reference_variants["fitness"]);
+          NumericVector abs_fitness_values = abs(ref_fitness_values);
+          
+          LogicalVector converged = as<LogicalVector>(ESS_test_values["converged"]);
+          //Rcout << "ref_fitness_values: " << ref_fitness_values << endl;
+          //Rcout << "abs_fitness_values: " << abs_fitness_values << endl;
+          
+          //Rcout << "Entered search mode determination section" << endl;
+          if (search_mode == 0) { // Reflection
+            variant_R = clone(ESS_test_values);
+            xR_fitness = e995_fitness_test;
+            //Rcout << "xR_fitness: " << xR_fitness << endl;
+            //Rcout << "e995_fitness_L: " << e995_fitness_L << endl;
+            //Rcout << "e995_fitness_H: " << e995_fitness_H << endl;
+            if (abs(xR_fitness) < abs(e995_fitness_L)) {
+              //Rcout << "ESS_optimizer_fb T1 search mode 0, moving to search mode 1" << endl;
+              search_mode = 1;
+            } else if (abs(xR_fitness) < abs(e995_fitness_H)) {
+              //Rcout << "ESS_optimizer_fb T2 search mode 0, staying in search mode 0" << endl;
+              variant_H = clone(ESS_test_values);
+              e995_fitness_H = xR_fitness;
+              
+              if (worst_point == 2) {
+                point_2 = clone(variant_H);
+                e995_fitness_2 = e995_fitness_H;
+              } else if (worst_point == 1) {
+                point_1 = clone(variant_H);
+                e995_fitness_1 = e995_fitness_H;
+              }
+            } else {
+              //Rcout << "ESS_optimizer_fb T3 search mode 0, moving to search mode 2" << endl;
+              search_mode = 2;
+            }
+            
+          } else if (search_mode == 1) { // Expansion
+            //Rcout << "ESS_optimizer_fb T4 search mode 1, moving to search mode 0" << endl;
+            variant_E = clone(ESS_test_values);
+            xE_fitness = e995_fitness_test;
+            //Rcout << "xE_fitness: " << xE_fitness << endl;
+            //Rcout << "xR_fitness: " << xR_fitness << endl;
+            //Rcout << "e995_fitness_L: " << e995_fitness_L << endl;
+            //Rcout << "e995_fitness_H: " << e995_fitness_H << endl;
+            if (abs(xE_fitness) < abs(xR_fitness)) {
+              //Rcout << "abs(xE_fitness) < abs(xR_fitness)" << endl;
+              if (worst_point == 2) {
+                //Rcout << "Replacing point_2 with xE" << endl;
+                point_2 = clone(variant_E);
+                e995_fitness_2 = xE_fitness;
+              } else if (worst_point == 1) {
+                //Rcout << "Replacing point_1 with xE" << endl;
+                point_1 = clone(variant_E);
+                e995_fitness_1 = xE_fitness;
+              }
+              
+              //variant_H = clone(variant_E);
+              //e995_fitness_H = xE_fitness;
+            } else {
+              //Rcout << "abs(xE_fitness) >= abs(xR_fitness)" << endl;
+              if (worst_point == 2) {
+                //Rcout << "Replacing point_2 with xR" << endl;
+                point_2 = clone(variant_R);
+                e995_fitness_2 = xR_fitness;
+              } else if (worst_point == 1) {
+                //Rcout << "Replacing point_1 with xR" << endl;
+                point_1 = clone(variant_R);
+                e995_fitness_1 = xR_fitness;
+              }
+              
+              //variant_H = clone(variant_R);
+              //e995_fitness_H = xR_fitness;
+            }
+            search_mode = 0;
+            
+          } else if (search_mode == 2) { // Contraction
+            variant_C_new = clone(ESS_test_values);
+            xC_new_fitness = e995_fitness_test;
+            //Rcout << "xC_new_fitness: " << xC_new_fitness << endl;
+            //Rcout << "e995_fitness_L: " << e995_fitness_L << endl;
+            //Rcout << "e995_fitness_H: " << e995_fitness_H << endl;
+            
+            if (worst_point == 1) {
+              if ((abs(xC_new_fitness) < abs(xR_fitness)) && (abs(xR_fitness) < abs(e995_fitness_1))) {
+                //Rcout << "ESS_optimizer_fb T5 search mode 2, moving to search mode 0" << endl;
+                point_1 = clone(variant_C_new);
+                e995_fitness_1 = xC_new_fitness;
+                search_mode = 0;
+              } else if ((abs(xC_new_fitness) < abs(e995_fitness_1)) && (abs(xR_fitness) >= abs(e995_fitness_1))) {
+                //Rcout << "ESS_optimizer_fb T6 search mode 2, moving to search mode 0" << endl;
+                point_1 = clone(variant_C_new);
+                e995_fitness_1 = xC_new_fitness;
+                search_mode = 0;
+              } else search_mode = 3;
+            } else if (worst_point == 2) {
+              if ((abs(xC_new_fitness) < abs(xR_fitness)) && (abs(xR_fitness) < abs(e995_fitness_2))) {
+                //Rcout << "ESS_optimizer_fb T7 search mode 2, moving to search mode 0" << endl;
+                point_2 = clone(variant_C_new);
+                e995_fitness_2 = xC_new_fitness;
+                search_mode = 0;
+              } else if ((abs(xC_new_fitness) < abs(e995_fitness_2)) && (abs(xR_fitness) >= abs(e995_fitness_2))) {
+                //Rcout << "ESS_optimizer_fb T8 search mode 2, moving to search mode 0" << endl;
+                point_2 = clone(variant_C_new);
+                e995_fitness_2 = xC_new_fitness;
+                search_mode = 0;
+              } else search_mode = 3;
+            }
+          }
+          
+        } else if (search_mode == 3) {
+          //Rcout << "ESS_optimizer_fb T7 search mode 3, moving to search mode 0" << endl;
+          search_mode = 0;
+          
+          NumericVector point1_fitness_values = as<NumericVector>(point_1["fitness"]);
+          NumericVector point2_fitness_values = as<NumericVector>(point_2["fitness"]);
+          e995_fitness_1 = point1_fitness_values(1); 
+          e995_fitness_2 = point2_fitness_values(1); 
+          
+          if (abs(e995_fitness_1) < abs(e995_fitness_2)) {
+            variant_L = clone(point_1);
+            variant_H = clone(point_2);
+            e995_fitness_L = e995_fitness_1;
+            e995_fitness_H = e995_fitness_2;
+          } else {
+            variant_H = clone(point_1);
+            variant_L = clone(point_2);
+            e995_fitness_L = e995_fitness_2;
+            e995_fitness_H = e995_fitness_1;
+          }
+            
+          variant_C = clone(variant_L);
+        }
+        //Rcout << "ESS_optimizer_fb T8" << endl;
+        
       }
-      
-      //Rcout << "ESS_optimizer_fb R" << endl;
-      surv_dev_nta_new = as<arma::vec>(variants_to_test(16));
-      obs_dev_nta_new = as<arma::vec>(variants_to_test(17));
-      size_dev_nta_new = as<arma::vec>(variants_to_test(18));
-      sizeb_dev_nta_new = as<arma::vec>(variants_to_test(19));
-      sizec_dev_nta_new = as<arma::vec>(variants_to_test(20));
-      repst_dev_nta_new = as<arma::vec>(variants_to_test(21));
-      fec_dev_nta_new = as<arma::vec>(variants_to_test(22));
-      jsurv_dev_nta_new = as<arma::vec>(variants_to_test(23));
-      jobs_dev_nta_new = as<arma::vec>(variants_to_test(24));
-      jsize_dev_nta_new = as<arma::vec>(variants_to_test(25));
-      jsizeb_dev_nta_new = as<arma::vec>(variants_to_test(26));
-      jsizec_dev_nta_new = as<arma::vec>(variants_to_test(27));
-      jrepst_dev_nta_new = as<arma::vec>(variants_to_test(28));
-      jmatst_dev_nta_new = as<arma::vec>(variants_to_test(29));
-      
-      //Rcout << "ESS_optimizer_fb S" << endl;
-      
-      // New stageexpansion
-      IntegerVector chosen_int = {0};
-      DataFrame variants_to_test_main = AdaptUtils::df_indices(variants_to_test, 0);
-      //Rcout << "ESS_optimizer_fb T" << endl;
-      DataFrame variants_to_test_995 = AdaptUtils::df_indices(variants_to_test, 1);
-      
-      DataFrame stageexpansion_main = AdaptMats::thenewpizzle(stageframe_df,
-        variants_to_test_main, firstage_int, finalage_int, ehrlen, style,
-        filter);
-      //Rcout << "ESS_optimizer_fb U" << endl;
-      DataFrame stageexpansion_995 = AdaptMats::thenewpizzle(stageframe_df,
-        variants_to_test_995, firstage_int, finalage_int, ehrlen, style,
-        filter);
-      
-      //Rcout << "ESS_optimizer_fb V" << endl;
-      
-      chosen_int = 1;
-      StringVector focused_var = {"mpm_altered"};
-      DataFrame stageexpansion_main_reduced = LefkoUtils::df_subset(stageexpansion_main,
-        as<RObject>(chosen_int), false, true, false, false, true,
-        as<RObject>(focused_var));
+      loop_tracker++;
       //Rcout << "ESS_optimizer_fb W" << endl;
       
-      DataFrame stageexpansion_995_reduced = LefkoUtils::df_subset(stageexpansion_995,
-        as<RObject>(chosen_int), false, true, false, false, true,
-        as<RObject>(focused_var));
-      //Rcout << "ESS_optimizer_fb X" << endl;
-      
-      List sge_to_test = Rcpp::List::create(_["main"] = stageexpansion_main_reduced,
-        _["e995"] = stageexpansion_995_reduced);
-      //Rcout << "ESS_optimizer_fb Y" << endl;
-      
-      DataFrame ESS_out_values;
-      
-      invfb_optim_singlerun (ESS_out_values, surv_dev_nta_new, obs_dev_nta_new,
-        size_dev_nta_new, sizeb_dev_nta_new, sizec_dev_nta_new, repst_dev_nta_new, 
-        fec_dev_nta_new, jsurv_dev_nta_new, jobs_dev_nta_new, jsize_dev_nta_new, 
-        jsizeb_dev_nta_new, jsizec_dev_nta_new, jrepst_dev_nta_new,
-        jmatst_dev_nta_new, variant_nta_new, variants_to_test, N_out, comm_out,
-        errcheck_mpm, errcheck_mpmout, sge_to_test, used_times, allmodels_all,
-        vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
-        ind_terms_cat_list, stageexpansion_ta_devterms_by_variant, sp_density_list,
-        start_list, equivalence_list, density_vr_list, current_stageframe,
-        current_supplement, density_df, dens_index_df, entry_time_vec,
-        sp_density_num_vec, inda_terms_num_vec, indb_terms_num_vec,
-        indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
-        indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec, year_vec, patch_vec,
-        times, fitness_times, format_int, firstage_int, finalage_int,
-        dev_terms_times_int, substoch, opt_res, opt_res_orig, exp_tol,
-        theta_tol, conv_threshold, sparse_bool, A_only, stages_not_equal,
-        integeronly, dens_yn_bool, errcheck, zap_min);
-      
-      //Rcout << "ESS_optimizer_fb Z" << endl;
-      NumericVector current_round_fitness_values = as<NumericVector>(ESS_out_values["fitness"]);
-      //Rcout << "current_round_fitness_values: " << current_round_fitness_values << endl;
-      //double main_fitness = current_round_fitness_values(0);
-      double e995_fitness = current_round_fitness_values(1); 
-      //Rcout << "new invader main_fitness: " << main_fitness << endl;
-      //Rcout << "new invader e995_fitness: " << e995_fitness << endl;
-      
-      NumericVector ref_fitness_values = as<NumericVector>(reference_variants["fitness"]);
-      NumericVector abs_fitness_values = abs(ref_fitness_values);
-      
-      LogicalVector converged = as<LogicalVector>(ESS_out_values["converged"]);
-      //Rcout << "ref_fitness_values: " << ref_fitness_values << endl;
-      //Rcout << "abs_fitness_values: " << abs_fitness_values << endl;
-      
-      if (abs(e995_fitness) < conv_threshold) {
-        //Rcout << "ESS_optimizer_fb AE" << endl;
-        //Rcout << " current e995_fitness is within threshold, optimization will end" << endl;
-        IntegerVector next_chosen_one = {0};
-        //Rcout << "pre-selection ESS_out_values nrows: " << static_cast<int>(ESS_out_values.nrows()) << endl;
-        ESS_out_values = AdaptUtils::df_indices(ESS_out_values, next_chosen_one);
-        //Rcout << "post-selection ESS_out_values nrows: " << static_cast<int>(ESS_out_values.nrows()) << endl;
+      if (abs(e995_fitness_1) <= conv_threshold || abs(e995_fitness_2) <= conv_threshold ||
+          abs(e995_fitness_1 - e995_fitness_2) <= conv_threshold) {
+        //bool found_optimum {true};
+        if (abs(e995_fitness_1) <= conv_threshold || abs(e995_fitness_1 - e995_fitness_2) <= conv_threshold) {
+          //Rcout << "Exporting point 1 on convergence" << endl;
+          ESS_test_values = clone(point_1);
+        } else {
+          //Rcout << "Exporting point 2 on convergence" << endl;
+          ESS_test_values = clone(point_2);
+        }
         
-        final_output(i) = ESS_out_values;
-        converged(0) = 1;
+        IntegerVector next_chosen_one = {0};
+        ESS_out_values = AdaptUtils::df_indices(ESS_test_values, next_chosen_one);
+        IntegerVector further_one = {1};
+        DataFrame NeededFitnessRow = AdaptUtils::df_indices(ESS_test_values, further_one);
+        
+        NumericVector true_fitness_vec = as<NumericVector>(NeededFitnessRow["fitness"]);
+        ESS_out_values["fitness"] = true_fitness_vec;
+        
+        found_converged = true;
+        LogicalVector found_converged_vec = {found_converged};
+        ESS_out_values["converged"] = found_converged_vec;
+        
         opt_needed = false;
         break;
       }
-      
-      CharacterVector ref_var_names = as<CharacterVector>(reference_variants.names());
-      CharacterVector old_ref_var_names = as<CharacterVector>(old_reference_variants.names());
-      
-      IntegerVector ref_variant_nta = as<IntegerVector>(reference_variants["variant"]);
-      
-      CharacterVector ref_stage3_nta = as<CharacterVector>(reference_variants["stage3"]);
-      CharacterVector ref_stage2_nta = as<CharacterVector>(reference_variants["stage2"]);
-      CharacterVector ref_stage1_nta = as<CharacterVector>(reference_variants["stage1"]);
-      IntegerVector ref_age3_nta = as<IntegerVector>(reference_variants["age3"]);
-      IntegerVector ref_age2_nta = as<IntegerVector>(reference_variants["age2"]);
-      
-      CharacterVector ref_eststage3_nta = as<CharacterVector>(reference_variants["eststage3"]);
-      CharacterVector ref_eststage2_nta = as<CharacterVector>(reference_variants["eststage2"]);
-      CharacterVector ref_eststage1_nta = as<CharacterVector>(reference_variants["eststage1"]);
-      IntegerVector ref_estage3_nta = as<IntegerVector>(reference_variants["estage3"]);
-      IntegerVector ref_estage2_nta = as<IntegerVector>(reference_variants["estage2"]);
-      
-      NumericVector ref_givenrate_nta = as<NumericVector>(reference_variants["givenrate"]);
-      NumericVector ref_offset_nta = as<NumericVector>(reference_variants["offset"]);
-      NumericVector ref_multiplier_nta = as<NumericVector>(reference_variants["multiplier"]);
-      IntegerVector ref_convtype_nta = as<IntegerVector>(reference_variants["convtype"]);
-      IntegerVector ref_convtype_t12_nta = as<IntegerVector>(reference_variants["convtype_t12"]);
-      
-      NumericVector ref_surv_dev_nta = as<NumericVector>(reference_variants["surv_dev"]);
-      NumericVector ref_obs_dev_nta = as<NumericVector>(reference_variants["obs_dev"]);
-      NumericVector ref_size_dev_nta = as<NumericVector>(reference_variants["size_dev"]);
-      NumericVector ref_sizeb_dev_nta = as<NumericVector>(reference_variants["sizeb_dev"]);
-      NumericVector ref_sizec_dev_nta = as<NumericVector>(reference_variants["sizec_dev"]);
-      NumericVector ref_repst_dev_nta = as<NumericVector>(reference_variants["repst_dev"]);
-      NumericVector ref_fec_dev_nta = as<NumericVector>(reference_variants["fec_dev"]);
-      
-      NumericVector ref_jsurv_dev_nta = as<NumericVector>(reference_variants["jsurv_dev"]);
-      NumericVector ref_jobs_dev_nta = as<NumericVector>(reference_variants["jobs_dev"]);
-      NumericVector ref_jsize_dev_nta = as<NumericVector>(reference_variants["jsize_dev"]);
-      NumericVector ref_jsizeb_dev_nta = as<NumericVector>(reference_variants["jsizeb_dev"]);
-      NumericVector ref_jsizec_dev_nta = as<NumericVector>(reference_variants["jsizec_dev"]);
-      NumericVector ref_jrepst_dev_nta = as<NumericVector>(reference_variants["jrepst_dev"]);
-      NumericVector ref_jmatst_dev_nta = as<NumericVector>(reference_variants["jmatst_dev"]);
-      
-      CharacterVector ref_year2_nta = as<CharacterVector>(reference_variants["year2"]);
-      IntegerVector ref_mpm_altered_nta = as<IntegerVector>(reference_variants["mpm_altered"]);
-      IntegerVector ref_vrm_altered_nta = as<IntegerVector>(reference_variants["vrm_altered"]);
-      
-      IntegerVector old_ref_variant_nta = as<IntegerVector>(old_reference_variants["variant"]);
-      
-      CharacterVector old_ref_stage3_nta = as<CharacterVector>(old_reference_variants["stage3"]);
-      CharacterVector old_ref_stage2_nta = as<CharacterVector>(old_reference_variants["stage2"]);
-      CharacterVector old_ref_stage1_nta = as<CharacterVector>(old_reference_variants["stage1"]);
-      IntegerVector old_ref_age3_nta = as<IntegerVector>(old_reference_variants["age3"]);
-      IntegerVector old_ref_age2_nta = as<IntegerVector>(old_reference_variants["age2"]);
-      
-      CharacterVector old_ref_eststage3_nta = as<CharacterVector>(old_reference_variants["eststage3"]);
-      CharacterVector old_ref_eststage2_nta = as<CharacterVector>(old_reference_variants["eststage2"]);
-      CharacterVector old_ref_eststage1_nta = as<CharacterVector>(old_reference_variants["eststage1"]);
-      IntegerVector old_ref_estage3_nta = as<IntegerVector>(old_reference_variants["estage3"]);
-      IntegerVector old_ref_estage2_nta = as<IntegerVector>(old_reference_variants["estage2"]);
-      
-      NumericVector old_ref_givenrate_nta = as<NumericVector>(old_reference_variants["givenrate"]);
-      NumericVector old_ref_offset_nta = as<NumericVector>(old_reference_variants["offset"]);
-      NumericVector old_ref_multiplier_nta = as<NumericVector>(old_reference_variants["multiplier"]);
-      IntegerVector old_ref_convtype_nta = as<IntegerVector>(old_reference_variants["convtype"]);
-      IntegerVector old_ref_convtype_t12_nta = as<IntegerVector>(old_reference_variants["convtype_t12"]);
-      
-      NumericVector old_ref_surv_dev_nta = as<NumericVector>(old_reference_variants["surv_dev"]);
-      NumericVector old_ref_obs_dev_nta = as<NumericVector>(old_reference_variants["obs_dev"]);
-      NumericVector old_ref_size_dev_nta = as<NumericVector>(old_reference_variants["size_dev"]);
-      NumericVector old_ref_sizeb_dev_nta = as<NumericVector>(old_reference_variants["sizeb_dev"]);
-      NumericVector old_ref_sizec_dev_nta = as<NumericVector>(old_reference_variants["sizec_dev"]);
-      NumericVector old_ref_repst_dev_nta = as<NumericVector>(old_reference_variants["repst_dev"]);
-      NumericVector old_ref_fec_dev_nta = as<NumericVector>(old_reference_variants["fec_dev"]);
-      
-      NumericVector old_ref_jsurv_dev_nta = as<NumericVector>(old_reference_variants["jsurv_dev"]);
-      NumericVector old_ref_jobs_dev_nta = as<NumericVector>(old_reference_variants["jobs_dev"]);
-      NumericVector old_ref_jsize_dev_nta = as<NumericVector>(old_reference_variants["jsize_dev"]);
-      NumericVector old_ref_jsizeb_dev_nta = as<NumericVector>(old_reference_variants["jsizeb_dev"]);
-      NumericVector old_ref_jsizec_dev_nta = as<NumericVector>(old_reference_variants["jsizec_dev"]);
-      NumericVector old_ref_jrepst_dev_nta = as<NumericVector>(old_reference_variants["jrepst_dev"]);
-      NumericVector old_ref_jmatst_dev_nta = as<NumericVector>(old_reference_variants["jmatst_dev"]);
-      
-      CharacterVector old_ref_year2_nta = as<CharacterVector>(old_reference_variants["year2"]);
-      IntegerVector old_ref_mpm_altered_nta = as<IntegerVector>(old_reference_variants["mpm_altered"]);
-      IntegerVector old_ref_vrm_altered_nta = as<IntegerVector>(old_reference_variants["vrm_altered"]);
-      
-      IntegerVector ESS_out_variant_nta = as<IntegerVector>(ESS_out_values["variant"]);
-      
-      CharacterVector ESS_out_stage3_nta = as<CharacterVector>(ESS_out_values["stage3"]);
-      CharacterVector ESS_out_stage2_nta = as<CharacterVector>(ESS_out_values["stage2"]);
-      CharacterVector ESS_out_stage1_nta = as<CharacterVector>(ESS_out_values["stage1"]);
-      IntegerVector ESS_out_age3_nta = as<IntegerVector>(ESS_out_values["age3"]);
-      IntegerVector ESS_out_age2_nta = as<IntegerVector>(ESS_out_values["age2"]);
-      
-      CharacterVector ESS_out_eststage3_nta = as<CharacterVector>(ESS_out_values["eststage3"]);
-      CharacterVector ESS_out_eststage2_nta = as<CharacterVector>(ESS_out_values["eststage2"]);
-      CharacterVector ESS_out_eststage1_nta = as<CharacterVector>(ESS_out_values["eststage1"]);
-      IntegerVector ESS_out_estage3_nta = as<IntegerVector>(ESS_out_values["estage3"]);
-      IntegerVector ESS_out_estage2_nta = as<IntegerVector>(ESS_out_values["estage2"]);
-      
-      NumericVector ESS_out_givenrate_nta = as<NumericVector>(ESS_out_values["givenrate"]);
-      NumericVector ESS_out_offset_nta = as<NumericVector>(ESS_out_values["offset"]);
-      NumericVector ESS_out_multiplier_nta = as<NumericVector>(ESS_out_values["multiplier"]);
-      IntegerVector ESS_out_convtype_nta = as<IntegerVector>(ESS_out_values["convtype"]);
-      IntegerVector ESS_out_convtype_t12_nta = as<IntegerVector>(ESS_out_values["convtype_t12"]);
-      
-      NumericVector ESS_out_surv_dev_nta = as<NumericVector>(ESS_out_values["surv_dev"]);
-      NumericVector ESS_out_obs_dev_nta = as<NumericVector>(ESS_out_values["obs_dev"]);
-      NumericVector ESS_out_size_dev_nta = as<NumericVector>(ESS_out_values["size_dev"]);
-      NumericVector ESS_out_sizeb_dev_nta = as<NumericVector>(ESS_out_values["sizeb_dev"]);
-      NumericVector ESS_out_sizec_dev_nta = as<NumericVector>(ESS_out_values["sizec_dev"]);
-      NumericVector ESS_out_repst_dev_nta = as<NumericVector>(ESS_out_values["repst_dev"]);
-      NumericVector ESS_out_fec_dev_nta = as<NumericVector>(ESS_out_values["fec_dev"]);
-      
-      NumericVector ESS_out_jsurv_dev_nta = as<NumericVector>(ESS_out_values["jsurv_dev"]);
-      NumericVector ESS_out_jobs_dev_nta = as<NumericVector>(ESS_out_values["jobs_dev"]);
-      NumericVector ESS_out_jsize_dev_nta = as<NumericVector>(ESS_out_values["jsize_dev"]);
-      NumericVector ESS_out_jsizeb_dev_nta = as<NumericVector>(ESS_out_values["jsizeb_dev"]);
-      NumericVector ESS_out_jsizec_dev_nta = as<NumericVector>(ESS_out_values["jsizec_dev"]);
-      NumericVector ESS_out_jrepst_dev_nta = as<NumericVector>(ESS_out_values["jrepst_dev"]);
-      NumericVector ESS_out_jmatst_dev_nta = as<NumericVector>(ESS_out_values["jmatst_dev"]);
-      
-      CharacterVector ESS_out_year2_nta = as<CharacterVector>(ESS_out_values["year2"]);
-      IntegerVector ESS_out_mpm_altered_nta = ref_mpm_altered_nta;
-      IntegerVector ESS_out_vrm_altered_nta = ref_vrm_altered_nta;
-      
-      bool found_optimum {true};
-      
-      if ((abs(e995_fitness) < abs_fitness_values(0) || abs(e995_fitness) < abs_fitness_values(1))) {
-        //Rcout << "current elasticity fitness lower than at least one reference fitness" << endl;
-        //Rcout << "ESS_optimizer_fb AF" << endl;
-        
-        double diff0 = abs(abs(e995_fitness) - abs_fitness_values(0));
-        double diff1 = abs(abs(e995_fitness) - abs_fitness_values(1));
-        
-        if (diff0 < diff1) {
-          //Rcout << "replacing second reference value with new replacement value" << endl;
-          ref_variant_nta(1) = ESS_out_variant_nta(0);
-          
-          ref_stage3_nta(1) = ESS_out_stage3_nta(0);
-          ref_stage2_nta(1) = ESS_out_stage2_nta(0);
-          ref_stage1_nta(1) = ESS_out_stage1_nta(0);
-          ref_age3_nta(1) = ESS_out_age3_nta(0);
-          ref_age2_nta(1) = ESS_out_age2_nta(0);
-          
-          ref_eststage3_nta(1) = ESS_out_eststage3_nta(0);
-          ref_eststage2_nta(1) = ESS_out_eststage2_nta(0);
-          ref_eststage1_nta(1) = ESS_out_eststage1_nta(0);
-          ref_estage3_nta(1) = ESS_out_estage3_nta(0);
-          ref_estage2_nta(1) = ESS_out_estage2_nta(0);
-          
-          ref_givenrate_nta(1) = ESS_out_givenrate_nta(0);
-          ref_offset_nta(1) = ESS_out_offset_nta(0);
-          ref_multiplier_nta(1) = ESS_out_multiplier_nta(0);
-          ref_convtype_nta(1) = ESS_out_convtype_nta(0);
-          ref_convtype_t12_nta(1) = ESS_out_convtype_t12_nta(0);
-          
-          ref_surv_dev_nta(1) = ESS_out_surv_dev_nta(0);
-          ref_obs_dev_nta(1) = ESS_out_obs_dev_nta(0);
-          ref_size_dev_nta(1) = ESS_out_size_dev_nta(0);
-          ref_sizeb_dev_nta(1) = ESS_out_sizeb_dev_nta(0);
-          ref_sizec_dev_nta(1) = ESS_out_sizec_dev_nta(0);
-          ref_repst_dev_nta(1) = ESS_out_repst_dev_nta(0);
-          ref_fec_dev_nta(1) = ESS_out_fec_dev_nta(0);
-          
-          ref_jsurv_dev_nta(1) = ESS_out_jsurv_dev_nta(0);
-          ref_jobs_dev_nta(1) = ESS_out_jobs_dev_nta(0);
-          ref_jsize_dev_nta(1) = ESS_out_jsize_dev_nta(0);
-          ref_jsizeb_dev_nta(1) = ESS_out_jsizeb_dev_nta(0);
-          ref_jsizec_dev_nta(1) = ESS_out_jsizec_dev_nta(0);
-          ref_jrepst_dev_nta(1) = ESS_out_jrepst_dev_nta(0);
-          ref_jmatst_dev_nta(1) = ESS_out_jmatst_dev_nta(0);
-          
-          ref_year2_nta(1) = ESS_out_year2_nta(0);
-          ref_mpm_altered_nta(1) = ESS_out_mpm_altered_nta(0);
-          ref_vrm_altered_nta(1) = ESS_out_vrm_altered_nta(0);
-          
-          ref_fitness_values(1) = e995_fitness;
-        } else {
-          //Rcout << "replacing first reference value with new replacement value" << endl;
-          ref_variant_nta(0) = ESS_out_variant_nta(0);
-          
-          ref_stage3_nta(0) = ESS_out_stage3_nta(0);
-          ref_stage2_nta(0) = ESS_out_stage2_nta(0);
-          ref_stage1_nta(0) = ESS_out_stage1_nta(0);
-          ref_age3_nta(0) = ESS_out_age3_nta(0);
-          ref_age2_nta(0) = ESS_out_age2_nta(0);
-          
-          ref_eststage3_nta(0) = ESS_out_eststage3_nta(0);
-          ref_eststage2_nta(0) = ESS_out_eststage2_nta(0);
-          ref_eststage1_nta(0) = ESS_out_eststage1_nta(0);
-          ref_estage3_nta(0) = ESS_out_estage3_nta(0);
-          ref_estage2_nta(0) = ESS_out_estage2_nta(0);
-          
-          ref_givenrate_nta(0) = ESS_out_givenrate_nta(0);
-          ref_offset_nta(0) = ESS_out_offset_nta(0);
-          ref_multiplier_nta(0) = ESS_out_multiplier_nta(0);
-          ref_convtype_nta(0) = ESS_out_convtype_nta(0);
-          ref_convtype_t12_nta(0) = ESS_out_convtype_t12_nta(0);
-          
-          ref_surv_dev_nta(0) = ESS_out_surv_dev_nta(0);
-          ref_obs_dev_nta(0) = ESS_out_obs_dev_nta(0);
-          ref_size_dev_nta(0) = ESS_out_size_dev_nta(0);
-          ref_sizeb_dev_nta(0) = ESS_out_sizeb_dev_nta(0);
-          ref_sizec_dev_nta(0) = ESS_out_sizec_dev_nta(0);
-          ref_repst_dev_nta(0) = ESS_out_repst_dev_nta(0);
-          ref_fec_dev_nta(0) = ESS_out_fec_dev_nta(0);
-          
-          ref_jsurv_dev_nta(0) = ESS_out_jsurv_dev_nta(0);
-          ref_jobs_dev_nta(0) = ESS_out_jobs_dev_nta(0);
-          ref_jsize_dev_nta(0) = ESS_out_jsize_dev_nta(0);
-          ref_jsizeb_dev_nta(0) = ESS_out_jsizeb_dev_nta(0);
-          ref_jsizec_dev_nta(0) = ESS_out_jsizec_dev_nta(0);
-          ref_jrepst_dev_nta(0) = ESS_out_jrepst_dev_nta(0);
-          ref_jmatst_dev_nta(0) = ESS_out_jmatst_dev_nta(0);
-          
-          ref_year2_nta(0) = ESS_out_year2_nta(0);
-          ref_mpm_altered_nta(0) = ESS_out_mpm_altered_nta(0);
-          ref_vrm_altered_nta(0) = ESS_out_vrm_altered_nta(0);
-          
-          ref_fitness_values(0) = e995_fitness;
-        }
-        search_mode = 0;
-      } else {
-        //Rcout << "current elasticity fitness greater than or equal to both reference fitness values" << endl;
-        //Rcout << "ESS_optimizer_fb AF 7" << endl;
-        search_mode++;
-        
-        //Rcout << "reference_variants.nrows(): " << reference_variants.nrows() << endl;
-        
-        if (loop_tracker == (loop_max - 1)) {
-          if (ref_fitness_values(0) < ref_fitness_values(1)) {
-            //Rcout << "ref_fitness_values(0) < ref_fitness_values(1)" << endl;
-            IntegerVector next_chosen_one = {0};
-            ESS_out_values = AdaptUtils::df_indices(old_reference_variants, next_chosen_one);
-          } else {
-            //Rcout << "ref_fitness_values(0) >= ref_fitness_values(1)" << endl;
-            IntegerVector next_chosen_one = {1};
-            ESS_out_values = AdaptUtils::df_indices(old_reference_variants, next_chosen_one);
-          }
-          LogicalVector exit_unconverged = {0};
-          ESS_out_values["converged"] = exit_unconverged;
-          found_optimum = false;
-        }
-      }
-       
-      if (loop_tracker == (loop_max - 1)) {
-        //Rcout << "entered data frame finalization phase" << endl;
-        //Rcout << "ESS_optimizer_fb AF 5" << endl;
-        if (found_optimum) {
-          IntegerVector next_chosen_one = {0};
-          ESS_out_values = AdaptUtils::df_indices(ESS_out_values, next_chosen_one);
-        }
-        //Rcout << "ESS_optimizer_fb AF 6" << endl;
-        
-        LogicalVector exit_unconverged = {0};
-        ESS_out_values["converged"] = exit_unconverged;
-        final_output(i) = ESS_out_values;
-      }
-      
-      loop_tracker++;
     }
+    //Rcout << "ESS_optimizer_fb X" << endl;
+    //IntegerVector next_chosen_one = {0};
+    //ESS_out_values = AdaptUtils::df_indices(ESS_test_values, next_chosen_one);
+    
+    final_output(i) = ESS_out_values;
   }
   
-  //Rcout << "finished all optimization loops" << endl;
-  //Rcout << "ESS_optimizer_fb AG" << endl;
+  //Rcout << "ESS_optimizer_fb Y finished all optimization loops" << endl;
   DataFrame final_output_df;
   
   if (total_optima > 1) {
@@ -11837,23 +12712,25 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
     
     DataFrame final_output_df_pre = AdaptUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
     
-    //Rcout << "ESS_optimizer_fb AH" << endl;
+    //Rcout << "ESS_optimizer_fb Z" << endl;
     if (total_optima > 2) {
       for (int i = 2; i < total_optima; i++) {
         final_output_df_pre = AdaptUtils::df_rbind(final_output_df_pre, as<DataFrame>(final_output(i)));
       }
     }
     
-    //Rcout << "ESS_optimizer_fb AI" << endl;
+    //Rcout << "ESS_optimizer_fb AA" << endl;
     int fodfp_size = final_output_df_pre.nrows();
     IntegerVector new_variant_index = seq(1, fodfp_size);
     final_output_df_pre["variant"] = new_variant_index;
     
     final_output_df = final_output_df_pre;
   } else if (total_optima == 1) {
+    //Rcout << "ESS_optimizer_fb AB" << endl;
     DataFrame final_output_df_pre = as<DataFrame>(final_output(0));
     
     int fodfp_size = final_output_df_pre.nrows();
+
     IntegerVector new_variant_index = seq(1, fodfp_size);
     final_output_df_pre["variant"] = new_variant_index;
     
@@ -11862,16 +12739,8 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
     final_output_df = R_NilValue;
   }
   
+  //Rcout << "ESS_optimizer_fb AC" << endl;
   int optim_rows = static_cast<int>(final_output_df.nrows());
-  
-  if (optim_rows > 0) {
-    NumericVector fop_fitness = final_output_df["fitness"];
-    LogicalVector fop_converged = final_output_df["converged"];
-    
-    for (int i = 0; i < optim_rows; i++) {
-      if (abs(fop_fitness(i)) <= conv_threshold) fop_converged(i) = 1;
-    }
-  }
   
   ESS_Lyapunov = final_output_df;
 }
@@ -11955,7 +12824,6 @@ inline void invpre_project (const arma::mat var_run_mat, List& N_out_pre,
   const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool) {
     
   //Rcout << "invpre_project A" << endl;
-  
   int i = current_rep;
   
   List running_popvecs; //  = clone(start_list)
@@ -12254,7 +13122,6 @@ inline void invpre_optim (List& N_out_pre, List& comm_out_pre,
   const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool) {
   
   //Rcout << "invpre_optim A" << endl;
-  
   int i = current_rep;
   
   List running_popvecs; //  = clone(start_list)
@@ -12270,7 +13137,6 @@ inline void invpre_optim (List& N_out_pre, List& comm_out_pre,
     }
     
     List errcheck_mpm_reps_time_vmt (opt_res); // Could remove later
-    
     
     for (int l = 0; l < opt_res; l++) { // 3rd loop - permutes l
       //Rcout << "invpre_optim A2          ";
@@ -12851,6 +13717,7 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   List N_out_pre_optim (nreps);
   DataFrame ESS_trait_axis;
   IntegerVector ESS_var_traits;
+  IntegerVector flipped_traits (17);
   
   int ehrlen_optim {0};
   int style_optim {0};
@@ -12884,7 +13751,8 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   
   if (ESS_optima) {
     AdaptUtils::optim_ta_setup(new_trait_axis, ESS_trait_axis, optim_trait_axis,
-      optim_trait_axis_995, ESS_var_traits, opt_res, elast_mult);
+      optim_trait_axis_995, ESS_var_traits, flipped_traits, opt_res,
+      elast_mult);
     
     //int var_traits = sum(ESS_var_traits);
     if (opt_res_squared) opt_res_true = opt_res * opt_res; /////
@@ -13281,7 +14149,7 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
       opt_res_true, times, fitness_times, threshold, 1, false, zap_min);
     
     ESS_optimizer_pre(ESS_Lyapunov, ESS_trait_axis, Lyapunov_optim,
-      optim_trait_axis, ESS_var_traits, new_stageexpansion_list_optima,
+      optim_trait_axis, ESS_var_traits, flipped_traits, new_stageexpansion_list_optima,
       used_times, zero_stage_vec_list, start_list, equivalence_list, A_list,
       U_list, F_list, density_df, dens_index_df, stageframe_df, entry_time_vec,
       times, fitness_times, format_int, stagecounts, firstage_int, finalage_int,
@@ -13722,7 +14590,6 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
           }
           
           NumericVector stdbv = as<NumericVector>(stageexpansion_ta_devterms_by_variant(current_variant_index));
-          
           for (int z = 0; z < 14; z++) {
             dv_terms(z) = dv_terms(z) + stdbv(z);
           }
@@ -13742,7 +14609,6 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
           NumericVector dens_n (14);
           
           //Rcout << "invfb_project A21          ";
-          
           if (dens_vr_yn_vec(0) > 0) {
             dvr_bool = true;
             
@@ -13801,7 +14667,6 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
           }
           
           //Rcout << "invfb_project A22          ";
-          
           double dens_sp {1.0};
           
           if (sp_density_num_vec(0) > 0) {
@@ -14579,7 +15444,6 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
           }
           
           //Rcout << "invfb_optim A27        ";
-          
           double dens_sp {1.0};
           
           if (sp_density_num_vec(0) > 0) {
@@ -14630,7 +15494,6 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
               
             } else {
               //current_supplement = as<DataFrame>(supplement_list(0));
-              
               //Rcout << "invfb_optim A31        ";
               current_mpm = AdaptMats::mdabrowskiego(all_ages,
                 current_stageframe, surv_proxy, fec_proxy, f2_inda, f1_inda,
@@ -15027,7 +15890,6 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
           NumericVector dens_n (14);
           
           //Rcout << "invfb_optim B26        ";
-          
           if (dens_vr_yn_vec(0) > 0) {
             dvr_bool = true;
             
@@ -15274,7 +16136,6 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
           }
           
           //Rcout << "invfb_optim B33        ";
-          
           if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
           double N_current = arma::sum(running_popvec_vrm);
           N_mpm(m, (j + 1), i) = N_current;
@@ -15565,6 +16426,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   DataFrame ESS_trait_axis; 
   DataFrame stageframe_df_ESS;
   IntegerVector ESS_var_traits;
+  IntegerVector flipped_traits (17);
   
   int opt_res_true = opt_res;
   int ehrlen_optim {0};
@@ -15605,10 +16467,10 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   arma::vec jmatst_dev_nta = as<arma::vec>(new_trait_axis["jmatst_dev"]);
   
   //Rcout << "invade3_fb_core C" << endl;
-  
   if (ESS_optima) {
     AdaptUtils::optim_ta_setup(new_trait_axis, ESS_trait_axis, optim_trait_axis,
-      optim_trait_axis_995, ESS_var_traits, opt_res, elast_mult);
+      optim_trait_axis_995, ESS_var_traits, flipped_traits, opt_res,
+      elast_mult);
     
     //int var_traits = sum(ESS_var_traits);
     if (opt_res_squared) opt_res_true = opt_res * opt_res; /////
@@ -16160,28 +17022,31 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
       err_check, err_check_extreme, sparse_bool, A_only, stages_not_equal,
       integeronly, dens_yn_bool);
     
+    //Rcout << "obs_dev_nta_optim: " << obs_dev_nta_optim.t() << endl;
+    //Rcout << "obs_dev_nta_optim_995: " << obs_dev_nta_optim_995.t() << endl;
+    
     if (ESS_optima) {
       invfb_optim(surv_dev_nta_optim, obs_dev_nta_optim, size_dev_nta_optim,
-        sizeb_dev_nta_optim,
-        sizec_dev_nta_optim, repst_dev_nta_optim, fec_dev_nta_optim,
-        jsurv_dev_nta_optim, jobs_dev_nta_optim, jsize_dev_nta_optim,
-        jsizeb_dev_nta_optim, jsizec_dev_nta_optim, jrepst_dev_nta_optim,
-        jmatst_dev_nta_optim, variant_nta_optim, surv_dev_nta_optim_995,
-        obs_dev_nta_optim_995, size_dev_nta_optim_995, sizeb_dev_nta_optim_995,
-        sizec_dev_nta_optim_995, repst_dev_nta_optim_995, fec_dev_nta_optim_995,
-        jsurv_dev_nta_optim_995, jobs_dev_nta_optim_995, jsize_dev_nta_optim_995,
+        sizeb_dev_nta_optim, sizec_dev_nta_optim, repst_dev_nta_optim,
+        fec_dev_nta_optim, jsurv_dev_nta_optim, jobs_dev_nta_optim,
+        jsize_dev_nta_optim, jsizeb_dev_nta_optim, jsizec_dev_nta_optim,
+        jrepst_dev_nta_optim, jmatst_dev_nta_optim, variant_nta_optim,
+        surv_dev_nta_optim_995, obs_dev_nta_optim_995, size_dev_nta_optim_995,
+        sizeb_dev_nta_optim_995, sizec_dev_nta_optim_995,
+        repst_dev_nta_optim_995, fec_dev_nta_optim_995, jsurv_dev_nta_optim_995,
+        jobs_dev_nta_optim_995, jsize_dev_nta_optim_995,
         jsizeb_dev_nta_optim_995, jsizec_dev_nta_optim_995,
-        jrepst_dev_nta_optim_995, jmatst_dev_nta_optim_995, variant_nta_optim_995,
-        N_out_pre_optim, comm_out_pre_optim, new_stageexpansion_list_optim,
-        errcheck_mpm_reps_optima, errcheck_mpmout_reps_optima, mdtl_optim,
-        used_times, allmodels_all, vrm_list, allstages_all, dev_terms_list,
-        ind_terms_num_list, ind_terms_cat_list,
-        stageexpansion_ta_devterms_by_variant_optima, sp_density_list, start_list,
-        equivalence_list, density_vr_list, current_stageframe, current_supplement,
-        density_df, dens_index_df, entry_time_vec, sp_density_num_vec,
-        inda_terms_num_vec, indb_terms_num_vec, indc_terms_num_vec,
-        inda_terms_cat_vec, indb_terms_cat_vec, indc_terms_cat_vec,
-        dens_vr_yn_vec, fecmod_vec,
+        jrepst_dev_nta_optim_995, jmatst_dev_nta_optim_995,
+        variant_nta_optim_995, N_out_pre_optim, comm_out_pre_optim,
+        new_stageexpansion_list_optim, errcheck_mpm_reps_optima,
+        errcheck_mpmout_reps_optima, mdtl_optim, used_times, allmodels_all,
+        vrm_list, allstages_all, dev_terms_list, ind_terms_num_list,
+        ind_terms_cat_list, stageexpansion_ta_devterms_by_variant_optima,
+        sp_density_list, start_list, equivalence_list, density_vr_list,
+        current_stageframe, current_supplement, density_df, dens_index_df,
+        entry_time_vec, sp_density_num_vec, inda_terms_num_vec,
+        indb_terms_num_vec, indc_terms_num_vec, inda_terms_cat_vec,
+        indb_terms_cat_vec, indc_terms_cat_vec, dens_vr_yn_vec, fecmod_vec,
         year_vec, patch_vec, var_per_run, times, var_mat_length, format_int,
         current_rep, firstage_int, finalage_int, dev_terms_times_int, substoch,
         opt_res_true, opt_res, year_counter, exp_tol, theta_tol, threshold,
@@ -16210,20 +17075,20 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
       var_mat_length, times, fitness_times, threshold, 0, false, zap_min);
   }
   
-  //Rcout << "invade3_fb_core W        ";
+  //Rcout << "invade3_fb_core W right before call to ESS_optimizer_fb       " << endl;
   
   if (ESS_optima) {
     AdaptUtils::Lyapunov_creator (Lyapunov_optim, N_out_optim, entry_time_vec, nreps, 2,
       opt_res_true, times, fitness_times, threshold, 1, false, zap_min);
     
     ESS_optimizer_fb(ESS_Lyapunov, ESS_trait_axis, Lyapunov_optim,
-      optim_trait_axis, ESS_var_traits, surv_dev_nta_optim, obs_dev_nta_optim,
-      size_dev_nta_optim, sizeb_dev_nta_optim, sizec_dev_nta_optim,
-      repst_dev_nta_optim, fec_dev_nta_optim, jsurv_dev_nta_optim,
-      jobs_dev_nta_optim, jsize_dev_nta_optim, jsizeb_dev_nta_optim,
-      jsizec_dev_nta_optim, jrepst_dev_nta_optim, jmatst_dev_nta_optim,
-      variant_nta_optim, new_stageexpansion_list_optim, used_times,
-      errcheck_mpm_ESS, errcheck_mpmout_ESS, allmodels_all, vrm_list,
+      optim_trait_axis, ESS_var_traits, flipped_traits, surv_dev_nta_optim,
+      obs_dev_nta_optim, size_dev_nta_optim, sizeb_dev_nta_optim,
+      sizec_dev_nta_optim, repst_dev_nta_optim, fec_dev_nta_optim,
+      jsurv_dev_nta_optim, jobs_dev_nta_optim, jsize_dev_nta_optim,
+      jsizeb_dev_nta_optim, jsizec_dev_nta_optim, jrepst_dev_nta_optim,
+      jmatst_dev_nta_optim, variant_nta_optim, new_stageexpansion_list_optim,
+      used_times, errcheck_mpm_ESS, errcheck_mpmout_ESS, allmodels_all, vrm_list,
       allstages_all, dev_terms_list, ind_terms_num_list, ind_terms_cat_list,
       stageexpansion_ta_devterms_by_variant_optima, sp_density_list, start_list,
       equivalence_list, density_vr_list, current_stageframe, current_supplement,
@@ -16238,17 +17103,18 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
       err_check_extreme, elast_mult, zap_min);
   }
   
-  //Rcout << "invade3_fb_core X        ";
+  //Rcout << "invade3_fb_core X right after call to ESS_optimizer_fb        " << endl;
 }
 
-//' Run Pairwise and Multiple Invasion Analysis
+//' Run Pairwise and Multiple Invasibility Analysis
 //' 
-//' Function \code{invade3} runs pairwise and multiple invasion analyses, and
-//' provides output to analyze all aspects of the dynamics of generic variants.
-//' The output includes invasion fitness for all variants included, as well as
-//' resident fitness in all simulations run. When used with the
-//' \code{\link{plot.adaptInv}()} function, can be used to develop pairwise
-//' invasibility plots (PIPs).
+//' Function \code{invade3} runs pairwise and multiple invasisibility analyses,
+//' and provides output to analyze all aspects of the dynamics of generic
+//' variants. The output includes invasion fitness for all variants included, as
+//' well as resident fitness in all simulations run. Forms the core data plotted
+//' by the \code{\link{plot.adaptInv}()} function to plot pairwise
+//' invasibility plots (PIPs) and elasticity plots. Also estimates trait optima,
+//' if any occur.
 //' 
 //' @name invade3
 //' 
@@ -16388,8 +17254,8 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' fitness as 0 when their absolute values are less than the value given in
 //' argument \code{threshold}.
 //' @param converged_only A logical value indicating whether to show predicted
-//' trait optima only in cases where the Lyapunov coefficient in elasticity
-//' analysis has converged to 0. Defaults to \code{TRUE}.
+//' trait optima only in cases where the elasticity analysis has converged.
+//' Defaults to \code{FALSE}.
 //' @param err_check A logical value indicating whether to include an extra list
 //' of output objects for error checking. Can also be set to the text value
 //' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
@@ -16483,8 +17349,18 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' new trait axis is composed entirely of invaders that will be paired against
 //' each respective row in the original trait axis. These two trait axis frames
 //' are then used to conduct pairwise invasibility elasticity analyses,
-//' particularly noting where fitness values and trends invert. Note that this
-//' optimization approach really only works with one variable trait.
+//' particularly noting where fitness values and trends invert. Elasticity plots
+//' show the results of these elasticity simulations, using R's line segment
+//' default in the \code{plot.default()} function. Results are then used to
+//' determine golden sections for further evaluation, within which the bounded
+//' Nelder-Mead algorithm is used to determine the optimum value. Note that this
+//' optimization approach typically works properly with only one variable trait.
+//' Also note that if a trait spans both negative and positive values, then
+//' elasticity calculation is altered such that invader values for negative
+//' values are calculated as the sum of the old trait value and the difference
+//' between that value and the value when multiplied by the elasticity value.
+//' This is done to ensure that all elasticity values are consistently lower
+//' than the original values.
 //' 
 //' @examples
 //' library(lefko3)
@@ -16622,7 +17498,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   bool historical {false};
   bool sparse_bool {false};
   bool zap_min_bool {true};
-  bool converged_only_bool {true};
+  bool converged_only_bool {false};
   bool err_check_bool {false};
   bool err_check_extreme {false};
   
@@ -16780,7 +17656,6 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   }
   
   //DataFrame final_Lyapunov = clone(Lyapunov); // Remove later
-  
   AdaptUtils::Lyapunov_df_maker(Lyapunov, var_run_mat, var_per_run, axis_variants_unique);
   
   List cleaned_input = cleanup3_inv(mpm, vrm, stageframe, supplement, format,
@@ -16790,7 +17665,6 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
     substoch, variant_count, var_per_run);
   
   //Rcout << "invade3 c ";
-  
   mpm_list = as<List>(cleaned_input(0));
   mpm_count = static_cast<int>(cleaned_input(1));
   vrm_list = as<List>(cleaned_input(2));
@@ -16918,7 +17792,6 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   } // funcbased processing
   
   //Rcout << "invade3 g ";
-  
   int ESS_Lyap_nrows = static_cast<int>(ESS_Lyapunov.nrows());
   
   // Zap tiny values

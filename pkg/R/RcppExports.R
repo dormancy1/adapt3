@@ -643,6 +643,8 @@ NULL
 #' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
 #' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
 #' 16, jrepst_dev; and 17, jmatst_dev.
+#' @param flipped_traits An integer vector with 17 elements, giving the
+#' identities of variables with both positive and negative values.
 #' @param new_stageexpansion_list A list with stage expansions for all
 #' variant data used in ESS evaluation. This list includes an extra layer of
 #' list elements, corresponding to the optim_ta and optim_ta_995 data.
@@ -870,6 +872,8 @@ NULL
 #' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
 #' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
 #' 16, jrepst_dev; and 17, jmatst_dev.
+#' @param flipped_traits An integer vector with 17 elements, giving the
+#' identities of variables with both positive and negative values.
 #' @param surv_dev_nta The survival column in the reassessed trait axis.
 #' @param obs_dev_nta The observation status column in the reassessed trait
 #' axis.
@@ -2098,14 +2102,15 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
     .Call('_adapt3_project3', PACKAGE = 'adapt3', mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
 }
 
-#' Run Pairwise and Multiple Invasion Analysis
+#' Run Pairwise and Multiple Invasibility Analysis
 #' 
-#' Function \code{invade3} runs pairwise and multiple invasion analyses, and
-#' provides output to analyze all aspects of the dynamics of generic variants.
-#' The output includes invasion fitness for all variants included, as well as
-#' resident fitness in all simulations run. When used with the
-#' \code{\link{plot.adaptInv}()} function, can be used to develop pairwise
-#' invasibility plots (PIPs).
+#' Function \code{invade3} runs pairwise and multiple invasisibility analyses,
+#' and provides output to analyze all aspects of the dynamics of generic
+#' variants. The output includes invasion fitness for all variants included, as
+#' well as resident fitness in all simulations run. Forms the core data plotted
+#' by the \code{\link{plot.adaptInv}()} function to plot pairwise
+#' invasibility plots (PIPs) and elasticity plots. Also estimates trait optima,
+#' if any occur.
 #' 
 #' @name invade3
 #' 
@@ -2245,8 +2250,8 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' fitness as 0 when their absolute values are less than the value given in
 #' argument \code{threshold}.
 #' @param converged_only A logical value indicating whether to show predicted
-#' trait optima only in cases where the Lyapunov coefficient in elasticity
-#' analysis has converged to 0. Defaults to \code{TRUE}.
+#' trait optima only in cases where the elasticity analysis has converged.
+#' Defaults to \code{FALSE}.
 #' @param err_check A logical value indicating whether to include an extra list
 #' of output objects for error checking. Can also be set to the text value
 #' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
@@ -2340,8 +2345,18 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' new trait axis is composed entirely of invaders that will be paired against
 #' each respective row in the original trait axis. These two trait axis frames
 #' are then used to conduct pairwise invasibility elasticity analyses,
-#' particularly noting where fitness values and trends invert. Note that this
-#' optimization approach really only works with one variable trait.
+#' particularly noting where fitness values and trends invert. Elasticity plots
+#' show the results of these elasticity simulations, using R's line segment
+#' default in the \code{plot.default()} function. Results are then used to
+#' determine golden sections for further evaluation, within which the bounded
+#' Nelder-Mead algorithm is used to determine the optimum value. Note that this
+#' optimization approach typically works properly with only one variable trait.
+#' Also note that if a trait spans both negative and positive values, then
+#' elasticity calculation is altered such that invader values for negative
+#' values are calculated as the sum of the old trait value and the difference
+#' between that value and the value when multiplied by the elasticity value.
+#' This is done to ensure that all elasticity values are consistently lower
+#' than the original values.
 #' 
 #' @examples
 #' library(lefko3)

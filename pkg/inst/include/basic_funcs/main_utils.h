@@ -2376,12 +2376,15 @@ namespace AdaptUtils {
   //' @param optim_ta_995 A data frame giving trait axis data processed for ESS
   //' optimization. This is one of two data frames, and gives info for 99.5% the
   //' values of variable traits in \code{optim_ta}.
-  //' @param variable_traits An integer vector modifed by this function by
+  //' @param variable_traits An integer vector modified by this function by
   //' reference, indicating the actual traits that vary. The element order is:
   //' 1, givenrate; 2, offset; 3, multiplier; 4, surv_dev; 5, obs_dev;
   //' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
   //' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
   //' 16, jrepst_dev; and 17, jmatst_dev.
+  //' @param flipped_traits An integer vector modified by this function to
+  //' indicate variables in the optimization trait axis that include both
+  //' positive and negative values.
   //' @param opt_res Relic integer value denoting the number of rows in the
   //' trait_axis used in trait optimization.
   //' @param elast_multiplier A double precision floating point number to
@@ -2395,7 +2398,8 @@ namespace AdaptUtils {
   //' @keywords internal
   //' @noRd
   inline void optim_ta_setup (DataFrame& ta_reassessed, DataFrame& ESS_ta,
-    DataFrame& optim_ta, DataFrame& optim_ta_995, IntegerVector& variable_traits,
+    DataFrame& optim_ta, DataFrame& optim_ta_995,
+    IntegerVector& variable_traits, IntegerVector& flipped_traits,
     int opt_res, double elast_multiplier = 0.995) {
     
     DataFrame ESS_optim_ta;
@@ -2630,9 +2634,32 @@ namespace AdaptUtils {
     double jmatst_dev_min {0.};
     double jmatst_dev_max {0.};
     
+    bool givenrate_flipped {false};
+    bool offset_flipped {false};
+    bool multiplier_flipped {false};
+    bool surv_dev_flipped {false};
+    bool obs_dev_flipped {false};
+    bool size_dev_flipped {false};
+    bool sizeb_dev_flipped {false};
+    bool sizec_dev_flipped {false};
+    bool repst_dev_flipped {false};
+    bool fec_dev_flipped {false};
+    bool jsurv_dev_flipped {false};
+    bool jobs_dev_flipped {false};
+    bool jsize_dev_flipped {false};
+    bool jsizeb_dev_flipped {false};
+    bool jsizec_dev_flipped {false};
+    bool jrepst_dev_flipped {false};
+    bool jmatst_dev_flipped {false};
+    
     if (static_cast<int>(givenrate_noNA.length()) > 0) {
       givenrate_min = min(givenrate_noNA);
       givenrate_max = max(givenrate_noNA);
+      
+      if (givenrate_min < 0. && givenrate_max > 0.) {
+        givenrate_flipped = true;
+        flipped_traits(0) = 1;
+      }
       
       unsigned int givenrate_min_pos = which_min(givenrate_noNA);
       unsigned int givenrate_max_pos = which_max(givenrate_noNA);
@@ -2650,6 +2677,11 @@ namespace AdaptUtils {
       offset_min = min(offset_noNA);
       offset_max = max(offset_noNA);
       
+      if (offset_min < 0. && offset_max > 0.) {
+        offset_flipped = true;
+        flipped_traits(1) = 1;
+      }
+      
       unsigned int offset_min_pos = which_min(offset_noNA);
       unsigned int offset_max_pos = which_max(offset_noNA);
       
@@ -2665,6 +2697,11 @@ namespace AdaptUtils {
     if (static_cast<int>(multiplier_noNA.length()) > 0) {
       multiplier_min = min(multiplier_noNA);
       multiplier_max = max(multiplier_noNA);
+      
+      if (multiplier_min < 0. && multiplier_max > 0.) {
+        multiplier_flipped = true;
+        flipped_traits(2) = 1;
+      }
       
       unsigned int multiplier_min_pos = which_min(multiplier_noNA);
       unsigned int multiplier_max_pos = which_max(multiplier_noNA);
@@ -2685,6 +2722,11 @@ namespace AdaptUtils {
       unsigned int surv_dev_min_pos = which_min(surv_dev_noNA);
       unsigned int surv_dev_max_pos = which_max(surv_dev_noNA);
       
+      if (surv_dev_min < 0. && surv_dev_max > 0.) {
+        surv_dev_flipped = true;
+        flipped_traits(3) = 1;
+      }
+      
       if (surv_dev_min_pos < surv_dev_max_pos) {
         ESS_surv_dev(0) = surv_dev_min;
         ESS_surv_dev(1) = surv_dev_max;
@@ -2697,6 +2739,11 @@ namespace AdaptUtils {
     if (static_cast<int>(obs_dev_noNA.length()) > 0) {
       obs_dev_min = min(obs_dev_noNA);
       obs_dev_max = max(obs_dev_noNA);
+      
+      if (obs_dev_min < 0. && obs_dev_max > 0.) {
+        obs_dev_flipped = true;
+        flipped_traits(4) = 1;
+      }
       
       unsigned int obs_dev_min_pos = which_min(obs_dev_noNA);
       unsigned int obs_dev_max_pos = which_max(obs_dev_noNA);
@@ -2715,6 +2762,11 @@ namespace AdaptUtils {
       size_dev_min = min(size_dev_noNA);
       size_dev_max = max(size_dev_noNA);
       
+      if (size_dev_min < 0. && size_dev_max > 0.) {
+        size_dev_flipped = true;
+        flipped_traits(5) = 1;
+      }
+      
       unsigned int size_dev_min_pos = which_min(size_dev_noNA);
       unsigned int size_dev_max_pos = which_max(size_dev_noNA);
       
@@ -2730,6 +2782,11 @@ namespace AdaptUtils {
     if (static_cast<int>(sizeb_dev_noNA.length()) > 0) {
       sizeb_dev_min = min(sizeb_dev_noNA);
       sizeb_dev_max = max(sizeb_dev_noNA);
+      
+      if (sizeb_dev_min < 0. && sizeb_dev_max > 0.) {
+        sizeb_dev_flipped = true;
+        flipped_traits(6) = 1;
+      }
       
       unsigned int sizeb_dev_min_pos = which_min(sizeb_dev_noNA);
       unsigned int sizeb_dev_max_pos = which_max(sizeb_dev_noNA);
@@ -2747,6 +2804,11 @@ namespace AdaptUtils {
       sizec_dev_min = min(sizec_dev_noNA);
       sizec_dev_max = max(sizec_dev_noNA);
       
+      if (sizec_dev_min < 0. && sizec_dev_max > 0.) {
+        sizec_dev_flipped = true;
+        flipped_traits(7) = 1;
+      }
+      
       unsigned int sizec_dev_min_pos = which_min(sizec_dev_noNA);
       unsigned int sizec_dev_max_pos = which_max(sizec_dev_noNA);
       
@@ -2762,6 +2824,11 @@ namespace AdaptUtils {
     if (static_cast<int>(repst_dev_noNA.length()) > 0) {
       repst_dev_min = min(repst_dev_noNA);
       repst_dev_max = max(repst_dev_noNA);
+      
+      if (repst_dev_min < 0. && repst_dev_max > 0.) {
+        repst_dev_flipped = true;
+        flipped_traits(8) = 1;
+      }
       
       unsigned int repst_dev_min_pos = which_min(repst_dev_noNA);
       unsigned int repst_dev_max_pos = which_max(repst_dev_noNA);
@@ -2779,6 +2846,11 @@ namespace AdaptUtils {
       fec_dev_min = min(fec_dev_noNA);
       fec_dev_max = max(fec_dev_noNA);
       
+      if (fec_dev_min < 0. && fec_dev_max > 0.) {
+        fec_dev_flipped = true;
+        flipped_traits(9) = 1;
+      }
+      
       unsigned int fec_dev_min_pos = which_min(fec_dev_noNA);
       unsigned int fec_dev_max_pos = which_max(fec_dev_noNA);
       
@@ -2794,6 +2866,11 @@ namespace AdaptUtils {
     if (static_cast<int>(jsurv_dev_noNA.length()) > 0) {
       jsurv_dev_min = min(jsurv_dev_noNA);
       jsurv_dev_max = max(jsurv_dev_noNA);
+      
+      if (jsurv_dev_min < 0. && jsurv_dev_max > 0.) {
+        jsurv_dev_flipped = true;
+        flipped_traits(10) = 1;
+      }
       
       unsigned int jsurv_dev_min_pos = which_min(jsurv_dev_noNA);
       unsigned int jsurv_dev_max_pos = which_max(jsurv_dev_noNA);
@@ -2811,6 +2888,11 @@ namespace AdaptUtils {
       jobs_dev_min = min(jobs_dev_noNA);
       jobs_dev_max = max(jobs_dev_noNA);
       
+      if (jobs_dev_min < 0. && jobs_dev_max > 0.) {
+        jobs_dev_flipped = true;
+        flipped_traits(11) = 1;
+      }
+      
       unsigned int jobs_dev_min_pos = which_min(jobs_dev_noNA);
       unsigned int jobs_dev_max_pos = which_max(jobs_dev_noNA);
       
@@ -2826,6 +2908,11 @@ namespace AdaptUtils {
     if (static_cast<int>(jsize_dev_noNA.length()) > 0) {
       jsize_dev_min = min(jsize_dev_noNA);
       jsize_dev_max = max(jsize_dev_noNA);
+      
+      if (jsize_dev_min < 0. && jsize_dev_max > 0.) {
+        jsize_dev_flipped = true;
+        flipped_traits(12) = 1;
+      }
       
       unsigned int jsize_dev_min_pos = which_min(jsize_dev_noNA);
       unsigned int jsize_dev_max_pos = which_max(jsize_dev_noNA);
@@ -2843,6 +2930,11 @@ namespace AdaptUtils {
       jsizeb_dev_min = min(jsizeb_dev_noNA);
       jsizeb_dev_max = max(jsizeb_dev_noNA);
       
+      if (jsizeb_dev_min < 0. && jsizeb_dev_max > 0.) {
+        jsizeb_dev_flipped = true;
+        flipped_traits(13) = 1;
+      }
+      
       unsigned int jsizeb_dev_min_pos = which_min(jsizeb_dev_noNA);
       unsigned int jsizeb_dev_max_pos = which_max(jsizeb_dev_noNA);
       
@@ -2858,6 +2950,11 @@ namespace AdaptUtils {
     if (static_cast<int>(jsizec_dev_noNA.length()) > 0) {
       jsizec_dev_min = min(jsizec_dev_noNA);
       jsizec_dev_max = max(jsizec_dev_noNA);
+      
+      if (jsizec_dev_min < 0. && jsizec_dev_max > 0.) {
+        jsizec_dev_flipped = true;
+        flipped_traits(14) = 1;
+      }
       
       unsigned int jsizec_dev_min_pos = which_min(jsizec_dev_noNA);
       unsigned int jsizec_dev_max_pos = which_max(jsizec_dev_noNA);
@@ -2875,6 +2972,11 @@ namespace AdaptUtils {
       jrepst_dev_min = min(jrepst_dev_noNA);
       jrepst_dev_max = max(jrepst_dev_noNA);
       
+      if (jrepst_dev_min < 0. && jrepst_dev_max > 0.) {
+        jrepst_dev_flipped = true;
+        flipped_traits(15) = 1;
+      }
+      
       unsigned int jrepst_dev_min_pos = which_min(jrepst_dev_noNA);
       unsigned int jrepst_dev_max_pos = which_max(jrepst_dev_noNA);
       
@@ -2890,6 +2992,11 @@ namespace AdaptUtils {
     if (static_cast<int>(jmatst_dev_noNA.length()) > 0) {
       jmatst_dev_min = min(jmatst_dev_noNA);
       jmatst_dev_max = max(jmatst_dev_noNA);
+      
+      if (jmatst_dev_min < 0. && jmatst_dev_max > 0.) {
+        jmatst_dev_flipped = true;
+        flipped_traits(16) = 1;
+      }
       
       unsigned int jmatst_dev_min_pos = which_min(jmatst_dev_noNA);
       unsigned int jmatst_dev_max_pos = which_max(jmatst_dev_noNA);
@@ -3189,23 +3296,246 @@ namespace AdaptUtils {
     optim_jmatst_dev_995 = clone(optim_jmatst_dev);
     
     
-    if (ESS_variable_traits(0) > 0) optim_givenrate_995 = optim_givenrate_995 * elast_multiplier;
-    if (ESS_variable_traits(1) > 0) optim_offset_995 = optim_offset_995 * elast_multiplier;
-    if (ESS_variable_traits(2) > 0) optim_multiplier_995 = optim_multiplier_995 * elast_multiplier;
-    if (ESS_variable_traits(3) > 0) optim_surv_dev_995 = optim_surv_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(4) > 0) optim_obs_dev_995 = optim_obs_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(5) > 0) optim_size_dev_995 = optim_size_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(6) > 0) optim_sizeb_dev_995 = optim_sizeb_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(7) > 0) optim_sizec_dev_995 = optim_sizec_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(8) > 0) optim_repst_dev_995 = optim_repst_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(9) > 0) optim_fec_dev_995 = optim_fec_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(10) > 0) optim_jsurv_dev_995 = optim_jsurv_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(11) > 0) optim_jobs_dev_995 = optim_jobs_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(12) > 0) optim_jsize_dev_995 = optim_jsize_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(13) > 0) optim_jsizeb_dev_995 = optim_jsizeb_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(14) > 0) optim_jsizec_dev_995 = optim_jsizec_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(15) > 0) optim_jrepst_dev_995 = optim_jrepst_dev_995 * elast_multiplier;
-    if (ESS_variable_traits(16) > 0) optim_jmatst_dev_995 = optim_jmatst_dev_995 * elast_multiplier;
+    int og995_length = static_cast<int>(optim_givenrate_995.length());
+    
+    if (ESS_variable_traits(0) > 0) {
+      if (!givenrate_flipped) {
+        optim_givenrate_995 = optim_givenrate_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_givenrate_995(i) < 0.) {
+            double opt_difference = optim_givenrate_995(i) - (optim_givenrate_995(i) * elast_multiplier);
+            optim_givenrate_995(i) = optim_givenrate_995(i) + opt_difference;
+          } else {
+            optim_givenrate_995(i) = optim_givenrate_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(1) > 0) {
+      if (!offset_flipped) {
+        optim_offset_995 = optim_offset_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_offset_995(i) < 0.) {
+            double opt_difference = optim_offset_995(i) - (optim_offset_995(i) * elast_multiplier);
+            optim_offset_995(i) = optim_offset_995(i) + opt_difference;
+          } else {
+            optim_offset_995(i) = optim_offset_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(2) > 0) {
+      if (!multiplier_flipped) {
+        optim_multiplier_995 = optim_multiplier_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_multiplier_995(i) < 0.) {
+            double opt_difference = optim_multiplier_995(i) - (optim_multiplier_995(i) * elast_multiplier);
+            optim_multiplier_995(i) = optim_multiplier_995(i) + opt_difference;
+          } else {
+            optim_multiplier_995(i) = optim_multiplier_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(3) > 0) {
+      if (!surv_dev_flipped) {
+        optim_surv_dev_995 = optim_surv_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_surv_dev_995(i) < 0.) {
+            double opt_difference = optim_surv_dev_995(i) - (optim_surv_dev_995(i) * elast_multiplier);
+            optim_surv_dev_995(i) = optim_surv_dev_995(i) + opt_difference;
+          } else {
+            optim_surv_dev_995(i) = optim_surv_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(4) > 0) {
+      if (!obs_dev_flipped) {
+        optim_obs_dev_995 = optim_obs_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_obs_dev_995(i) < 0.) {
+            double opt_difference = optim_obs_dev_995(i) - (optim_obs_dev_995(i) * elast_multiplier);
+            optim_obs_dev_995(i) = optim_obs_dev_995(i) + opt_difference;
+          } else {
+            optim_obs_dev_995(i) = optim_obs_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(5) > 0) {
+      if (!size_dev_flipped) {
+        optim_size_dev_995 = optim_size_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_size_dev_995(i) < 0.) {
+            double opt_difference = optim_size_dev_995(i) - (optim_size_dev_995(i) * elast_multiplier);
+            optim_size_dev_995(i) = optim_size_dev_995(i) + opt_difference;
+          } else {
+            optim_size_dev_995(i) = optim_size_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(6) > 0) {
+      if (!sizeb_dev_flipped) {
+        optim_sizeb_dev_995 = optim_sizeb_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_sizeb_dev_995(i) < 0.) {
+            double opt_difference = optim_sizeb_dev_995(i) - (optim_sizeb_dev_995(i) * elast_multiplier);
+            optim_sizeb_dev_995(i) = optim_sizeb_dev_995(i) + opt_difference;
+          } else {
+            optim_sizeb_dev_995(i) = optim_sizeb_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(7) > 0) {
+      if (!sizec_dev_flipped) {
+        optim_sizec_dev_995 = optim_sizec_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_sizec_dev_995(i) < 0.) {
+            double opt_difference = optim_sizec_dev_995(i) - (optim_sizec_dev_995(i) * elast_multiplier);
+            optim_sizec_dev_995(i) = optim_sizec_dev_995(i) + opt_difference;
+          } else {
+            optim_sizec_dev_995(i) = optim_sizec_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(8) > 0) {
+      if (!repst_dev_flipped) {
+        optim_repst_dev_995 = optim_repst_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_repst_dev_995(i) < 0.) {
+            double opt_difference = optim_repst_dev_995(i) - (optim_repst_dev_995(i) * elast_multiplier);
+            optim_repst_dev_995(i) = optim_repst_dev_995(i) + opt_difference;
+          } else {
+            optim_repst_dev_995(i) = optim_repst_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(9) > 0) {
+      if (!fec_dev_flipped) {
+        optim_fec_dev_995 = optim_fec_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_fec_dev_995(i) < 0.) {
+            double opt_difference = optim_fec_dev_995(i) - (optim_fec_dev_995(i) * elast_multiplier);
+            optim_fec_dev_995(i) = optim_fec_dev_995(i) + opt_difference;
+          } else {
+            optim_fec_dev_995(i) = optim_fec_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(10) > 0) {
+      if (!jsurv_dev_flipped) {
+        optim_jsurv_dev_995 = optim_jsurv_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jsurv_dev_995(i) < 0.) {
+            double opt_difference = optim_jsurv_dev_995(i) - (optim_jsurv_dev_995(i) * elast_multiplier);
+            optim_jsurv_dev_995(i) = optim_jsurv_dev_995(i) + opt_difference;
+          } else {
+            optim_jsurv_dev_995(i) = optim_jsurv_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(11) > 0) {
+      if (!jobs_dev_flipped) {
+        optim_jobs_dev_995 = optim_jobs_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jobs_dev_995(i) < 0.) {
+            double opt_difference = optim_jobs_dev_995(i) - (optim_jobs_dev_995(i) * elast_multiplier);
+            optim_jobs_dev_995(i) = optim_jobs_dev_995(i) + opt_difference;
+          } else {
+            optim_jobs_dev_995(i) = optim_jobs_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(12) > 0) {
+      if (!jsize_dev_flipped) {
+        optim_jsize_dev_995 = optim_jsize_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jsize_dev_995(i) < 0.) {
+            double opt_difference = optim_jsize_dev_995(i) - (optim_jsize_dev_995(i) * elast_multiplier);
+            optim_jsize_dev_995(i) = optim_jsize_dev_995(i) + opt_difference;
+          } else {
+            optim_jsize_dev_995(i) = optim_jsize_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(13) > 0) {
+      if (!jsizeb_dev_flipped) {
+        optim_jsizeb_dev_995 = optim_jsizeb_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jsizeb_dev_995(i) < 0.) {
+            double opt_difference = optim_jsizeb_dev_995(i) - (optim_jsizeb_dev_995(i) * elast_multiplier);
+            optim_jsizeb_dev_995(i) = optim_jsizeb_dev_995(i) + opt_difference;
+          } else {
+            optim_jsizeb_dev_995(i) = optim_jsizeb_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(14) > 0) {
+      if (!jsizec_dev_flipped) {
+        optim_jsizec_dev_995 = optim_jsizec_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jsizec_dev_995(i) < 0.) {
+            double opt_difference = optim_jsizec_dev_995(i) - (optim_jsizec_dev_995(i) * elast_multiplier);
+            optim_jsizec_dev_995(i) = optim_jsizec_dev_995(i) + opt_difference;
+          } else {
+            optim_jsizec_dev_995(i) = optim_jsizec_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(15) > 0) {
+      if (!jrepst_dev_flipped) {
+        optim_jrepst_dev_995 = optim_jrepst_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jrepst_dev_995(i) < 0.) {
+            double opt_difference = optim_jrepst_dev_995(i) - (optim_jrepst_dev_995(i) * elast_multiplier);
+            optim_jrepst_dev_995(i) = optim_jrepst_dev_995(i) + opt_difference;
+          } else {
+            optim_jrepst_dev_995(i) = optim_jrepst_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(16) > 0) {
+      if (!jmatst_dev_flipped) {
+        optim_jmatst_dev_995 = optim_jmatst_dev_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_jmatst_dev_995(i) < 0.) {
+            double opt_difference = optim_jmatst_dev_995(i) - (optim_jmatst_dev_995(i) * elast_multiplier);
+            optim_jmatst_dev_995(i) = optim_jmatst_dev_995(i) + opt_difference;
+          } else {
+            optim_jmatst_dev_995(i) = optim_jmatst_dev_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
     
     optim_variant_995 = clone(optim_variant);
     
