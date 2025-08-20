@@ -70,7 +70,7 @@ MPMs, with each vector giving the effect of each individual in each stage
 relative to a reference individual. Data frames of class \code{adaptEq}, and
 lists of such data frames, can be made with function
 \code{\link{equiv_input}()}. Numeric entries used in these vectors can be
-thought of as Lotka-Volterra interaction terms, such as are used in multiple
+thought of as Lotka-Volterra competition terms, such as are used in multiple
 species competition models.}
 
 \item{starts}{An optional list of \code{lefkoSV} objects, which are data
@@ -274,7 +274,7 @@ identities for each MPM entered.}
 \item{err_check}{An optional list composed of an additional six lists, each
 of which has the number of elements equal to the number of MPMs utilized.
 List output include \code{allstages_all}, which gives the indices of
-estimatedtransitions in MPMs constructed by function \code{project3()} from
+estimated transitions in MPMs constructed by function \code{project3()} from
 input vital rate models; \code{allmodels_all}, which provides all vital rate
 models as decomposed and interpreted by function \code{project3()};
 \code{equivalence_list}, which gives the stage equivalence for density

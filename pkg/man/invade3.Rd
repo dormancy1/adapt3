@@ -78,7 +78,7 @@ element giving the effect of an individual of that age, stage, age-stage, or
 stage-pair, depending on whether the MPM is age-based, ahistorical
 stage-based, age-by-stage, or historical stage-based, respectively. Numeric
 entries used in these vectors can be thought of as Lotka-Volterra
-interaction terms, such as are used in multiple species competition models.}
+competition terms, such as are used in multiple species competition models.}
 
 \item{starts}{An optional \code{lefkoSV} object, which is a data frame
 providing the starting numbers of individuals of each stage. If not
@@ -93,7 +93,7 @@ years in argument \code{mpm} or argument \code{vrm}.}
 used during invasion analysis. Defaults to the population-level set or the
 first patch, depending on whether the former exists.}
 
-\item{tweights}{An optional numeric vector or matrice denoting the
+\item{tweights}{An optional numeric vector or matrix denoting the
 probabilities of choosing each matrix in each MPM in a stochastic
 projection. If a matrix, then a first-order Markovian environment is
 assumed, in which the probability of choosing a specific annual matrix

@@ -160,7 +160,7 @@ cyp_eq <- equiv_input(cycamatrix2r,
 eq_list <- list(cyp_eq, cyp_eq)
 ```
   
-  <p style="text-indent: 20px">Finally, we can run our communty projection. We do so as follows, projecting the population forward 100 years.</p>
+  <p style="text-indent: 20px">Finally, we can run our community projection. We do so as follows, projecting the population forward 100 years.</p>
 ```{r ch1-1.11}
 cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
   density = cyp_dv_list, equivalence = eq_list, times = 100, integeronly = TRUE)
@@ -168,7 +168,7 @@ summary(cyp_comm_proj)
 ```
   
   <p style="text-indent: 20px">We can see that our projection did not predict extinction in *C. candidum*, but it did in *C. parviflorum*. Let's take a look at a graph of the results, showing the full population sizes over time.</p>
-```{r ch1-1.12}
+```{r ch1-1.12, fig.cap = "Figure C1. Projected population sizes for Cypripedium candidum (solid black) and C. parviflorum (dashed red)"}
 plot(cyp_comm_proj)
 ```
   

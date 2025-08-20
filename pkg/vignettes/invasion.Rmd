@@ -193,21 +193,29 @@ summary_hfv(cypraw_v1)
 #>  3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:1    3rd Qu.:1                     
 #>  Max.   :7.0000   Max.   :7.0000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1                     
 #>                                                                                                                                 
-#>   stage2index        sizea3          sizeb3         size3added        repstra3      repstr3added       feca3         fec3added    
-#>  Min.   :4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
-#>  1st Qu.:4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
-#>  Median :5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000   Median :0.000  
-#>  Mean   :4.982   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335   Mean   :0.335  
-#>  3rd Qu.:5.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
-#>  Max.   :8.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
-#>                                                                                                                                   
-#>    obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3           stage3index   
-#>  Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871        Min.   :0.000  
-#>  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character   1st Qu.:4.000  
-#>  Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character   Median :5.000  
-#>  Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                      Mean   :4.301  
-#>  3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                      3rd Qu.:5.000  
-#>  Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                      Max.   :8.000  
+#>   stage2index        sizea3          sizeb3         size3added        repstra3      repstr3added       feca3      
+#>  Min.   :4.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000   Min.   :0.000   Min.   :0.000  
+#>  1st Qu.:4.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.000  
+#>  Median :5.000   Median :0.000   Median :0.0000   Median :1.0000   Median :0.000   Median :0.000   Median :0.000  
+#>  Mean   :4.982   Mean   :0.335   Mean   :0.5523   Mean   :0.8874   Mean   :0.335   Mean   :0.335   Mean   :0.335  
+#>  3rd Qu.:5.000   3rd Qu.:0.000   3rd Qu.:1.0000   3rd Qu.:1.0000   3rd Qu.:0.000   3rd Qu.:0.000   3rd Qu.:0.000  
+#>  Max.   :8.000   Max.   :7.000   Max.   :7.0000   Max.   :7.0000   Max.   :7.000   Max.   :7.000   Max.   :7.000  
+#>                                                                                                                   
+#>    fec3added       obsstatus3      repstatus3       fecstatus3       matstatus3     alive3         stage3         
+#>  Min.   :0.000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :1    Min.   :0.000   Length:6871       
+#>  1st Qu.:0.000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:1    1st Qu.:1.000   Class :character  
+#>  Median :0.000   Median :1.000   Median :0.0000   Median :0.0000   Median :1    Median :1.000   Mode  :character  
+#>  Mean   :0.335   Mean   :0.571   Mean   :0.2391   Mean   :0.2391   Mean   :1    Mean   :0.874                     
+#>  3rd Qu.:0.000   3rd Qu.:1.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1    3rd Qu.:1.000                     
+#>  Max.   :7.000   Max.   :1.000   Max.   :1.0000   Max.   :1.0000   Max.   :1    Max.   :1.000                     
+#>                                                                                                                   
+#>   stage3index   
+#>  Min.   :0.000  
+#>  1st Qu.:4.000  
+#>  Median :5.000  
+#>  Mean   :4.301  
+#>  3rd Qu.:5.000  
+#>  Max.   :8.000  
 #> 
 ```
   
@@ -302,38 +310,38 @@ cyp_ta
 #> 13      13     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.714286        2
 #> 14      14     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   2.857143        2
 #> 15      15     P1    rep   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA   3.000000        2
-#>    convtype_t12 surv_dev obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev
-#> 1            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 2            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 3            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 4            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 5            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 6            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 7            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 8            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 9            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 10           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 11           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 12           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 13           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 14           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 15           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#>    jrepst_dev jmatst_dev
-#> 1          NA         NA
-#> 2          NA         NA
-#> 3          NA         NA
-#> 4          NA         NA
-#> 5          NA         NA
-#> 6          NA         NA
-#> 7          NA         NA
-#> 8          NA         NA
-#> 9          NA         NA
-#> 10         NA         NA
-#> 11         NA         NA
-#> 12         NA         NA
-#> 13         NA         NA
-#> 14         NA         NA
-#> 15         NA         NA
+#>    convtype_t12 surv_dev obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev
+#> 1            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 2            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 3            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 4            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 5            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 6            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 7            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 8            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 9            NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 10           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 11           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 12           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 13           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 14           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#> 15           NA       NA      NA       NA        NA        NA        NA      NA        NA       NA        NA         NA
+#>    jsizec_dev jrepst_dev jmatst_dev
+#> 1          NA         NA         NA
+#> 2          NA         NA         NA
+#> 3          NA         NA         NA
+#> 4          NA         NA         NA
+#> 5          NA         NA         NA
+#> 6          NA         NA         NA
+#> 7          NA         NA         NA
+#> 8          NA         NA         NA
+#> 9          NA         NA         NA
+#> 10         NA         NA         NA
+#> 11         NA         NA         NA
+#> 12         NA         NA         NA
+#> 13         NA         NA         NA
+#> 14         NA         NA         NA
+#> 15         NA         NA         NA
 ```
   
   <p style="text-indent: 20px">Finally, we will run our invasibility analysis.</p>
@@ -352,7 +360,7 @@ plot(cyp_inv, pip = FALSE, run = 25)
 plot(cyp_inv, pip = FALSE, run = 50)
 ```
 
-![plot of chunk ch2-1.8](ch2-1.8-1.png)
+![Figure I1. Population growth of resident (solid black) and invader (dashed red) variants in two runs](ch2-1.8-1.png)
   
   <p style="text-indent: 20px">In the plots above, the resident variant is given in solid black, while the invader variant, which is introduced at time 250, is given as a dashed red line. It appears that the invader never gained a foothold in the population, likely going extinct while the resident grew to a stable population size. However, we can also take a peek at the fitness values in the pairwise simulations, as below.</p>
 
@@ -373,7 +381,7 @@ summary(cyp_inv$fitness)
 plot(cyp_inv)
 ```
 
-![plot of chunk ch2-1.10](ch2-1.10-1.png)
+![Figure I2. Pairwise invasibility plot showing directional selection for increased reproduction. Black and white regions show positive and negative invader fitness, respectively](ch2-1.10-1.png)
   
   <p style="text-indent: 20px">It appears that natural selection is completely directional here, favoring increasingly large fruiting value multipliers.</p>
   
@@ -381,7 +389,7 @@ plot(cyp_inv)
 
   <p style="text-indent: 20px">Let's now move on to looking at analyzing function-based MPMs. This approach works best when vital rates are given as linear or non-linear functions of size, reproductive status, and other variables. Here, the linear or non-linear models can be manipulated by altering their y-intercepts.</p>
   
-  <p style="text-indent: 20px">Our example will once again focus on *Cypripedium parviflorum*. However, this time we will attempt to replicate the pairwise invasibility analysis results from the ahistorical, deterministic analysis of the same population published in @shefferson_life_2014. That analysis was used to explore the adaptive context of vegetative dormancy, and hence imperfect sprouting, and found an evolutionarily stable strategy at an intermediate level of sprouting. The dataset that we will use is not exactly the same as in the paper, nor is the methodology exactly the same, but our results should be similar. Because we will use a function-based approach, which is very similar to building an integral projection model (IPM), we will use a larger resolution life history model allowing for all observed sizes of both vegetative and flowering adults, where size is defined by the number of sprouts.</p>
+  <p style="text-indent: 20px">Our example will once again focus on *Cypripedium parviflorum*. However, this time we will attempt to replicate the pairwise invasibility analysis results from the ahistorical, deterministic analysis of the same population published in @shefferson_life_2014. That analysis was used to explore the adaptive context of vegetative dormancy, and hence imperfect sprouting, and found an evolutionarily stable strategy at an intermediate level of sprouting. The dataset that we will use is not exactly the same as in the paper, nor is the methodology exactly the same, but our results should be similar. Because we will use a function-based approach, which is very similar to building an integral projection model (IPM), we will use a larger resolution life history model than used in that paper, allowing for all observed sizes of both vegetative and flowering adults, where size is defined by the number of sprouts.</p>
 
 ``` r
 stagevector <- c("SD", "P1", "SL", "D", "V1", "V2", "V3", "V4", "V5", "V6",
@@ -424,44 +432,44 @@ cypframe_fb
 #> 16    F5    5     NA     NA      NA      NA         1         1          0         0         1         1              0.5
 #> 17    F6    6     NA     NA      NA      NA         1         1          0         0         1         1              0.5
 #> 18    F7    7     NA     NA      NA      NA         1         1          0         0         1         1              0.5
-#>    sizebin_min sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center sizebinb_width
-#> 1         -0.5         0.5              0             1                NA           NA           NA              NA             NA
-#> 2         -0.5         0.5              0             1                NA           NA           NA              NA             NA
-#> 3         -0.5         0.5              0             1                NA           NA           NA              NA             NA
-#> 4         -0.5         0.5              0             1                NA           NA           NA              NA             NA
-#> 5          0.5         1.5              1             1                NA           NA           NA              NA             NA
-#> 6          1.5         2.5              2             1                NA           NA           NA              NA             NA
-#> 7          2.5         3.5              3             1                NA           NA           NA              NA             NA
-#> 8          3.5         4.5              4             1                NA           NA           NA              NA             NA
-#> 9          4.5         5.5              5             1                NA           NA           NA              NA             NA
-#> 10         5.5         6.5              6             1                NA           NA           NA              NA             NA
-#> 11         6.5         7.5              7             1                NA           NA           NA              NA             NA
-#> 12         0.5         1.5              1             1                NA           NA           NA              NA             NA
-#> 13         1.5         2.5              2             1                NA           NA           NA              NA             NA
-#> 14         2.5         3.5              3             1                NA           NA           NA              NA             NA
-#> 15         3.5         4.5              4             1                NA           NA           NA              NA             NA
-#> 16         4.5         5.5              5             1                NA           NA           NA              NA             NA
-#> 17         5.5         6.5              6             1                NA           NA           NA              NA             NA
-#> 18         6.5         7.5              7             1                NA           NA           NA              NA             NA
-#>    binhalfwidthc_raw sizebinc_min sizebinc_max sizebinc_center sizebinc_width group          comments
-#> 1                 NA           NA           NA              NA             NA     0      Dormant seed
-#> 2                 NA           NA           NA              NA             NA     0         Protocorm
-#> 3                 NA           NA           NA              NA             NA     0          Seedling
-#> 4                 NA           NA           NA              NA             NA     0          Veg dorm
-#> 5                 NA           NA           NA              NA             NA     0  Veg adult 1 stem
-#> 6                 NA           NA           NA              NA             NA     0 Veg adult 2 stems
-#> 7                 NA           NA           NA              NA             NA     0 Veg adult 3 stems
-#> 8                 NA           NA           NA              NA             NA     0 Veg adult 4 stems
-#> 9                 NA           NA           NA              NA             NA     0 Veg adult 5 stems
-#> 10                NA           NA           NA              NA             NA     0 Veg adult 6 stems
-#> 11                NA           NA           NA              NA             NA     0 Veg adult 7 stems
-#> 12                NA           NA           NA              NA             NA     0  Flo adult 1 stem
-#> 13                NA           NA           NA              NA             NA     0 Flo adult 2 stems
-#> 14                NA           NA           NA              NA             NA     0 Flo adult 3 stems
-#> 15                NA           NA           NA              NA             NA     0 Flo adult 4 stems
-#> 16                NA           NA           NA              NA             NA     0 Flo adult 5 stems
-#> 17                NA           NA           NA              NA             NA     0 Flo adult 6 stems
-#> 18                NA           NA           NA              NA             NA     0 Flo adult 7 stems
+#>    sizebin_min sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center
+#> 1         -0.5         0.5              0             1                NA           NA           NA              NA
+#> 2         -0.5         0.5              0             1                NA           NA           NA              NA
+#> 3         -0.5         0.5              0             1                NA           NA           NA              NA
+#> 4         -0.5         0.5              0             1                NA           NA           NA              NA
+#> 5          0.5         1.5              1             1                NA           NA           NA              NA
+#> 6          1.5         2.5              2             1                NA           NA           NA              NA
+#> 7          2.5         3.5              3             1                NA           NA           NA              NA
+#> 8          3.5         4.5              4             1                NA           NA           NA              NA
+#> 9          4.5         5.5              5             1                NA           NA           NA              NA
+#> 10         5.5         6.5              6             1                NA           NA           NA              NA
+#> 11         6.5         7.5              7             1                NA           NA           NA              NA
+#> 12         0.5         1.5              1             1                NA           NA           NA              NA
+#> 13         1.5         2.5              2             1                NA           NA           NA              NA
+#> 14         2.5         3.5              3             1                NA           NA           NA              NA
+#> 15         3.5         4.5              4             1                NA           NA           NA              NA
+#> 16         4.5         5.5              5             1                NA           NA           NA              NA
+#> 17         5.5         6.5              6             1                NA           NA           NA              NA
+#> 18         6.5         7.5              7             1                NA           NA           NA              NA
+#>    sizebinb_width binhalfwidthc_raw sizebinc_min sizebinc_max sizebinc_center sizebinc_width group          comments
+#> 1              NA                NA           NA           NA              NA             NA     0      Dormant seed
+#> 2              NA                NA           NA           NA              NA             NA     0         Protocorm
+#> 3              NA                NA           NA           NA              NA             NA     0          Seedling
+#> 4              NA                NA           NA           NA              NA             NA     0          Veg dorm
+#> 5              NA                NA           NA           NA              NA             NA     0  Veg adult 1 stem
+#> 6              NA                NA           NA           NA              NA             NA     0 Veg adult 2 stems
+#> 7              NA                NA           NA           NA              NA             NA     0 Veg adult 3 stems
+#> 8              NA                NA           NA           NA              NA             NA     0 Veg adult 4 stems
+#> 9              NA                NA           NA           NA              NA             NA     0 Veg adult 5 stems
+#> 10             NA                NA           NA           NA              NA             NA     0 Veg adult 6 stems
+#> 11             NA                NA           NA           NA              NA             NA     0 Veg adult 7 stems
+#> 12             NA                NA           NA           NA              NA             NA     0  Flo adult 1 stem
+#> 13             NA                NA           NA           NA              NA             NA     0 Flo adult 2 stems
+#> 14             NA                NA           NA           NA              NA             NA     0 Flo adult 3 stems
+#> 15             NA                NA           NA           NA              NA             NA     0 Flo adult 4 stems
+#> 16             NA                NA           NA           NA              NA             NA     0 Flo adult 5 stems
+#> 17             NA                NA           NA           NA              NA             NA     0 Flo adult 6 stems
+#> 18             NA                NA           NA           NA              NA             NA     0 Flo adult 7 stems
 ```
   
   <p style="text-indent: 20px">Now we will standardize our dataset using the new life history model, allowing `lefko3` to develop new stage calls in all cases.</p>
@@ -938,7 +946,7 @@ cyp_proj1 <- f_projection3(format = 3, stageframe = cypframe_fb,
 plot(cyp_proj1)
 ```
 
-![plot of chunk ch2-2.7](ch2-2.7-1.png)
+![Figure I3. Density dependent projected population growth under density frame c2d_1](ch2-2.7-1.png)
   
   <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 20 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using more variants, in order to get a good resolution of trait variation.</p>
 
@@ -1030,7 +1038,7 @@ summary(cyp_inv3)
 #> It includes optimization data suggesting 1 purported ESS optimum.
 ```
   
-  <p style="text-indent: 20px">The resulting output suggests that we have an ESS value of our trait. As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 8, then there will be no run 50 and that line will lead to an error.</p>
+  <p style="text-indent: 20px">The resulting output suggests that we have an ESS value of our trait. As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 20, then the run numbers might need to be adjusted.</p>
 
 ``` r
 par(mfrow = c(2, 1))
@@ -1039,7 +1047,7 @@ plot(cyp_inv3, pip = FALSE, run = 1)
 plot(cyp_inv3, pip = FALSE, run = 11)
 ```
 
-![plot of chunk ch2-2.11](ch2-2.11-1.png)
+![Figure I4. Population growth of resident (solid black) and invader (dashed red) variants in two runs](ch2-2.11-1.png)
   
   <p style="text-indent: 20px">At first glance the invader seems to be so low as to be extinct in both cases. However, we can take a look at the actual growth of the invader in run 11 as follows.</p>
 
@@ -1165,7 +1173,7 @@ cyp_inv3$N_out[[1]][2,,11]
 plot(cyp_inv3)
 ```
 
-![plot of chunk ch2-2.13](ch2-2.13-1.png)
+![Figure I5. Pairwise invasibility plot showing an intermediate level of sprouting as the predicted ESS. Black and white regions show positive and negative invader fitness, respectively](ch2-2.13-1.png)
 
   <p style="text-indent: 20px">A fairly beautiful PIP, if I say so myself! We find that there appears to be an ESS value for sprouting. Let's now take a look at the associated elasticity plot.</p>
 
@@ -1173,9 +1181,9 @@ plot(cyp_inv3)
 plot(cyp_inv3, pip = FALSE, elast = TRUE)
 ```
 
-![plot of chunk ch2-2.14](ch2-2.14-1.png)
+![Figure I6. Elasticity plot showing the ESS deviation to the y-intercept of sprouting as a value somewhere around the 7th or 8th variant in the trait frame](ch2-2.14-1.png)
 
-  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Here, we see a potential optimum hovering near 0. Regardless, let's take a look at the predicted ESS value of the trait.</p>
+  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Here, we see a potential optimum near 0, corresponding roughly to variant 7 in our trait axis. Let's take a look at the predicted ESS value of the trait.</p>
 
 ``` r
 cyp_inv3$optim$ESS_values
@@ -1186,7 +1194,7 @@ cyp_inv3$optim$ESS_values
 #>   jsizec_dev jrepst_dev jmatst_dev year2 mpm_altered vrm_altered       fitness converged
 #> 1         NA         NA         NA  <NA>           0           1 -1.162412e-05      TRUE
 ```
-  <p style="text-indent: 20px">Our converged ESS value is at a slightly negative additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS. This is exactly what was found in @shefferson_life_2014, so we've done well.</p>
+  <p style="text-indent: 20px">Our converged ESS value is at a slightly negative additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS or very close to it. This is exactly what was found in @shefferson_life_2014, so we've done well.</p>
 
 
 ## Acknowledgements

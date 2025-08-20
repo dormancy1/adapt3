@@ -1823,7 +1823,7 @@ NULL
 #' relative to a reference individual. Data frames of class \code{adaptEq}, and
 #' lists of such data frames, can be made with function
 #' \code{\link{equiv_input}()}. Numeric entries used in these vectors can be
-#' thought of as Lotka-Volterra interaction terms, such as are used in multiple
+#' thought of as Lotka-Volterra competition terms, such as are used in multiple
 #' species competition models.
 #' @param starts An optional list of \code{lefkoSV} objects, which are data
 #' frames providing the starting numbers of individuals of each stage. If
@@ -1998,7 +1998,7 @@ NULL
 #' \item{err_check}{An optional list composed of an additional six lists, each
 #' of which has the number of elements equal to the number of MPMs utilized.
 #' List output include \code{allstages_all}, which gives the indices of
-#' estimatedtransitions in MPMs constructed by function \code{project3()} from
+#' estimated transitions in MPMs constructed by function \code{project3()} from
 #' input vital rate models; \code{allmodels_all}, which provides all vital rate
 #' models as decomposed and interpreted by function \code{project3()};
 #' \code{equivalence_list}, which gives the stage equivalence for density
@@ -2136,7 +2136,7 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' stage-pair, depending on whether the MPM is age-based, ahistorical
 #' stage-based, age-by-stage, or historical stage-based, respectively. Numeric
 #' entries used in these vectors can be thought of as Lotka-Volterra
-#' interaction terms, such as are used in multiple species competition models.
+#' competition terms, such as are used in multiple species competition models.
 #' @param starts An optional \code{lefkoSV} object, which is a data frame
 #' providing the starting numbers of individuals of each stage. If not
 #' provided, then all projections start with a single individual per stage.
@@ -2147,7 +2147,7 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' @param patches An optional single string giving a single pop-patch to be
 #' used during invasion analysis. Defaults to the population-level set or the
 #' first patch, depending on whether the former exists.
-#' @param tweights An optional numeric vector or matrice denoting the
+#' @param tweights An optional numeric vector or matrix denoting the
 #' probabilities of choosing each matrix in each MPM in a stochastic
 #' projection. If a matrix, then a first-order Markovian environment is
 #' assumed, in which the probability of choosing a specific annual matrix

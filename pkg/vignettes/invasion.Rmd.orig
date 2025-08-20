@@ -125,7 +125,7 @@ cyp_inv <- invade3(axis = cyp_ta, mpm = cypmean, density = c2d_4, times = 350,
 ```
   
   <p style="text-indent: 20px">Let's see some diagnostics, in particular by plotting the sizes of the resident and invader subpopulations in each time step. We will look at two separate runs.</p>
-```{r ch2-1.8}
+```{r ch2-1.8, fig.cap = "Figure I1. Population growth of resident (solid black) and invader (dashed red) variants in two runs"}
 par(mfrow = c(2, 1))
 plot(cyp_inv, pip = FALSE, run = 25)
 plot(cyp_inv, pip = FALSE, run = 50)
@@ -137,7 +137,7 @@ summary(cyp_inv$fitness)
 ```
   
   <p style="text-indent: 20px">The data frame that we see the summary of above shows the fitness for both the resident (`variant1`) and the invader (`variant2`). Note that the invaders' fitness, assessed as the Lyapunov coefficient for the final 30 times in each simulation, shows that some invaders actually had very high growth. These are likely cases in which low fecundity multiplier residents were run with high fecundity multiplier invaders. Let's view the pairwise invasibility plot (PIP) to see if an ESS resulted from this. This will give us a sense of whether we have any evolutionarily stable equilibria, or whether natural selection appears to completely directional.</p>
-```{r ch2-1.10}
+```{r ch2-1.10, fig.cap = "Figure I2. Pairwise invasibility plot showing directional selection for increased reproduction. Black and white regions show positive and negative invader fitness, respectively"}
 plot(cyp_inv)
 ```
   
@@ -147,7 +147,7 @@ plot(cyp_inv)
 
   <p style="text-indent: 20px">Let's now move on to looking at analyzing function-based MPMs. This approach works best when vital rates are given as linear or non-linear functions of size, reproductive status, and other variables. Here, the linear or non-linear models can be manipulated by altering their y-intercepts.</p>
   
-  <p style="text-indent: 20px">Our example will once again focus on *Cypripedium parviflorum*. However, this time we will attempt to replicate the pairwise invasibility analysis results from the ahistorical, deterministic analysis of the same population published in @shefferson_life_2014. That analysis was used to explore the adaptive context of vegetative dormancy, and hence imperfect sprouting, and found an evolutionarily stable strategy at an intermediate level of sprouting. The dataset that we will use is not exactly the same as in the paper, nor is the methodology exactly the same, but our results should be similar. Because we will use a function-based approach, which is very similar to building an integral projection model (IPM), we will use a larger resolution life history model allowing for all observed sizes of both vegetative and flowering adults, where size is defined by the number of sprouts.</p>
+  <p style="text-indent: 20px">Our example will once again focus on *Cypripedium parviflorum*. However, this time we will attempt to replicate the pairwise invasibility analysis results from the ahistorical, deterministic analysis of the same population published in @shefferson_life_2014. That analysis was used to explore the adaptive context of vegetative dormancy, and hence imperfect sprouting, and found an evolutionarily stable strategy at an intermediate level of sprouting. The dataset that we will use is not exactly the same as in the paper, nor is the methodology exactly the same, but our results should be similar. Because we will use a function-based approach, which is very similar to building an integral projection model (IPM), we will use a larger resolution life history model than used in that paper, allowing for all observed sizes of both vegetative and flowering adults, where size is defined by the number of sprouts.</p>
 ```{r ch2-2.0}
 stagevector <- c("SD", "P1", "SL", "D", "V1", "V2", "V3", "V4", "V5", "V6",
   "V7", "F1", "F2", "F3", "F4", "F5", "F6", "F7")
@@ -236,7 +236,7 @@ c2d_1
 
   
   <p style="text-indent: 20px">Next, we will quickly run a projection of the sample MPM under the density dependence that we set above, using `lefko3`'s `f_projection3()` function. This will give us a sense of whether everything appears to be working.</p>
-```{r ch2-2.7}
+```{r ch2-2.7, fig.cap = "Figure I3. Density dependent projected population growth under density frame c2d_1"}
 cyp_proj1 <- f_projection3(format = 3, stageframe = cypframe_fb,
   supplement = cypsupp2f, modelsuite = cypmodels2, times = 1000,
   start_frame = cyp_start, data = cypraw_v2, density = c2d_1,
@@ -265,8 +265,8 @@ cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
 summary(cyp_inv3)
 ```
   
-  <p style="text-indent: 20px">The resulting output suggests that we have an ESS value of our trait. As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 8, then there will be no run 50 and that line will lead to an error.</p>
-```{r ch2-2.11}
+  <p style="text-indent: 20px">The resulting output suggests that we have an ESS value of our trait. As before, we can take a peek at what some of these simulations look like. We will try two different runs. Note that if the number of trait variants is set to less than 20, then the run numbers might need to be adjusted.</p>
+```{r ch2-2.11, fig.cap = "Figure I4. Population growth of resident (solid black) and invader (dashed red) variants in two runs"}
 par(mfrow = c(2, 1))
 
 plot(cyp_inv3, pip = FALSE, run = 1)
@@ -279,20 +279,20 @@ cyp_inv3$N_out[[1]][2,,11]
 ```
   
   <p style="text-indent: 20px">We can see that the invader does grow in at least some of the simulations. Now let's see the pairwise invasibility plot (PIP).</p>
-```{r ch2-2.13}
+```{r ch2-2.13, fig.cap = "Figure I5. Pairwise invasibility plot showing an intermediate level of sprouting as the predicted ESS. Black and white regions show positive and negative invader fitness, respectively"}
 plot(cyp_inv3)
 ```
 
   <p style="text-indent: 20px">A fairly beautiful PIP, if I say so myself! We find that there appears to be an ESS value for sprouting. Let's now take a look at the associated elasticity plot.</p>
-```{r ch2-2.14}
+```{r ch2-2.14, fig.cap = "Figure I6. Elasticity plot showing the ESS deviation to the y-intercept of sprouting as a value somewhere around the 7th or 8th variant in the trait frame"}
 plot(cyp_inv3, pip = FALSE, elast = TRUE)
 ```
 
-  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Here, we see a potential optimum hovering near 0. Regardless, let's take a look at the predicted ESS value of the trait.</p>
+  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Here, we see a potential optimum near 0, corresponding roughly to variant 7 in our trait axis. Let's take a look at the predicted ESS value of the trait.</p>
 ```{r ch2-2.15}
 cyp_inv3$optim$ESS_values
 ```
-  <p style="text-indent: 20px">Our converged ESS value is at a slightly negative additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS. This is exactly what was found in @shefferson_life_2014, so we've done well.</p>
+  <p style="text-indent: 20px">Our converged ESS value is at a slightly negative additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS or very close to it. This is exactly what was found in @shefferson_life_2014, so we've done well.</p>
 
 
 ## Acknowledgements
