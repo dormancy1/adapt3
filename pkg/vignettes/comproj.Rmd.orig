@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-  <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset in package `adapt3`, as well as the `cypdata` dataset from package `lefko3`, to illustrate community matrix projection. Package `adapt3` allows both pre-existing MPMs to be utilized, as well as purely function-based MPMs, which must be constructed at each step. Both approaches utilize functions from and structures created by the package `lefko3`, and we encourage users to become familiar with that package to use package `adapt3` properly. Here, we illustrate the community matrix projection with pre-existing MPMs</p>
+  <p style="text-indent: 20px">In this vignette, we will use the `cypa_data` dataset in package `adapt3`, as well as the `cypdata` dataset from package `lefko3`, to illustrate community matrix projection. Package `adapt3` allows both pre-existing MPMs to be utilized, as well as purely function-based MPMs, which must be constructed at each step. Both approaches utilize functions from and structures created by the package `lefko3`, and we encourage users to become familiar with that package to use package `adapt3` properly. Here, we illustrate the community matrix projection with pre-existing MPMs.</p>
 
   <p style="text-indent: 20px">To reduce vignette size, we have prevented some statements from running if they produce long stretches of output. Examples include most `summary()` calls. In these cases, we include hashtagged versions of these calls, and we encourage the user to run these statements without hashtags.</p>
 

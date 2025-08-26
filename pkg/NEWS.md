@@ -1,9 +1,11 @@
-# adapt 1.0.2 (2025-XX-XX)
+# adapt 1.0.2 (2025-08-27)
 
 ## NEW FEATURES
 
 * ESS trait value optimization now handled via Golden section Nelder-Mead
   search algorithm.
+  
+* Standard error bootstrapping exmple added to invasibility analysis vignette.
 
 ## USER-VISIBLE CHANGES
 

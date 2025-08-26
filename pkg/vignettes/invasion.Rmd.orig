@@ -44,7 +44,7 @@ summary(cypa_data)
 
 ### Pairwise invasibility analysis focused on matrix element manipulation
 
-  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
+  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM.</p>
   
   <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below.</p>
 ```{r ch2-1.1}
@@ -244,7 +244,7 @@ cyp_proj1 <- f_projection3(format = 3, stageframe = cypframe_fb,
 plot(cyp_proj1)
 ```
   
-  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 20 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using more variants, in order to get a good resolution of trait variation.</p>
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 20 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using more variants, such as 50 or 100, in order to get a good resolution of trait variation for the pairwise invasibility plot and in case the actual adaptive dynamics are complex.</p>
 ```{r ch2-2.8}
 current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
   historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 20)) 
@@ -293,7 +293,103 @@ plot(cyp_inv3, pip = FALSE, elast = TRUE)
 cyp_inv3$optim$ESS_values
 ```
   <p style="text-indent: 20px">Our converged ESS value is at a slightly negative additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS or very close to it. This is exactly what was found in @shefferson_life_2014, so we've done well.</p>
+  
+  <p style="text-indent: 20px">Let's now estimate the standard error for the ESS value. We will use the demographic shuffling approach used in @shefferson_life_2014.</p>
+```{r ch2-2.16}
+library(lme4)
+library(glmmTMB)
 
+sample_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
+  historical = FALSE, obs_dev = seq(from = -1.5, to = 3.0, length.out = 10))
+
+num_runs <- 100
+
+output_vec <- rep(NA, num_runs)
+
+sample_size <- dim(cypa_data)[1]
+
+for (i in c(1:num_runs)) {
+  set.seed(i)
+  
+  sample_order <- sample(1:sample_size, sample_size, replace = TRUE)
+  sample_data <- cypa_data[sample_order,]
+  sample_data$plant_id <- c(1:sample_size)
+  
+  sampleraw_v2 <- verticalize3(data = sample_data, noyears = 18, firstyear = 1994,
+    individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+    sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+    stageassign = cypframe_fb, stagesize = "sizeadded", NAas0 = TRUE)
+  
+  sample_surv <- try(glmer(alive3 ~ repstatus2 + size2added + (1 | year2) +
+    (1 | individ), data = sampleraw_v2, family = binomial))
+  sample_obsdata <- subset(sampleraw_v2, alive3 == 1)
+  sample_obs <- try(glmer(obsstatus3 ~ size2added + (1 | year2) + (1 | individ),
+    data = sample_obsdata, family = binomial))
+  sample_sizedata <- subset(sample_obsdata, obsstatus3 == 1)
+  sample_sizem <- try(glmer(size3added ~ size2added + (1 | year2) + (1 | individ),
+    data = sample_sizedata, family = poisson))
+  sample_repst <- try(glmer(repstatus3 ~ repstatus2 + size2added + (1 | year2) +
+    (1 | individ), data = sample_sizedata, family = poisson))
+  sample_fecdata <- subset(sampleraw_v2, repstatus2 == 1)
+  sample_fec <- try(glmmTMB(feca2 ~ (1 | year2) + (1 | individ),
+    zi = feca2 ~ (1 | year2) + (1 | individ), data = sample_fecdata,
+    family = poisson))
+  
+  samplemodels2 <- cypmodels2
+  samplemodels2$survival_model <- sample_surv
+  samplemodels2$observation_model <- sample_obs
+  samplemodels2$size_model <- sample_sizem
+  samplemodels2$repstatus_model <- sample_repst
+  samplemodels2$fecundity_model <- sample_fec
+  
+  sample_vrm <- try(miniMod(samplemodels2, hfv_data = sampleraw_v2))
+  
+  sample_inv3 <- try(invade3(axis = sample_traits, vrm = sample_vrm, format = 3,
+    starts = cyp_start, years = 2008, stageframe = cypframe_fb,
+    supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
+    times = 1000, fitness_times = 190, var_per_run = 2, stochastic = FALSE,
+    density = c2d_1, trait_optima = TRUE))
+  
+  try(output_vec[i] <- sample_inv3$optim$ESS_values$obs_dev[1])
+  try(writeLines(paste0("ESS: ", sample_inv3$optim$ESS_values$obs_dev[1], "\n")))
+}
+```
+
+  <p style="text-indent: 20px">Let's see the mean and SD, as well as whether the ESS value is significantly different from 0.</p>
+```{r ch2-2.17}
+mean_sim <- mean(output_vec, na.rm = TRUE)
+se_sim <- sd(output_vec, na.rm = TRUE)
+
+true_ESS <- cyp_inv3$optim$ESS_values$obs_dev[1]
+z_value <- abs(true_ESS) / se_sim
+p_value <- pnorm(z_value, mean = 0, sd = 1, lower.tail = FALSE)
+
+writeLines(paste0("True ESS: ", true_ESS))
+writeLines(paste0("Simulated ESS: ", mean_sim))
+writeLines(paste0("Simulated SE: ", se_sim))
+writeLines(paste0("Z score: ", z_value))
+writeLines(paste0("p-value: ", p_value))
+```
+
+  <p style="text-indent: 20px">Now let's work out a figure showing the predicted sprouting probability.</p>
+```{r ch2-2.18}
+cyp_pred_df <- data.frame(size2added = c(0:7), year2 = 2004, individ = "A 1")
+
+new_model <- cypmodels2$observation_model
+new_model@beta[1] <- cypmodels2$observation_model@beta[1] + true_ESS
+
+cyp_pred_df$pred_y <- predict(cypmodels2$observation_model,
+  newdata = cyp_pred_df, type = "response")
+cyp_pred_df$new_pred_y <- predict(new_model, newdata = cyp_pred_df,
+  type = "response")
+
+plot(pred_y ~ size2added, data = cyp_pred_df, ylab = "P(sprouting)",
+  xlab = "# of sprouts", ylim = c(0.60, 0.90), lwd = 2, type = "l", bty = "n")
+lines(new_pred_y ~ size2added, data = cyp_pred_df, lty = 2, lwd = 2,
+  col = "red")
+legend("bottomright", c("Observed", "ESS"), lty = c(1, 2), lwd = 2,
+  col = c("black", "red"), bty = "n")
+```
 
 ## Acknowledgements
 

@@ -89,7 +89,7 @@ summary(cypa_data)
 
 ### Pairwise invasibility analysis focused on matrix element manipulation
 
-  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM</p>
+  <p style="text-indent: 20px">Our first example will focus on running pairwise invasibility analyses in which matrix elements are manipulated to create our pairs of residents and mutants. Because we use existing MPMs, the process generally proceeds quite quickly, and only slows when using giant matrices such as might occur in historical MPM projection. To make this process easier, we will develop a relatively small, stage-based empirical MPM.</p>
   
   <p style="text-indent: 20px">Per `lefko3` terminology, we will develop a stageframe that encapsulates our life history model by noting all of the relevant characteristics of each stage, as below.</p>
 
@@ -948,7 +948,7 @@ plot(cyp_proj1)
 
 ![Figure I3. Density dependent projected population growth under density frame c2d_1](ch2-2.7-1.png)
   
-  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 20 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using more variants, in order to get a good resolution of trait variation.</p>
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 20 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using more variants, such as 50 or 100, in order to get a good resolution of trait variation for the pairwise invasibility plot and in case the actual adaptive dynamics are complex.</p>
 
 ``` r
 current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
@@ -1195,7 +1195,892 @@ cyp_inv3$optim$ESS_values
 #> 1         NA         NA         NA  <NA>           0           1 -1.162412e-05      TRUE
 ```
   <p style="text-indent: 20px">Our converged ESS value is at a slightly negative additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS or very close to it. This is exactly what was found in @shefferson_life_2014, so we've done well.</p>
+  
+  <p style="text-indent: 20px">Let's now estimate the standard error for the ESS value. We will use the demographic shuffling approach used in @shefferson_life_2014.</p>
 
+``` r
+library(lme4)
+#> Loading required package: Matrix
+library(glmmTMB)
+
+sample_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
+  historical = FALSE, obs_dev = seq(from = -1.5, to = 3.0, length.out = 10))
+
+num_runs <- 100
+
+output_vec <- rep(NA, num_runs)
+
+sample_size <- dim(cypa_data)[1]
+
+for (i in c(1:num_runs)) {
+  set.seed(i)
+  
+  sample_order <- sample(1:sample_size, sample_size, replace = TRUE)
+  sample_data <- cypa_data[sample_order,]
+  sample_data$plant_id <- c(1:sample_size)
+  
+  sampleraw_v2 <- verticalize3(data = sample_data, noyears = 18, firstyear = 1994,
+    individcol = "plant_id", blocksize = 2, sizeacol = "Inf.94",
+    sizebcol = "Veg.94", repstracol = "Inf.94", fecacol = "Inf.94",
+    stageassign = cypframe_fb, stagesize = "sizeadded", NAas0 = TRUE)
+  
+  sample_surv <- try(glmer(alive3 ~ repstatus2 + size2added + (1 | year2) +
+    (1 | individ), data = sampleraw_v2, family = binomial))
+  sample_obsdata <- subset(sampleraw_v2, alive3 == 1)
+  sample_obs <- try(glmer(obsstatus3 ~ size2added + (1 | year2) + (1 | individ),
+    data = sample_obsdata, family = binomial))
+  sample_sizedata <- subset(sample_obsdata, obsstatus3 == 1)
+  sample_sizem <- try(glmer(size3added ~ size2added + (1 | year2) + (1 | individ),
+    data = sample_sizedata, family = poisson))
+  sample_repst <- try(glmer(repstatus3 ~ repstatus2 + size2added + (1 | year2) +
+    (1 | individ), data = sample_sizedata, family = poisson))
+  sample_fecdata <- subset(sampleraw_v2, repstatus2 == 1)
+  sample_fec <- try(glmmTMB(feca2 ~ (1 | year2) + (1 | individ),
+    zi = feca2 ~ (1 | year2) + (1 | individ), data = sample_fecdata,
+    family = poisson))
+  
+  samplemodels2 <- cypmodels2
+  samplemodels2$survival_model <- sample_surv
+  samplemodels2$observation_model <- sample_obs
+  samplemodels2$size_model <- sample_sizem
+  samplemodels2$repstatus_model <- sample_repst
+  samplemodels2$fecundity_model <- sample_fec
+  
+  sample_vrm <- try(miniMod(samplemodels2, hfv_data = sampleraw_v2))
+  
+  sample_inv3 <- try(invade3(axis = sample_traits, vrm = sample_vrm, format = 3,
+    starts = cyp_start, years = 2008, stageframe = cypframe_fb,
+    supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
+    times = 1000, fitness_times = 190, var_per_run = 2, stochastic = FALSE,
+    density = c2d_1, trait_optima = TRUE))
+  
+  try(output_vec[i] <- sample_inv3$optim$ESS_values$obs_dev[1])
+  try(writeLines(paste0("ESS: ", sample_inv3$optim$ESS_values$obs_dev[1], "\n")))
+}
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.22439
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.169397333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.227221 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.230833333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.208208
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.161197916666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.219455
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.1453125
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): failed to invert Hessian from numDeriv::jacobian(), falling back to
+#> internal vcov estimate
+#> ESS: -0.19
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.216018
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.202181
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.148177083333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.228736 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.168064768
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.170762666666667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): failed to invert Hessian from numDeriv::jacobian(), falling back to
+#> internal vcov estimate
+#> ESS: -0.216471354166667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.216819
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.200218453333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.217216
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.154030133333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.1625
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| =
+#> 0.0555602 (tol = 0.002, component 1)
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.192
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.167785147733333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): failed to invert Hessian from numDeriv::jacobian(), falling back to
+#> internal vcov estimate
+#> ESS: -0.234375
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.1892
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.233466
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.232644 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): failed to invert Hessian from numDeriv::jacobian(), falling back to
+#> internal vcov estimate
+#> ESS: -0.240885416666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.224701
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.169288106666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.223205
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.135466666666667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> ESS: -0.173001813333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.222528
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.240885416666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.234339
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.307916666666667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.18350426841088
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.23928
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.156770833333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.217328 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.251572864
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> ESS: -0.15546875
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.1816
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.276458333333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.160026041666667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.203958333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.230939
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.2025
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.126916666666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.212205
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.185269333333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.230833333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : unable to evaluate scaled gradient
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge: degenerate Hessian with
+#> 1 negative eigenvalues
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.258333333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.114548
+#> (tol = 0.002, component 1)
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.156083333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.222833
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.130859375
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> ESS: -0.19378072576
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.228589
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.169069653333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.15703125
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.236979166666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.216399 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.2353515625
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.230214
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.1840196644864
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.214711
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.229644
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.25117440512
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.233288
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.251747626666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.225894
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.23303
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.149146666666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.231266 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.149650474666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.223613
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.184292573866667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.229849333333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.205733333333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.190625
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.225179
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.204375
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.146354166666667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.235188802083333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.218772 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.221481
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.188
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.217586
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.264666666666667
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.1425
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.23483
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.279296875
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.227104 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): failed to invert Hessian from numDeriv::jacobian(), falling back to
+#> internal vcov estimate
+#> ESS: -0.141166666666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.230308
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.196266666666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.213168
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.212992
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.252184533333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.225378
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.1896
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.23577 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.230429 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.222176
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.183733333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.227957 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.15625
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.1936196644864
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.229431
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.22265625
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.19504
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in f(init, x[[i]]): Model convergence problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+#> ESS: -0.186133333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.232992
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
+#> vignette('troubleshooting'), help('diagnose')
+#> ESS: -0.406133333333333
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.227063
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.1645
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.229242
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.299479166666667
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.220055 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.223644
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.183375419392
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.23508
+#> (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Error in eval(expr, envir) : 
+#>   Data frames must have the same number of columns.
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.220893 (tol = 0.002, component 1)
+#> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
+#>  - Rescale variables?
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.163802083333333
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.26
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> ESS: -0.16171875
+#> boundary (singular) fit: see help('isSingular')
+#> boundary (singular) fit: see help('isSingular')
+#> Warning in f(init, x[[i]]): discarding LHS of second argument
+#> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
+#> vignette('troubleshooting')
+#> ESS: -0.13744
+```
+
+  <p style="text-indent: 20px">Let's see the mean and SD, as well as whether the ESS value is significantly different from 0.</p>
+
+``` r
+mean_sim <- mean(output_vec, na.rm = TRUE)
+se_sim <- sd(output_vec, na.rm = TRUE)
+
+true_ESS <- cyp_inv3$optim$ESS_values$obs_dev[1]
+z_value <- abs(true_ESS) / se_sim
+p_value <- pnorm(z_value, mean = 0, sd = 1, lower.tail = FALSE)
+
+writeLines(paste0("True ESS: ", true_ESS))
+#> True ESS: 0.447368421052632
+writeLines(paste0("Simulated ESS: ", mean_sim))
+#> Simulated ESS: -0.197179853545528
+writeLines(paste0("Simulated SE: ", se_sim))
+#> Simulated SE: 0.0483600710621941
+writeLines(paste0("Z score: ", z_value))
+#> Z score: 9.25078088651456
+writeLines(paste0("p-value: ", p_value))
+#> p-value: 1.11429246493775e-20
+```
+
+  <p style="text-indent: 20px">Now let's work out a figure showing the predicted sprouting probability.</p>
+
+``` r
+cyp_pred_df <- data.frame(size2added = c(0:7), year2 = 2004, individ = "A 1")
+
+new_model <- cypmodels2$observation_model
+new_model@beta[1] <- cypmodels2$observation_model@beta[1] + true_ESS
+
+cyp_pred_df$pred_y <- predict(cypmodels2$observation_model,
+  newdata = cyp_pred_df, type = "response")
+cyp_pred_df$new_pred_y <- predict(new_model, newdata = cyp_pred_df,
+  type = "response")
+
+plot(pred_y ~ size2added, data = cyp_pred_df, ylab = "P(sprouting)",
+  xlab = "# of sprouts", ylim = c(0.60, 0.90), lwd = 2, type = "l", bty = "n")
+lines(new_pred_y ~ size2added, data = cyp_pred_df, lty = 2, lwd = 2,
+  col = "red")
+legend("bottomright", c("Observed", "ESS"), lty = c(1, 2), lwd = 2,
+  col = c("black", "red"), bty = "n")
+```
+
+![plot of chunk ch2-2.18](ch2-2.18-1.png)
 
 ## Acknowledgements
 
