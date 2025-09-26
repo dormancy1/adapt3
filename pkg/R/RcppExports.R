@@ -2434,7 +2434,7 @@ invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supp
 #' Function \code{ta_skeleton()} creates a core data frame that can be modified
 #' by users to provide the core variation in transition elements and vital
 #' rates to use in invasion analysis. The resulting data frame should be used
-#' as input in function \code{\link{invade3}()}.
+#' as input in the \code{axis} argument in function \code{\link{invade3}()}.
 #' 
 #' @name ta_skeleton
 #' 
@@ -2500,6 +2500,12 @@ invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supp
 #' the vital rate model for juvenile reproduction probability.}
 #' \item{jmatst_dev}{A numeric vector giving the deviations to the y-intercept of
 #' the vital rate model for maturity status.}
+#' \item{indcova}{Numeric values of individual covariate a used in creating new
+#' variants.}
+#' \item{indcovb}{Numeric values of individual covariate b used in creating new
+#' variants.}
+#' \item{indcovc}{Numeric values of individual covariate c used in creating new
+#' variants.}
 #' 
 #' @examples
 #' 
@@ -2521,7 +2527,8 @@ ta_skeleton <- function(rows = 10L) {
 #' analysis. It lists the specific variations to MPMs for each variant run.
 #' Variants can be given via overwritten matrix elements, proxy matrix
 #' elements, additive offsets on matrix elements, matrix element multipliers,
-#' and additive offsets to y-intercepts in vital rate models.
+#' additive offsets to y-intercepts in vital rate models, or specific values
+#' of individual covariates to vary by matrix.
 #' 
 #' @name trait_axis
 #' 
@@ -2635,6 +2642,18 @@ ta_skeleton <- function(rows = 10L) {
 #' @param jmatst_dev An optional vector of numeric deviations to the y-intercept
 #' of the juvenile maturity model used in function-based MPM creation.
 #' Defaults to \code{NA} for all values.
+#' @param indcova An optional vector of numeric values for a quantitative
+#' individual covariate used in MPM creation. Should be identified as
+#' individual covariate a in any other modeling. Defaults to \code{NA} for all
+#' values.
+#' @param indcovb An optional vector of numeric values for a quantitative
+#' individual covariate used in MPM creation. Should be identified as
+#' individual covariate b in any other modeling. Defaults to \code{NA} for all
+#' values.
+#' @param indcovc An optional vector of numeric values for a quantitative
+#' individual covariate used in MPM creation. Should be identified as
+#' individual covariate c in any other modeling. Defaults to \code{NA} for all
+#' values.
 #' 
 #' @return A data frame of class \code{adaptAxis}. This object can be used as
 #' input in function \code{invade3()}.
@@ -2699,6 +2718,12 @@ ta_skeleton <- function(rows = 10L) {
 #' model of juvenile reproduction.}
 #' \item{jmatst_dev}{Numeric deviations to the y-intercept of the vital rate
 #' model of juvenile maturity.}
+#' \item{indcova}{Numeric values of individual covariate a used in creating new
+#' variants.}
+#' \item{indcovb}{Numeric values of individual covariate b used in creating new
+#' variants.}
+#' \item{indcovc}{Numeric values of individual covariate c used in creating new
+#' variants.}
 #' 
 #' @section Notes:
 #' Negative values are not allowed in \code{givenrate} and \code{multiplier}
@@ -2777,7 +2802,7 @@ ta_skeleton <- function(rows = 10L) {
 #'   obs_dev = c(NA, NA, NA, 0.5, 2.0, 50), fec_dev = c(NA, NA, NA, -1000, 0, 1000))
 #' 
 #' @export trait_axis
-trait_axis <- function(historical = NULL, stagebased = NULL, agebased = NULL, stageframe = NULL, stage3 = NULL, stage2 = NULL, stage1 = NULL, age3 = NULL, age2 = NULL, eststage3 = NULL, eststage2 = NULL, eststage1 = NULL, estage3 = NULL, estage2 = NULL, givenrate = NULL, offset = NULL, multiplier = NULL, type = NULL, type_t12 = NULL, surv_dev = NULL, obs_dev = NULL, size_dev = NULL, sizeb_dev = NULL, sizec_dev = NULL, repst_dev = NULL, fec_dev = NULL, jsurv_dev = NULL, jobs_dev = NULL, jsize_dev = NULL, jsizeb_dev = NULL, jsizec_dev = NULL, jrepst_dev = NULL, jmatst_dev = NULL) {
-    .Call('_adapt3_trait_axis', PACKAGE = 'adapt3', historical, stagebased, agebased, stageframe, stage3, stage2, stage1, age3, age2, eststage3, eststage2, eststage1, estage3, estage2, givenrate, offset, multiplier, type, type_t12, surv_dev, obs_dev, size_dev, sizeb_dev, sizec_dev, repst_dev, fec_dev, jsurv_dev, jobs_dev, jsize_dev, jsizeb_dev, jsizec_dev, jrepst_dev, jmatst_dev)
+trait_axis <- function(historical = NULL, stagebased = NULL, agebased = NULL, stageframe = NULL, stage3 = NULL, stage2 = NULL, stage1 = NULL, age3 = NULL, age2 = NULL, eststage3 = NULL, eststage2 = NULL, eststage1 = NULL, estage3 = NULL, estage2 = NULL, givenrate = NULL, offset = NULL, multiplier = NULL, type = NULL, type_t12 = NULL, surv_dev = NULL, obs_dev = NULL, size_dev = NULL, sizeb_dev = NULL, sizec_dev = NULL, repst_dev = NULL, fec_dev = NULL, jsurv_dev = NULL, jobs_dev = NULL, jsize_dev = NULL, jsizeb_dev = NULL, jsizec_dev = NULL, jrepst_dev = NULL, jmatst_dev = NULL, indcova = NULL, indcovb = NULL, indcovc = NULL) {
+    .Call('_adapt3_trait_axis', PACKAGE = 'adapt3', historical, stagebased, agebased, stageframe, stage3, stage2, stage1, age3, age2, eststage3, eststage2, eststage1, estage3, estage2, givenrate, offset, multiplier, type, type_t12, surv_dev, obs_dev, size_dev, sizeb_dev, sizec_dev, repst_dev, fec_dev, jsurv_dev, jobs_dev, jsize_dev, jsizeb_dev, jsizec_dev, jrepst_dev, jmatst_dev, indcova, indcovb, indcovc)
 }
 

@@ -1,4 +1,11 @@
-# adapt 1.0.2 (2025-08-27)
+# adapt3 1.1.0 (2025-XX-XX)
+
+## NEW FEATURES
+
+* Trait axes now include individual covariate values that can be used to create
+  variants.
+
+# adapt3 1.0.2 (2025-08-27)
 
 ## NEW FEATURES
 
@@ -25,13 +32,13 @@
 
 * Function summary.adaptInv() now gives the correct number of variants tested.
 
-# adapt 1.0.1 (2025-07-11)
+# adapt3 1.0.1 (2025-07-11)
 
 ## USER-VISIBLE CHANGES
 
 * Corrections to documentation.
 
-# adapt 1.0.0 (2025-07-10)
+# adapt3 1.0.0 (2025-07-10)
 
 ## NEW FEATURES
 
@@ -41,7 +48,7 @@
 
 * Corrected help files for certain functions.
 
-# adapt 0.9.9 (2025-07-08)
+# adapt3 0.9.9 (2025-07-08)
 
 ## USER-VISIBLE CHANGES
 
@@ -58,7 +65,7 @@
 * Functions plot.adaptInv() and summary.adaptInv() created to plot and
   summarize invasibility analyses, respectively.
 
-# adapt 0.9.7 (2025-07-05)
+# adapt3 0.9.7 (2025-07-05)
 
 ## NEW FEATURES
 
@@ -71,7 +78,7 @@
 
 * Threshold values for 0s created for function invade3().
 
-# adapt 0.9.6 (2025-04-12)
+# adapt3 0.9.6 (2025-04-12)
 
 ## NEW FEATURES
 

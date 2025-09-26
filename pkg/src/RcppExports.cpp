@@ -119,8 +119,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // trait_axis
-Rcpp::List trait_axis(Nullable<RObject> historical, Nullable<RObject> stagebased, Nullable<RObject> agebased, Nullable<RObject> stageframe, Nullable<RObject> stage3, Nullable<RObject> stage2, Nullable<RObject> stage1, Nullable<RObject> age3, Nullable<RObject> age2, Nullable<RObject> eststage3, Nullable<RObject> eststage2, Nullable<RObject> eststage1, Nullable<RObject> estage3, Nullable<RObject> estage2, Nullable<RObject> givenrate, Nullable<RObject> offset, Nullable<RObject> multiplier, Nullable<RObject> type, Nullable<RObject> type_t12, Nullable<RObject> surv_dev, Nullable<RObject> obs_dev, Nullable<RObject> size_dev, Nullable<RObject> sizeb_dev, Nullable<RObject> sizec_dev, Nullable<RObject> repst_dev, Nullable<RObject> fec_dev, Nullable<RObject> jsurv_dev, Nullable<RObject> jobs_dev, Nullable<RObject> jsize_dev, Nullable<RObject> jsizeb_dev, Nullable<RObject> jsizec_dev, Nullable<RObject> jrepst_dev, Nullable<RObject> jmatst_dev);
-RcppExport SEXP _adapt3_trait_axis(SEXP historicalSEXP, SEXP stagebasedSEXP, SEXP agebasedSEXP, SEXP stageframeSEXP, SEXP stage3SEXP, SEXP stage2SEXP, SEXP stage1SEXP, SEXP age3SEXP, SEXP age2SEXP, SEXP eststage3SEXP, SEXP eststage2SEXP, SEXP eststage1SEXP, SEXP estage3SEXP, SEXP estage2SEXP, SEXP givenrateSEXP, SEXP offsetSEXP, SEXP multiplierSEXP, SEXP typeSEXP, SEXP type_t12SEXP, SEXP surv_devSEXP, SEXP obs_devSEXP, SEXP size_devSEXP, SEXP sizeb_devSEXP, SEXP sizec_devSEXP, SEXP repst_devSEXP, SEXP fec_devSEXP, SEXP jsurv_devSEXP, SEXP jobs_devSEXP, SEXP jsize_devSEXP, SEXP jsizeb_devSEXP, SEXP jsizec_devSEXP, SEXP jrepst_devSEXP, SEXP jmatst_devSEXP) {
+Rcpp::List trait_axis(Nullable<RObject> historical, Nullable<RObject> stagebased, Nullable<RObject> agebased, Nullable<RObject> stageframe, Nullable<RObject> stage3, Nullable<RObject> stage2, Nullable<RObject> stage1, Nullable<RObject> age3, Nullable<RObject> age2, Nullable<RObject> eststage3, Nullable<RObject> eststage2, Nullable<RObject> eststage1, Nullable<RObject> estage3, Nullable<RObject> estage2, Nullable<RObject> givenrate, Nullable<RObject> offset, Nullable<RObject> multiplier, Nullable<RObject> type, Nullable<RObject> type_t12, Nullable<RObject> surv_dev, Nullable<RObject> obs_dev, Nullable<RObject> size_dev, Nullable<RObject> sizeb_dev, Nullable<RObject> sizec_dev, Nullable<RObject> repst_dev, Nullable<RObject> fec_dev, Nullable<RObject> jsurv_dev, Nullable<RObject> jobs_dev, Nullable<RObject> jsize_dev, Nullable<RObject> jsizeb_dev, Nullable<RObject> jsizec_dev, Nullable<RObject> jrepst_dev, Nullable<RObject> jmatst_dev, Nullable<RObject> indcova, Nullable<RObject> indcovb, Nullable<RObject> indcovc);
+RcppExport SEXP _adapt3_trait_axis(SEXP historicalSEXP, SEXP stagebasedSEXP, SEXP agebasedSEXP, SEXP stageframeSEXP, SEXP stage3SEXP, SEXP stage2SEXP, SEXP stage1SEXP, SEXP age3SEXP, SEXP age2SEXP, SEXP eststage3SEXP, SEXP eststage2SEXP, SEXP eststage1SEXP, SEXP estage3SEXP, SEXP estage2SEXP, SEXP givenrateSEXP, SEXP offsetSEXP, SEXP multiplierSEXP, SEXP typeSEXP, SEXP type_t12SEXP, SEXP surv_devSEXP, SEXP obs_devSEXP, SEXP size_devSEXP, SEXP sizeb_devSEXP, SEXP sizec_devSEXP, SEXP repst_devSEXP, SEXP fec_devSEXP, SEXP jsurv_devSEXP, SEXP jobs_devSEXP, SEXP jsize_devSEXP, SEXP jsizeb_devSEXP, SEXP jsizec_devSEXP, SEXP jrepst_devSEXP, SEXP jmatst_devSEXP, SEXP indcovaSEXP, SEXP indcovbSEXP, SEXP indcovcSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -157,7 +157,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Nullable<RObject> >::type jsizec_dev(jsizec_devSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type jrepst_dev(jrepst_devSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type jmatst_dev(jmatst_devSEXP);
-    rcpp_result_gen = Rcpp::wrap(trait_axis(historical, stagebased, agebased, stageframe, stage3, stage2, stage1, age3, age2, eststage3, eststage2, eststage1, estage3, estage2, givenrate, offset, multiplier, type, type_t12, surv_dev, obs_dev, size_dev, sizeb_dev, sizec_dev, repst_dev, fec_dev, jsurv_dev, jobs_dev, jsize_dev, jsizeb_dev, jsizec_dev, jrepst_dev, jmatst_dev));
+    Rcpp::traits::input_parameter< Nullable<RObject> >::type indcova(indcovaSEXP);
+    Rcpp::traits::input_parameter< Nullable<RObject> >::type indcovb(indcovbSEXP);
+    Rcpp::traits::input_parameter< Nullable<RObject> >::type indcovc(indcovcSEXP);
+    rcpp_result_gen = Rcpp::wrap(trait_axis(historical, stagebased, agebased, stageframe, stage3, stage2, stage1, age3, age2, eststage3, eststage2, eststage1, estage3, estage2, givenrate, offset, multiplier, type, type_t12, surv_dev, obs_dev, size_dev, sizeb_dev, sizec_dev, repst_dev, fec_dev, jsurv_dev, jobs_dev, jsize_dev, jsizeb_dev, jsizec_dev, jrepst_dev, jmatst_dev, indcova, indcovb, indcovc));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -166,7 +169,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_adapt3_project3", (DL_FUNC) &_adapt3_project3, 33},
     {"_adapt3_invade3", (DL_FUNC) &_adapt3_invade3, 43},
     {"_adapt3_ta_skeleton", (DL_FUNC) &_adapt3_ta_skeleton, 1},
-    {"_adapt3_trait_axis", (DL_FUNC) &_adapt3_trait_axis, 33},
+    {"_adapt3_trait_axis", (DL_FUNC) &_adapt3_trait_axis, 36},
     {NULL, NULL, 0}
 };
 

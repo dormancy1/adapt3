@@ -29,7 +29,7 @@ using namespace AdaptInputs;
 //' Function \code{ta_skeleton()} creates a core data frame that can be modified
 //' by users to provide the core variation in transition elements and vital
 //' rates to use in invasion analysis. The resulting data frame should be used
-//' as input in function \code{\link{invade3}()}.
+//' as input in the \code{axis} argument in function \code{\link{invade3}()}.
 //' 
 //' @name ta_skeleton
 //' 
@@ -95,6 +95,12 @@ using namespace AdaptInputs;
 //' the vital rate model for juvenile reproduction probability.}
 //' \item{jmatst_dev}{A numeric vector giving the deviations to the y-intercept of
 //' the vital rate model for maturity status.}
+//' \item{indcova}{Numeric values of individual covariate a used in creating new
+//' variants.}
+//' \item{indcovb}{Numeric values of individual covariate b used in creating new
+//' variants.}
+//' \item{indcovc}{Numeric values of individual covariate c used in creating new
+//' variants.}
 //' 
 //' @examples
 //' 
@@ -135,7 +141,8 @@ DataFrame ta_skeleton (int rows = 10) {
     _["jsurv_dev"] = clone(entered1), _["jobs_dev"] = clone(entered1),
     _["jsize_dev"] = clone(entered1), _["jsizeb_dev"] = clone(entered1),
     _["jsizec_dev"] = clone(entered1), _["jrepst_dev"] = clone(entered1),
-    _["jmatst_dev"] = clone(entered1));
+    _["jmatst_dev"] = clone(entered1), _["indcova"] = clone(entered1),
+    _["indcovb"] = clone(entered1), _["indcovc"] = clone(entered1));
   
   CharacterVector newclasses = {"data.frame", "adaptAxis"};
   output.attr("class") = newclasses;
@@ -149,7 +156,8 @@ DataFrame ta_skeleton (int rows = 10) {
 //' analysis. It lists the specific variations to MPMs for each variant run.
 //' Variants can be given via overwritten matrix elements, proxy matrix
 //' elements, additive offsets on matrix elements, matrix element multipliers,
-//' and additive offsets to y-intercepts in vital rate models.
+//' additive offsets to y-intercepts in vital rate models, or specific values
+//' of individual covariates to vary by matrix.
 //' 
 //' @name trait_axis
 //' 
@@ -263,6 +271,18 @@ DataFrame ta_skeleton (int rows = 10) {
 //' @param jmatst_dev An optional vector of numeric deviations to the y-intercept
 //' of the juvenile maturity model used in function-based MPM creation.
 //' Defaults to \code{NA} for all values.
+//' @param indcova An optional vector of numeric values for a quantitative
+//' individual covariate used in MPM creation. Should be identified as
+//' individual covariate a in any other modeling. Defaults to \code{NA} for all
+//' values.
+//' @param indcovb An optional vector of numeric values for a quantitative
+//' individual covariate used in MPM creation. Should be identified as
+//' individual covariate b in any other modeling. Defaults to \code{NA} for all
+//' values.
+//' @param indcovc An optional vector of numeric values for a quantitative
+//' individual covariate used in MPM creation. Should be identified as
+//' individual covariate c in any other modeling. Defaults to \code{NA} for all
+//' values.
 //' 
 //' @return A data frame of class \code{adaptAxis}. This object can be used as
 //' input in function \code{invade3()}.
@@ -327,6 +347,12 @@ DataFrame ta_skeleton (int rows = 10) {
 //' model of juvenile reproduction.}
 //' \item{jmatst_dev}{Numeric deviations to the y-intercept of the vital rate
 //' model of juvenile maturity.}
+//' \item{indcova}{Numeric values of individual covariate a used in creating new
+//' variants.}
+//' \item{indcovb}{Numeric values of individual covariate b used in creating new
+//' variants.}
+//' \item{indcovc}{Numeric values of individual covariate c used in creating new
+//' variants.}
 //' 
 //' @section Notes:
 //' Negative values are not allowed in \code{givenrate} and \code{multiplier}
@@ -423,13 +449,18 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   Nullable<RObject> jsurv_dev = R_NilValue, Nullable<RObject> jobs_dev = R_NilValue,
   Nullable<RObject> jsize_dev = R_NilValue, Nullable<RObject> jsizeb_dev = R_NilValue,
   Nullable<RObject> jsizec_dev = R_NilValue, Nullable<RObject> jrepst_dev = R_NilValue,
-  Nullable<RObject> jmatst_dev = R_NilValue) {
+  Nullable<RObject> jmatst_dev = R_NilValue, Nullable<RObject> indcova = R_NilValue,
+  Nullable<RObject> indcovb = R_NilValue, Nullable<RObject> indcovc = R_NilValue) {
   
   int wtf {-1};
   
   bool historical_bool {false};
   bool stagebased_bool {true};
   bool agebased_bool {false};
+  bool sf_needed {false};
+  
+  if (stage3.isNotNull() || stage2.isNotNull() || stage1.isNotNull()) sf_needed = true;
+  if (eststage3.isNotNull() || eststage2.isNotNull() || eststage1.isNotNull()) sf_needed = true;
   
   bool trash_out {false};
   LefkoInputs::RObj_TF_input_check ("historical", "", historical_bool, trash_out,
@@ -456,22 +487,24 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   
   if (wtf < 3) {
     if (!stageframe.isNotNull()) {
-      throw Rcpp::exception("Stageframe required for stage-based MPMs.", false);
+      Rf_warningcall(R_NilValue, "Stageframe required for stage-based MPMs.");
     }
     
-    if (is<DataFrame>(stageframe)) stageframe_ = as<DataFrame>(stageframe);
-    StringVector sf_class = stageframe_.attr("class");
-    
-    String sf_error = "Please enter an object of class stageframe as input.";
-    if (stageframe_.containsElementNamed("stage")) sf_yes++;
-    if (stageframe_.containsElementNamed("min_age")) sf_yes++;
-    if (stageframe_.containsElementNamed("max_age")) sf_yes++;
-    if (stageframe_.containsElementNamed("group")) sf_yes++;
-    
-    for (int i = 0; i < static_cast<int>(sf_class.length()); i++) {
-      if (sf_class(i) == "stageframe")  sf_yes++;
+    if (stageframe.isNotNull() || sf_needed) {
+      if (is<DataFrame>(stageframe)) stageframe_ = as<DataFrame>(stageframe);
+      StringVector sf_class = stageframe_.attr("class");
+      
+      String sf_error = "Please enter an object of class stageframe as input.";
+      if (stageframe_.containsElementNamed("stage")) sf_yes++;
+      if (stageframe_.containsElementNamed("min_age")) sf_yes++;
+      if (stageframe_.containsElementNamed("max_age")) sf_yes++;
+      if (stageframe_.containsElementNamed("group")) sf_yes++;
+      
+      for (int i = 0; i < static_cast<int>(sf_class.length()); i++) {
+        if (sf_class(i) == "stageframe")  sf_yes++;
+      }
+      if (sf_yes < 5) throw Rcpp::exception(sf_error.get_cstring(), false);
     }
-    if (sf_yes < 5) throw Rcpp::exception(sf_error.get_cstring(), false);
   }
   
   StringVector stage3_;
@@ -504,6 +537,9 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   NumericVector jsizec_dev_;
   NumericVector jrepst_dev_;
   NumericVector jmatst_dev_;
+  NumericVector indcova_;
+  NumericVector indcovb_;
+  NumericVector indcovc_;
   
   List element_vectors (15);
   element_vectors(0) = stage3;
@@ -522,7 +558,7 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   element_vectors(13) = type;
   element_vectors(14) = type_t12;
   
-  List vrm_vectors (14);
+  List vrm_vectors (17);
   vrm_vectors(0) = surv_dev;
   vrm_vectors(1) = obs_dev;
   vrm_vectors(2) = size_dev;
@@ -537,6 +573,9 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   vrm_vectors(11) = jsizec_dev;
   vrm_vectors(12) = jrepst_dev;
   vrm_vectors(13) = jmatst_dev;
+  vrm_vectors(14) = indcova;
+  vrm_vectors(15) = indcovb;
+  vrm_vectors(16) = indcovc;
   
   int element_change_vector_length = AdaptInputs::list_vector_length(element_vectors);
   int vrm_change_vector_length = AdaptInputs::list_vector_length(vrm_vectors);
@@ -571,6 +610,9 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   AdaptInputs::numeric_vectorizer(jsizec_dev_, jsizec_dev, "jsizec_dev", overall_length, false);
   AdaptInputs::numeric_vectorizer(jrepst_dev_, jrepst_dev, "jrepst_dev", overall_length, false);
   AdaptInputs::numeric_vectorizer(jmatst_dev_, jmatst_dev, "jmatst_dev", overall_length, false);
+  AdaptInputs::numeric_vectorizer(indcova_, indcova, "indcova", overall_length, false);
+  AdaptInputs::numeric_vectorizer(indcovb_, indcovb, "indcovb", overall_length, false);
+  AdaptInputs::numeric_vectorizer(indcovc_, indcovc, "indcovc", overall_length, false);
   
   IntegerVector new_variants = seq(1, overall_length);
   
@@ -601,12 +643,10 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
     eststage3_ = clone(char_na_vec);
     eststage2_ = clone(char_na_vec);
     eststage1_ = clone(char_na_vec);
-    
   }
   
-  
-  
-  List newtraitaxis (30);
+  // New trait axis data frame
+  List newtraitaxis (33);
   
   newtraitaxis(0) = new_variants;
   newtraitaxis(1) = stage3_;
@@ -638,13 +678,16 @@ Rcpp::List trait_axis (Nullable<RObject> historical = R_NilValue,
   newtraitaxis(27) = jsizec_dev_;
   newtraitaxis(28) = jrepst_dev_;
   newtraitaxis(29) = jmatst_dev_;
+  newtraitaxis(30) = indcova_;
+  newtraitaxis(31) = indcovb_;
+  newtraitaxis(32) = indcovc_;
   
   StringVector ta_names = {"variant", "stage3", "stage2", "stage1", "age3",
     "age2", "eststage3", "eststage2", "eststage1", "estage3", "estage2",
     "givenrate", "offset", "multiplier", "convtype", "convtype_t12", "surv_dev",
     "obs_dev", "size_dev", "sizeb_dev", "sizec_dev", "repst_dev", "fec_dev",
     "jsurv_dev", "jobs_dev", "jsize_dev", "jsizeb_dev", "jsizec_dev",
-    "jrepst_dev", "jmatst_dev"};
+    "jrepst_dev", "jmatst_dev", "indcova", "indcovb", "indcovc"};
   StringVector ta_class = {"data.frame", "adaptAxis"};
   
   newtraitaxis.attr("class") = ta_class;

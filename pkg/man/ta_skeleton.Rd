@@ -70,12 +70,18 @@ the vital rate model for juvenile tertiary size transition.}
 the vital rate model for juvenile reproduction probability.}
 \item{jmatst_dev}{A numeric vector giving the deviations to the y-intercept of
 the vital rate model for maturity status.}
+\item{indcova}{Numeric values of individual covariate a used in creating new
+variants.}
+\item{indcovb}{Numeric values of individual covariate b used in creating new
+variants.}
+\item{indcovc}{Numeric values of individual covariate c used in creating new
+variants.}
 }
 \description{
 Function \code{ta_skeleton()} creates a core data frame that can be modified
 by users to provide the core variation in transition elements and vital
 rates to use in invasion analysis. The resulting data frame should be used
-as input in function \code{\link{invade3}()}.
+as input in the \code{axis} argument in function \code{\link{invade3}()}.
 }
 \examples{
 

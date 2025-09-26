@@ -37,7 +37,10 @@ trait_axis(
   jsizeb_dev = NULL,
   jsizec_dev = NULL,
   jrepst_dev = NULL,
-  jmatst_dev = NULL
+  jmatst_dev = NULL,
+  indcova = NULL,
+  indcovb = NULL,
+  indcovc = NULL
 )
 }
 \arguments{
@@ -183,6 +186,21 @@ Defaults to \code{NA} for all values.}
 \item{jmatst_dev}{An optional vector of numeric deviations to the y-intercept
 of the juvenile maturity model used in function-based MPM creation.
 Defaults to \code{NA} for all values.}
+
+\item{indcova}{An optional vector of numeric values for a quantitative
+individual covariate used in MPM creation. Should be identified as
+individual covariate a in any other modeling. Defaults to \code{NA} for all
+values.}
+
+\item{indcovb}{An optional vector of numeric values for a quantitative
+individual covariate used in MPM creation. Should be identified as
+individual covariate b in any other modeling. Defaults to \code{NA} for all
+values.}
+
+\item{indcovc}{An optional vector of numeric values for a quantitative
+individual covariate used in MPM creation. Should be identified as
+individual covariate c in any other modeling. Defaults to \code{NA} for all
+values.}
 }
 \value{
 A data frame of class \code{adaptAxis}. This object can be used as
@@ -248,13 +266,20 @@ model of juvenile tertiary size.}
 model of juvenile reproduction.}
 \item{jmatst_dev}{Numeric deviations to the y-intercept of the vital rate
 model of juvenile maturity.}
+\item{indcova}{Numeric values of individual covariate a used in creating new
+variants.}
+\item{indcovb}{Numeric values of individual covariate b used in creating new
+variants.}
+\item{indcovc}{Numeric values of individual covariate c used in creating new
+variants.}
 }
 \description{
 Function \code{trait_axis()} provides all necessary data for invasion
 analysis. It lists the specific variations to MPMs for each variant run.
 Variants can be given via overwritten matrix elements, proxy matrix
 elements, additive offsets on matrix elements, matrix element multipliers,
-and additive offsets to y-intercepts in vital rate models.
+additive offsets to y-intercepts in vital rate models, or specific values
+of individual covariates to vary by matrix.
 }
 \section{Notes}{
 
