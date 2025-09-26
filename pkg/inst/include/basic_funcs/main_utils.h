@@ -1172,6 +1172,9 @@ namespace AdaptUtils {
     NumericVector jsizec_dev_ta;
     NumericVector jrepst_dev_ta;
     NumericVector jmatst_dev_ta;
+    NumericVector indcova_dev_ta;
+    NumericVector indcovb_dev_ta;
+    NumericVector indcovc_dev_ta;
     
     StringVector pop_ta;
     StringVector patch_ta;
@@ -1208,6 +1211,9 @@ namespace AdaptUtils {
     jsizec_dev_ta = as<NumericVector>(trait_axis["jsizec_dev"]);
     jrepst_dev_ta = as<NumericVector>(trait_axis["jrepst_dev"]);
     jmatst_dev_ta = as<NumericVector>(trait_axis["jmatst_dev"]);
+    indcova_dev_ta = as<NumericVector>(trait_axis["indcova"]);
+    indcovb_dev_ta = as<NumericVector>(trait_axis["indcovb"]);
+    indcovc_dev_ta = as<NumericVector>(trait_axis["indcovc"]);
     int ta_rows = static_cast<int>(stage3_ta.length());
     
     // Prep based on stages in stageframe
@@ -1334,6 +1340,16 @@ namespace AdaptUtils {
       }
       if (!NumericVector::is_na(jmatst_dev_ta(i))) {
         if (jmatst_dev_ta(i) != 0.) vrm_altered(i) = 1;
+      }
+      
+      if (!NumericVector::is_na(indcova_dev_ta(i))) {
+        if (indcova_dev_ta(i) != 0.) vrm_altered(i) = 1;
+      }
+      if (!NumericVector::is_na(indcovb_dev_ta(i))) {
+        if (indcovb_dev_ta(i) != 0.) vrm_altered(i) = 1;
+      }
+      if (!NumericVector::is_na(indcovc_dev_ta(i))) {
+        if (indcovc_dev_ta(i) != 0.) vrm_altered(i) = 1;
       }
     }
     
@@ -1677,7 +1693,8 @@ namespace AdaptUtils {
       NumericVector current_dev = {surv_dev_ta(i), obs_dev_ta(i), size_dev_ta(i),
         sizeb_dev_ta(i), sizec_dev_ta(i), repst_dev_ta(i), fec_dev_ta(i),
         jsurv_dev_ta(i), jobs_dev_ta(i), jsize_dev_ta(i), jsizeb_dev_ta(i),
-        jsizec_dev_ta(i), jrepst_dev_ta(i), jmatst_dev_ta(i)};
+        jsizec_dev_ta(i), jrepst_dev_ta(i), jmatst_dev_ta(i), indcova_dev_ta(i),
+        indcovb_dev_ta(i), indcovc_dev_ta(i)};
       arma::vec current_dev_arma = as<arma::vec>(current_dev);
       arma::uvec current_dev_nonzeros = find(current_dev_arma);
       int current_found_nonzeros = static_cast<int>(current_dev_nonzeros.n_elem);
@@ -1742,6 +1759,9 @@ namespace AdaptUtils {
     NumericVector jsizec_dev_newta (newta_rows);
     NumericVector jrepst_dev_newta (newta_rows);
     NumericVector jmatst_dev_newta (newta_rows);
+    NumericVector indcova_dev_newta (newta_rows);
+    NumericVector indcovb_dev_newta (newta_rows);
+    NumericVector indcovc_dev_newta (newta_rows);
     NumericVector mpm_altered_newta (newta_rows);
     NumericVector vrm_altered_newta (newta_rows);
     
@@ -1804,6 +1824,9 @@ namespace AdaptUtils {
             jsizec_dev_newta(basepoints(i) + overall_counter) = jsizec_dev_ta(i);
             jrepst_dev_newta(basepoints(i) + overall_counter) = jrepst_dev_ta(i);
             jmatst_dev_newta(basepoints(i) + overall_counter) = jmatst_dev_ta(i);
+            indcova_dev_newta(basepoints(i) + overall_counter) = indcova_dev_ta(i);
+            indcovb_dev_newta(basepoints(i) + overall_counter) = indcovb_dev_ta(i);
+            indcovc_dev_newta(basepoints(i) + overall_counter) = indcovc_dev_ta(i);
             mpm_altered_newta(basepoints(i) + overall_counter) = mpm_altered(i);
             vrm_altered_newta(basepoints(i) + overall_counter) = vrm_altered(i);
             
@@ -1860,7 +1883,7 @@ namespace AdaptUtils {
       }
     }
     
-    Rcpp::List newtraitaxis(33);
+    Rcpp::List newtraitaxis(36);
     
     newtraitaxis(0) = variant_newta;
     newtraitaxis(1) = stage3_newta;
@@ -1892,17 +1915,20 @@ namespace AdaptUtils {
     newtraitaxis(27) = jsizec_dev_newta;
     newtraitaxis(28) = jrepst_dev_newta;
     newtraitaxis(29) = jmatst_dev_newta;
-    newtraitaxis(30) = year2_newta;
-    newtraitaxis(31) = mpm_altered_newta;
-    newtraitaxis(32) = vrm_altered_newta;
+    newtraitaxis(30) = indcova_dev_newta;
+    newtraitaxis(31) = indcovb_dev_newta;
+    newtraitaxis(32) = indcovc_dev_newta;
+    newtraitaxis(33) = year2_newta;
+    newtraitaxis(34) = mpm_altered_newta;
+    newtraitaxis(35) = vrm_altered_newta;
     
     CharacterVector ta_namevec = {"variant", "stage3", "stage2", "stage1",
       "age3", "age2", "eststage3", "eststage2", "eststage1", "estage3",
       "estage2", "givenrate", "offset", "multiplier", "convtype",
       "convtype_t12", "surv_dev", "obs_dev", "size_dev", "sizeb_dev",
       "sizec_dev", "repst_dev", "fec_dev", "jsurv_dev", "jobs_dev", "jsize_dev",
-      "jsizeb_dev", "jsizec_dev", "jrepst_dev", "jmatst_dev", "year2",
-      "mpm_altered", "vrm_altered"};
+      "jsizeb_dev", "jsizec_dev", "jrepst_dev", "jmatst_dev", "indcova",
+      "indcovb", "indcovc", "year2", "mpm_altered", "vrm_altered"};
     CharacterVector ta_newclasses = {"data.frame", "adaptAxis"};
     newtraitaxis.attr("names") = ta_namevec;
     newtraitaxis.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, newta_rows);

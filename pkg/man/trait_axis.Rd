@@ -4,44 +4,77 @@
 \alias{trait_axis}
 \title{Create a Data Frame of Trait Data for Invasion Analysis}
 \usage{
-trait_axis(
-  historical = NULL,
-  stagebased = NULL,
-  agebased = NULL,
-  stageframe = NULL,
-  stage3 = NULL,
-  stage2 = NULL,
-  stage1 = NULL,
-  age3 = NULL,
-  age2 = NULL,
-  eststage3 = NULL,
-  eststage2 = NULL,
-  eststage1 = NULL,
-  estage3 = NULL,
-  estage2 = NULL,
-  givenrate = NULL,
-  offset = NULL,
-  multiplier = NULL,
-  type = NULL,
-  type_t12 = NULL,
-  surv_dev = NULL,
-  obs_dev = NULL,
-  size_dev = NULL,
-  sizeb_dev = NULL,
-  sizec_dev = NULL,
-  repst_dev = NULL,
-  fec_dev = NULL,
-  jsurv_dev = NULL,
-  jobs_dev = NULL,
-  jsize_dev = NULL,
-  jsizeb_dev = NULL,
-  jsizec_dev = NULL,
-  jrepst_dev = NULL,
-  jmatst_dev = NULL,
-  indcova = NULL,
-  indcovb = NULL,
-  indcovc = NULL
-)
+historical = TRUE,
+
+stagebased = TRUE,
+
+agebased = FALSE,
+
+stageframe = NULL,
+
+stage3 = NULL,
+
+stage2 = NULL,
+
+stage1 = NULL,
+
+age3 = NULL,
+
+age2 = NULL,
+
+eststage3 = NULL,
+
+eststage2 = NULL,
+
+eststage1 = NULL,
+
+estage3 = NULL,
+
+estage2 = NULL,
+
+givenrate = NULL,
+
+offset = NULL,
+
+multiplier = NULL,
+
+type = NULL,
+
+type_t12 = NULL,
+
+surv_dev = NULL,
+
+obs_dev = NULL,
+
+size_dev = NULL,
+
+sizeb_dev = NULL,
+
+sizec_dev = NULL,
+
+repst_dev = NULL,
+
+fec_dev = NULL,
+
+jsurv_dev = NULL,
+
+jobs_dev = NULL,
+
+jsize_dev = NULL,
+
+jsizeb_dev = NULL,
+
+jsizec_dev = NULL,
+
+jrepst_dev = NULL,
+
+jmatst_dev = NULL,
+
+indcova = NULL,
+
+indcovb = NULL,
+
+indcovc = NULL
 }
 \arguments{
 \item{historical}{A single logical value indicating whether the MPMs
