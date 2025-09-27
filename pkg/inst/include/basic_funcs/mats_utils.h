@@ -14,13 +14,736 @@ using namespace LefkoMats;
 
 
 // Index of functions
-// 1. List mazurekd  Estimate All Elements of Stage- and Function-based Population Projection Matrix
-// 2. List mdabrowskiego  Estimate All Elements of Function-based Leslie Population Projection Matrix
-// 3. List thenewpizzle  Create Element Index for Matrix Estimation with Trait Variants
+// 1. double preouterator_adapt3  Estimate Value for Vital Rate Based on Inputs
+// 2. List mazurekd  Estimate All Elements of Stage- and Function-based Population Projection Matrix
+// 3. List mdabrowskiego  Estimate All Elements of Function-based Leslie Population Projection Matrix
+// 4. List thenewpizzle  Create Element Index for Matrix Estimation with Trait Variants
 
 
 
 namespace AdaptMats {
+  
+  //' Estimate Value for Vital Rate Based on Inputs
+  //' 
+  //' Function \code{preouterator_adapt3()} calculates the value of the vital rate called
+  //' for by the function \code{jerzeibalowski()}.
+  //' 
+  //' @name preouterator_adapt3
+  //' 
+  //' @param modelproxy A model_proxy object derived from function
+  //' \code{modelextract()}.
+  //' @param maincoefs The coefficients portion of the vital rate model proxy.
+  //' @param randindex An integer matrix indexing all random covariates for all
+  //' vital rates.
+  //' @param dev_terms A numeric vector containing the deviations to the linear
+  //' models input by the user. The order is: survival, observation status, size,
+  //' size_b, size_c, reproductive status, fecundity, juvenile survival, juvenile
+  //' observation status, juvenile size, juvenile size_b, juvenile size_c,
+  //' juvenile reproductive status, and juvenile maturity status. This is
+  //' followed by the values of individual covariates a, b, and c, if used in
+  //' trait axis formation.
+  //' @param vitalyear A matrix with year coefficients for all vital rates.
+  //' @param vitalpatch A matrix with patch coefficients for all vital rates.
+  //' @param chosen_r2inda A string identifying random covariate a in time t.
+  //' @param chosen_r1inda A string identifying random covariate a in time t-1.
+  //' @param chosen_r2indb A string identifying random covariate b in time t.
+  //' @param chosen_r1indb A string identifying random covariate b in time t-1.
+  //' @param chosen_r2indc A string identifying random covariate c in time t.
+  //' @param chosen_r1indc A string identifying random covariate c in time t-1.
+  //' @param chosen_f2inda_cat A string identifying fixed factor a in time t.
+  //' @param chosen_f1inda_cat A string identifying fixed factor a in time t-1.
+  //' @param chosen_f2indb_cat A string identifying fixed factor b in time t.
+  //' @param chosen_f1indb_cat A string identifying fixed factor b in time t-1.
+  //' @param chosen_f2indc_cat A string identifying fixed factor c in time t.
+  //' @param chosen_f1indc_cat A string identifying fixed factor c in time t-1.
+  //' @param status_terms A NumericVector containing, in order: fl1_i, fl2n_i,
+  //' sz1_i, sz2o_i, szb1_i, szb2o_i, szc1_i, szc2o_i, aage2_i, inda_1, inda_2,
+  //' indb_1, indb_2, indc_1, indc_2, used_dens, sz3_i, szb3_i, szc3_i,
+  //' binwidth3_i, binbwidth3_i, bincwidth3_i, anna_2, anna_1, annb_2, annb_1,
+  //' annc_2, and annc_1.
+  //' @param modelgroups2 A vector of group slope coefficients for time t.
+  //' @param modelgroups1 A vector of group slope coefficients for time t-1.
+  //' @param modelgroups2zi A vector of zero-inflation model group slope
+  //' coefficients for time t.
+  //' @param modelgroups1zi A vector of zero-inflation model group slope
+  //' coefficients for time t-1.
+  //' @param modelyearzi A vector of zero-inflation model time slope coefficients.
+  //' @param modelpatchzi A vector of zero-inflation model patch slope coefficients.
+  //' @param modelind A vector of individual covariate slope coefficients.
+  //' @param modelind_rownames A string vector with the names of the individual
+  //' covariate coefficients.
+  //' @param modelindzi A vector of individual covariate slope coefficients.
+  //' @param modelind_rownames_zi A string vector with the names of the individual
+  //' covariate coefficients.
+  //' @param zi A logical value indicating whether model coefficients refer to the
+  //' zero inflation portion of a model.
+  //' @param sigma The sigma term in the \code{modelproxy} object.
+  //' @param grp2o_i Stage group number in time \emph{t}.
+  //' @param grp1_i Stage group number in time \emph{t}-1.
+  //' @param patchnumber An integer index for pop-patch.
+  //' @param yearnumber An integer index for monitoring occasion in time \emph{t}.
+  //' @param vitaldist A parameter specifying the distribution of the vital rate.
+  //' Current options are: Poisson (0), negative binomial (1), Gaussian (2),
+  //' Gamma (3), and binomial (4).
+  //' @param vitalrate An integer specifying the vital rate. 1 = surv, 2 = obs,
+  //' 3 = size, 4 = sizeb, 5 = sizec, 6 = repst, 7 = fec, 8 = jsurv, 9 = jobs,
+  //' 10 = jsize, 11 = jsizeb, 12 = jsizec, 13 = jrepst, 14 = jmatst.
+  //' @param exp_tol A numeric value indicating the maximum limit for the
+  //' \code{exp()} function to be used in vital rate calculations. Defaults to
+  //' \code{700.0}.
+  //' @param theta_tol A numeric value indicating a maximum value for theta in
+  //' negative binomial probability density estimation. Defaults to
+  //' \code{100000000.0}.
+  //' @param ipm_cdf A logical value indicating whether to use the cumulative
+  //' density function to estimate size transitions in continuous distributions
+  //' (\code{true}), or the midpoint method (\code{false}).
+  //' @param matrixformat An integer representing the style of matrix to develop.
+  //' Options include Ehrlen-format hMPM (1), deVries-format hMPM (2), ahMPM (3),
+  //' and age-by-stage MPM (4).
+  //' @param fecmod A scalar multiplier for fecundity.
+  //' @param repentry_i Rep entry value for time t+1.
+  //' @param negfec A logical value denoting whether to change negative estimated
+  //' fecundity to 0.
+  //' @param stage2n_i Numeric index of stage in time t.
+  //' @param nostages The total number of stages in the stageframe.
+  //' @param modeltrunc An integer coding for zero-truncation status.
+  //' 
+  //' @return A class double numeric value for the vital rate being estimated.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline double preouterator_adapt3(List modelproxy, NumericVector maincoefs,
+    arma::imat randindex, NumericVector dev_terms, NumericMatrix vitalyear,
+    NumericMatrix vitalpatch, String chosen_r2inda, String chosen_r1inda,
+    String chosen_r2indb, String chosen_r1indb, String chosen_r2indc,
+    String chosen_r1indc, String chosen_f2inda_cat, String chosen_f1inda_cat,
+    String chosen_f2indb_cat, String chosen_f1indb_cat, String chosen_f2indc_cat,
+    String chosen_f1indc_cat, NumericVector status_terms,
+    NumericVector modelgroups2, NumericVector modelgroups1,
+    NumericVector modelgroups2zi, NumericVector modelgroups1zi,
+    NumericVector modelyearzi, NumericVector modelpatchzi,
+    NumericVector modelind, StringVector modelind_rownames,
+    NumericVector modelindzi, StringVector modelind_rownames_zi, bool zi,
+    double sigma, double grp2o_i, double grp1_i, int patchnumber, int yearnumber,
+    int vitaldist, int vitalrate, double exp_tol, double theta_tol, bool ipm_cdf,
+    int matrixformat, double fecmod, double repentry_i, bool negfec,
+    double stage2n_i, int nostages, int modeltrunc) {
+    
+    double preout {0.0};
+    double all_out {0.0};
+    double all_out_zi {0.0};
+    
+    int placeholder = vitalrate - 1;
+    int placeholder_zi = placeholder + 12;
+    int vitaltype {0}; // Binomial vital rates
+    if (vitalrate == 3 || vitalrate == 4 || vitalrate == 5) {
+      vitaltype = 1; // Size
+    } else if (vitalrate == 10 || vitalrate == 11 || vitalrate == 12) {
+      vitaltype = 1; // Juv size
+      placeholder_zi = placeholder + 9;
+    } else if (vitalrate == 7) {
+      vitaltype = 2; // Fecundity
+      placeholder_zi = placeholder + 11;
+    }
+    
+    //Rcout << "preouterator_adapt3 dev_terms: " << dev_terms << endl;
+    
+    // For all / conditional models
+    double mainsum = rimeotam(maincoefs, status_terms(0), status_terms(1),
+      status_terms(2), status_terms(3), status_terms(4), status_terms(5),
+      status_terms(6), status_terms(7), status_terms(8),
+      (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14)),
+      (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15)),
+      (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16)),
+      status_terms(22), status_terms(23), status_terms(24), status_terms(25),
+      status_terms(26), status_terms(27), status_terms(15), false);
+    
+    bool zi_processing = false;
+    
+    if (vitaltype == 1) {
+      if (vitalrate == 3 || vitalrate == 10) {
+        if (zi) zi_processing = true;
+      } else if (vitalrate == 4 || vitalrate == 11) {
+        if (zi) zi_processing = true;
+      } else if (vitalrate == 5 || vitalrate == 12) {
+        if (zi) zi_processing = true;
+      } 
+    } else if (vitaltype == 2) {
+      if (zi && vitaldist < 2) zi_processing = true;  
+    }
+    
+    // Creates covariate numerics for all models
+    // Random covariate processing
+    double chosen_randcova2 {0.0};
+    if (chosen_r2inda != "none") {
+      for (int indcount = 0; indcount < randindex(0, placeholder); indcount++) {
+        if (chosen_r2inda == modelind_rownames(indcount)) {
+          chosen_randcova2 = modelind(indcount);
+        }
+      }
+    }
+    double chosen_randcova1 {0.0};
+    if (chosen_r1inda != "none") {
+      int delectable_sum = randindex(0, placeholder);
+      for (int indcount = 0; indcount < randindex(1, placeholder); indcount++) {
+        if (chosen_r1inda == modelind_rownames(indcount + delectable_sum)) {
+          chosen_randcova1 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_randcovb2 {0.0};
+    if (chosen_r2indb != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder);
+      for (int indcount = 0; indcount < randindex(2, placeholder); indcount++) {
+        if (chosen_r2indb == modelind_rownames(indcount + delectable_sum)) {
+          chosen_randcovb2 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_randcovb1 {0.0};
+    if (chosen_r1indb != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder) +
+        randindex(2, placeholder);
+      for (int indcount = 0; indcount < randindex(3, placeholder); indcount++) {
+        if (chosen_r1indb == modelind_rownames(indcount + delectable_sum)) {
+          chosen_randcovb1 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_randcovc2 {0.0};
+    if (chosen_r2indc != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder) +
+        randindex(2, placeholder) + randindex(3, placeholder);
+      for (int indcount = 0; indcount < randindex(4, placeholder); indcount++) {
+        if (chosen_r2indc == modelind_rownames(indcount + delectable_sum)) {
+          chosen_randcovc2 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_randcovc1 {0.0};
+    if (chosen_r1indc != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder) +
+        randindex(2, placeholder) + randindex(3, placeholder) + randindex(4, placeholder);
+      for (int indcount = 0; indcount < randindex(5, placeholder); indcount++) {
+        if (chosen_r1indc == modelind_rownames(indcount + delectable_sum)) {
+          chosen_randcovc1 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    
+    // Fixed factor covariate processing (all / conditional)
+    double chosen_fixcova2 {0.0};
+    if (chosen_f2inda_cat != "none") {
+      for (int indcount = 0; indcount < randindex(0, placeholder); indcount++) {
+        if (chosen_f2inda_cat == modelind_rownames(indcount)) {
+          chosen_fixcova2 = modelind(indcount);
+        }
+      }
+    }
+    double chosen_fixcova1 {0.0};
+    if (chosen_f1inda_cat != "none") {
+      int delectable_sum = randindex(0, placeholder);
+      for (int indcount = 0; indcount < randindex(1, placeholder); indcount++) {
+        if (chosen_f1inda_cat == modelind_rownames(indcount + delectable_sum)) {
+          chosen_fixcova1 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_fixcovb2 {0.0};
+    if (chosen_f2indb_cat != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder);
+      for (int indcount = 0; indcount < randindex(2, placeholder); indcount++) {
+        if (chosen_f2indb_cat == modelind_rownames(indcount + delectable_sum)) {
+          chosen_fixcovb2 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_fixcovb1 {0.0};
+    if (chosen_f1indb_cat != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder) +
+        randindex(2, placeholder);
+      for (int indcount = 0; indcount < randindex(3, placeholder); indcount++) {
+        if (chosen_f1indb_cat == modelind_rownames(indcount + delectable_sum)) {
+          chosen_fixcovb1 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_fixcovc2 {0.0};
+    if (chosen_f2indc_cat != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder) +
+        randindex(2, placeholder) + randindex(3, placeholder);
+      for (int indcount = 0; indcount < randindex(4, placeholder); indcount++) {
+        if (chosen_f2indc_cat == modelind_rownames(indcount + delectable_sum)) {
+          chosen_fixcovc2 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    double chosen_fixcovc1 {0.0};
+    if (chosen_f1indc_cat != "none") {
+      int delectable_sum = randindex(0, placeholder) + randindex(1, placeholder) +
+        randindex(2, placeholder) + randindex(3, placeholder) + randindex(4, placeholder);
+      for (int indcount = 0; indcount < randindex(5, placeholder); indcount++) {
+        if (chosen_f1indc_cat == modelind_rownames(indcount + delectable_sum)) {
+          chosen_fixcovc1 = modelind(indcount + delectable_sum);
+        }
+      }
+    }
+    
+    preout = (mainsum + chosen_randcova2 + chosen_randcova1 +
+      chosen_randcovb2 + chosen_randcovb1 + chosen_randcovc2 +
+      chosen_randcovc1 + chosen_fixcova2 + chosen_fixcova1 + chosen_fixcovb2 +
+      chosen_fixcovb1 + chosen_fixcovc2 + chosen_fixcovc1 +
+      modelgroups2(grp2o_i) + modelgroups1(grp1_i) + 
+      vitalpatch(patchnumber, placeholder) +
+      vitalyear(yearnumber, placeholder) + dev_terms(placeholder));
+      
+    if (preout > exp_tol && vitaldist < 2) preout = exp_tol;
+    
+    
+    double preout_zi {0.0};
+    
+    if (zi_processing) {
+      double mainsum_zi = rimeotam(maincoefs, status_terms(0), status_terms(1),
+        status_terms(2), status_terms(3), status_terms(4), status_terms(5),
+        status_terms(6), status_terms(7), status_terms(8),
+        (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14)),
+        (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15)),
+        (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16)),
+        status_terms(22), status_terms(23), status_terms(24), status_terms(25),
+        status_terms(26), status_terms(27), status_terms(15), true);
+        
+      // Only for size and fec
+      double chosen_randcova2zi {0.0};
+      if (chosen_r2inda != "none") {
+        for (int indcount = 0; indcount < randindex(0, placeholder_zi); indcount++) {
+          if (chosen_r2inda == modelind_rownames_zi(indcount)) {
+            chosen_randcova2zi = modelindzi(indcount);
+          }
+        }
+      }
+      double chosen_randcova1zi {0.0};
+      if (chosen_r1inda != "none") {
+        int delectable_sum = randindex(0, placeholder_zi);
+        for (int indcount = 0; indcount < randindex(1, placeholder_zi); indcount++) {
+          if (chosen_r1inda == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_randcova1zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_randcovb2zi {0.0};
+      if (chosen_r2indb != "none") {
+        int delectable_sum = randindex(0, placeholder_zi) + randindex(1, placeholder_zi);
+        for (int indcount = 0; indcount < randindex(2, placeholder_zi); indcount++) {
+          if (chosen_r2indb == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_randcovb2zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_randcovb1zi {0.0};
+      if (chosen_r1indb != "none") {
+        int delectable_sum = randindex(0, placeholder_zi) + randindex(1, placeholder_zi) +
+          randindex(2, placeholder_zi);
+        for (int indcount = 0; indcount < randindex(3, placeholder_zi); indcount++) {
+          if (chosen_r1indb == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_randcovb1zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_randcovc2zi {0.0};
+      if (chosen_r2indc != "none") {
+        int delectable_sum = randindex(0, placeholder_zi) + randindex(1, placeholder_zi) +
+          randindex(2, placeholder_zi) + randindex(3, placeholder_zi);
+        for (int indcount = 0; indcount < randindex(4, placeholder_zi); indcount++) {
+          if (chosen_r2indc == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_randcovc2zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_randcovc1zi {0.0};
+      if (chosen_r1indc != "none") {
+        int delectable_sum = randindex(0, placeholder_zi) + randindex(1, placeholder_zi) +
+          randindex(2, placeholder_zi) + randindex(3, placeholder_zi) + randindex(4, placeholder_zi);
+        for (int indcount = 0; indcount < randindex(5, placeholder_zi); indcount++) {
+          if (chosen_r1indc == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_randcovc1zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      
+      double chosen_fixcova2zi {0.0};
+      if (chosen_f2inda_cat != "none") {
+        for (int indcount = 0; indcount < randindex(0, 16); indcount++) {
+          if (chosen_f2inda_cat == modelind_rownames_zi(indcount)) {
+            chosen_fixcova2zi = modelindzi(indcount);
+          }
+        }
+      }
+      double chosen_fixcova1zi {0.0};
+      if (chosen_f1inda_cat != "none") {
+        int delectable_sum = randindex(0, 16);
+        for (int indcount = 0; indcount < randindex(1, 16); indcount++) {
+          if (chosen_f1inda_cat == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_fixcova1zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_fixcovb2zi {0.0};
+      if (chosen_f2indb_cat != "none") {
+        int delectable_sum = randindex(0, 16) + randindex(1, 16);
+        for (int indcount = 0; indcount < randindex(2, 16); indcount++) {
+          if (chosen_f2indb_cat == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_fixcovb2zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_fixcovb1zi {0.0};
+      if (chosen_f1indb_cat != "none") {
+        int delectable_sum = randindex(0, 16) + randindex(1, 16) + randindex(2, 16);
+        for (int indcount = 0; indcount < randindex(3, 16); indcount++) {
+          if (chosen_f1indb_cat == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_fixcovb1zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_fixcovc2zi {0.0};
+      if (chosen_f2indc_cat != "none") {
+        int delectable_sum = randindex(0, 16) + randindex(1, 16) + randindex(2, 16) +
+          randindex(3, 16);
+        for (int indcount = 0; indcount < randindex(4, 16); indcount++) {
+          if (chosen_f2indc_cat == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_fixcovc2zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      double chosen_fixcovc1zi {0.0};
+      if (chosen_f1indc_cat != "none") {
+        int delectable_sum = randindex(0, 16) + randindex(1, 16) + randindex(2, 16) +
+          randindex(3, 16) + randindex(4, 16);
+        for (int indcount = 0; indcount < randindex(5, 16); indcount++) {
+          if (chosen_f1indc_cat == modelind_rownames_zi(indcount + delectable_sum)) {
+            chosen_fixcovc1zi = modelindzi(indcount + delectable_sum);
+          }
+        }
+      }
+      
+      preout_zi = (mainsum_zi + chosen_randcova2zi + chosen_randcova1zi +
+        chosen_randcovb2zi + chosen_randcovb1zi + chosen_randcovc2zi +
+        chosen_randcovc1zi + chosen_fixcova2zi + chosen_fixcova1zi +
+        chosen_fixcovb2zi + chosen_fixcovb1zi + chosen_fixcovc2zi +
+        chosen_fixcovc1zi + modelgroups2zi(grp2o_i) + modelgroups1zi(grp1_i) + 
+        modelpatchzi(patchnumber) + modelyearzi(yearnumber) +
+        dev_terms(placeholder));
+    }
+    
+    if (vitaltype == 0) {
+      // Binomial vital rates only
+      if (preout > exp_tol) preout = exp_tol;
+        
+      double pre_exp = exp(preout);
+      all_out = pre_exp / (1.0 + pre_exp);
+      
+      // //Rcout << "Binomial: preout: " << preout << " pre_exp: " << pre_exp <<
+      //   " all_out: " << all_out << "\n";
+      
+    } else if (vitaltype == 1) {
+      // Size vital rates
+      
+      double Used_size3 = status_terms(16);
+      double Used_binwidth3 = status_terms(19);
+      
+      if (vitalrate == 4) {
+        Used_size3 = status_terms(17);
+        Used_binwidth3 = status_terms(20);
+        
+      } else if (vitalrate == 5) {
+        Used_size3 = status_terms(18);
+        Used_binwidth3 = status_terms(21);
+        
+      } else if (vitalrate == 11) {
+        Used_size3 = status_terms(17);
+        Used_binwidth3 = status_terms(20);
+        
+      } else if (vitalrate == 12) {
+        Used_size3 = status_terms(18);
+        Used_binwidth3 = status_terms(21);
+      }
+      
+      if (zi_processing) {
+        // Development of estimate of pi (probability of 0 in binomial zi model)
+        if (preout_zi > exp_tol) preout_zi = exp_tol;
+        
+        double pre_exp_zi = exp(preout_zi);
+        all_out_zi = pre_exp_zi / (1.0 + pre_exp_zi);
+        
+        // //Rcout << "ZI Binomial: preout_zi: " << preout_zi << " pre_exp_zi: " << pre_exp_zi <<
+        //   " all_out_zi: " << all_out_zi << "\n";
+      }
+      
+      if (vitaldist == 0) {
+        // Poisson distribution
+        
+        if (preout > exp_tol) preout = exp_tol;
+        double lambda = exp(preout);
+        
+        double upper_boundary = (Used_size3 + (Used_binwidth3 / 2));
+        double upper_boundary_int = floor(upper_boundary);
+        
+        double lower_boundary = (Used_size3 - (Used_binwidth3 / 2));
+        double lower_boundary_int = floor(lower_boundary);
+        
+        if (ipm_cdf) {
+          if (lower_boundary_int < 0.0) lower_boundary_int = 0.0;
+          
+          double sizefac {1.0};
+          if (upper_boundary_int > 0.0) {
+            sizefac = upper_boundary_int * tgamma(upper_boundary_int);
+          }
+          double main_out = boost::math::tgamma((upper_boundary_int + 1), lambda) /
+            sizefac;
+          
+          if (upper_boundary_int > lower_boundary_int) {
+            double sizefac_low {1.0};
+            if (lower_boundary_int > 0.0) {
+              sizefac_low = lower_boundary_int * tgamma(lower_boundary_int);
+            }
+            all_out = main_out - boost::math::tgamma((lower_boundary_int + 1), lambda) /
+              sizefac_low;
+          } else {
+            all_out = main_out;
+          }
+          if (all_out < 0.0) all_out = 0.0; // Eliminates issues in some versions of Linux
+          
+          if (modeltrunc == 1) {
+            double den_corr = (1.0 - (exp(-1 * lambda)));
+            if (den_corr == 0.0 || NumericVector::is_na(den_corr)) {
+              den_corr = 1 / (exp_tol * exp_tol);
+            }
+            all_out = all_out / den_corr;
+          }
+          // //Rcout << "Poisson cdf: upper_boundary_int: " << upper_boundary_int << 
+          //   " lower_boundary_int: " << lower_boundary_int << " lambda: " << lambda << 
+          //   " all_out: " << all_out << "\n";
+          
+        } else {
+          int y = static_cast<int>(upper_boundary_int);
+          int y0 = static_cast<int>(lower_boundary_int);
+          if (y0 < -1) y0 = -1;
+          
+          double current_prob {0.0};
+          
+          for (int summed_size = (y0 + 1); summed_size <= y; summed_size++) {
+            double sizefac {1.0};
+            if (Used_size3 > 0.0) {
+              sizefac = Used_size3 * tgamma(Used_size3);
+            }
+            
+            double den_corr {1.0};
+            if (modeltrunc == 1) den_corr = (1.0 - (exp(-1 * lambda)));
+            if (den_corr == 0.0 || NumericVector::is_na(den_corr)) {
+              den_corr = 1.0 / (exp_tol * exp_tol);
+            }
+            
+            current_prob += ((pow(lambda, Used_size3) * exp(-1.0 * lambda)) / sizefac) /
+              den_corr;
+          }
+          all_out = current_prob;
+          
+          // //Rcout << "Poisson mid: upper_boundary_int: " << upper_boundary_int <<
+          //   " lower_boundary_int: " << lower_boundary_int << " lambda: " << lambda << 
+          //   " current_prob: " << current_prob << "\n";
+        }
+        
+        if (zi_processing) {
+          double current_pi = all_out_zi;
+          double current_chi = all_out;
+          
+          if (Used_size3 == 0) {
+            all_out = current_pi + ((1.0 - current_pi) * current_chi);
+          } else {
+            all_out = (1.0 - current_pi) * current_chi;
+          }
+        }
+        
+      } else if (vitaldist == 1) {
+        // Negative binomial
+        
+        double mu = exp(preout);
+        
+        double theta = modelproxy["sigma"];
+        if (NumericVector::is_na(theta)) theta = 1.0;
+        if (theta > theta_tol) theta = theta_tol;
+        double alpha = 1.0 / theta;
+        
+        double upper_boundary = (Used_size3 + (Used_binwidth3 / 2));
+        double upper_boundary_int = floor(upper_boundary);
+        int y = static_cast<int>(upper_boundary_int);
+        
+        double lower_boundary = (Used_size3 - (Used_binwidth3 / 2));
+        double lower_boundary_int = floor(lower_boundary);
+        int y0 = static_cast<int>(lower_boundary_int);
+        if (y0 < -1) y0 = -1;
+        
+        double log_amu = log(alpha) + log(mu);
+        double log_mid = -1.0 * theta * log(1.0 + (alpha * mu));
+        double den_corr {1.0};
+        if (modeltrunc == 1) den_corr = 1.0 - exp(log_mid);
+        if (den_corr == 0.0 || NumericVector::is_na(den_corr)) {
+          den_corr = 1 / (exp_tol * exp_tol);
+        }
+        
+        double current_prob {0.0};
+        
+        for (int summed_size = (y0 + 1); summed_size <= y; summed_size++) {
+          double log_leftie = 0.0;
+          for (int j = 0; j < summed_size; j++) {
+            log_leftie = log(static_cast<double>(j) + theta) -
+              log(static_cast<double>(j) + 1.0) + log_leftie;
+          }
+          double log_rightie = static_cast<double>(summed_size) *
+            (log_amu - log(1.0 + (alpha * mu)));
+          
+          double raw_prob = log_leftie + log_mid + log_rightie;
+          
+          current_prob += exp(raw_prob) / den_corr;
+        }
+        all_out = current_prob;
+        
+        if (zi_processing) {
+          double current_pi = all_out_zi;
+          double current_chi = all_out;
+          
+          if (Used_size3 == 0) {
+            all_out = current_pi + ((1.0 - current_pi) * current_chi);
+          } else {
+            all_out = (1.0 - current_pi) * current_chi;
+          }
+        }
+        
+        if (all_out < 0.0) all_out = 0.0; // Eliminates issues in some versions of Linux
+        
+        // //Rcout << "Negbin: y: " << y << " y0: " << y0 << " alpha: " << alpha <<
+        //   " mu: " << mu << " current_prob: " << current_prob << "\n";
+        
+      } else if (vitaldist == 2) {
+        // Gaussian size distribution, assuming midpoint
+        
+        if (ipm_cdf) {
+          double lower_size = Used_size3 - (0.5 * Used_binwidth3);
+          double upper_size = Used_size3 + (0.5 * Used_binwidth3);
+          
+          double lower_prob = normcdf(lower_size, preout, sigma);
+          double upper_prob = normcdf(upper_size, preout, sigma);
+          
+          all_out = upper_prob - lower_prob;
+          
+          // //Rcout << "Gaussian cdf: upper_size: " << upper_size << " lower_size: " <<
+          //   lower_size << " Used_size3: " << Used_size3 << " Used_binwidth3: " <<
+          //   Used_binwidth3 << " preout: " << preout << " sigma: " <<
+          //   sigma << " upper_prob: " << upper_prob << " lower_prob: " <<
+          //   lower_prob << " all_out: " << all_out << "\n";
+        } else {
+          double sigma2 = sigma * sigma;
+          
+          all_out = (exp(-1 * (pow((Used_size3 - preout), 2) / (2.0 * sigma2))) / 
+            ((pow((2 * M_PI), 0.5)) * sigma));
+          all_out = all_out * Used_binwidth3; // Midpoint integration
+          
+          // //Rcout << "Gaussian mid: Used_size3: " << Used_size3 << " Used_binwidth3: " <<
+          //   Used_binwidth3 << " sigma: " << sigma << " preout: " <<
+          //   preout << " all_out: " << all_out << "\n";
+        }
+      } else if (vitaldist == 3) {
+        // Gamma size distribution, assuming midpoint
+        
+        double E_y = 1 / preout;
+        double sigma2 = sigma * sigma;
+        double alpha = 1.0 / sigma2;
+        double beta = (alpha / E_y);
+        
+        if (ipm_cdf) {
+          double lower_size = Used_size3 - (0.5 * Used_binwidth3);
+          double upper_size = Used_size3 + (0.5 * Used_binwidth3);
+          
+          double lower_prob = boost::math::gamma_p(alpha, (beta * lower_size));
+          double upper_prob = boost::math::gamma_p(alpha, (beta * upper_size));
+          
+          all_out = upper_prob - lower_prob;
+          
+          // //Rcout << "Gamma cdf: upper_size: " << upper_size << " lower_size: " <<
+          //   lower_size << " alpha: " << alpha << " beta: " << beta << " upper_prob: " <<
+          //   upper_prob << " lower_prob: " << lower_prob << " all_out: " << all_out << "\n";
+        } else {
+          
+          all_out = pow(beta, alpha) * (1.0 / tgamma(alpha)) * 
+            pow(Used_size3, (alpha - 1.0)) * exp(-1.0 * beta * Used_size3);
+          all_out = all_out * Used_binwidth3; // Midpoint integration
+          
+          // //Rcout << "Gamma mid: Used_size3: " << Used_size3 << " Used_binwidth3: " <<
+          //   Used_binwidth3 << " alpha: " << alpha << " beta: " << beta <<
+          //   " all_out: " << all_out << "\n";
+        }
+      }
+      
+    } else if (vitaltype == 2) {
+      // Fecundity
+      if (matrixformat != 2 || stage2n_i != static_cast<double>(nostages+1)) {
+        if (vitaldist == 0 || vitaldist == 1) {
+          // Poisson and negative binomial fecundity
+          if (preout > exp_tol) preout = exp_tol;
+          
+          if (zi_processing) {
+            
+            all_out = (1.0 - (exp(preout_zi) / (1.0 + exp(preout_zi)))) *
+              (exp(preout) * fecmod * repentry_i);
+            
+          } else {
+            
+            all_out = exp(preout) * fecmod * repentry_i;
+          }
+        } else if (vitaldist == 2) {
+          // Gaussian fecundity
+          all_out = preout * fecmod * repentry_i;
+          
+          if (negfec && all_out < 0.0) all_out = 0.0;
+          
+        } else if (vitaldist == 3) {
+          // Gamma fecundity
+          all_out = (1.0 / preout) * fecmod * repentry_i;
+        } else {
+          all_out = maincoefs(0);
+        }
+      } else if (stage2n_i == static_cast<double>(nostages+1)) {
+        // Fecundity in deVries-formatted hMPMs
+        if (vitaldist == 0 || vitaldist == 1) {
+          // Poisson and negative binomial fecundity
+          
+          if (preout > exp_tol) preout = exp_tol;
+              
+          if (zi_processing) {
+            all_out = (1.0 - (exp(preout_zi) / (1.0 + exp(preout_zi)))) *
+              (exp(preout) * fecmod * repentry_i);
+            
+          } else {
+            all_out = exp(preout) * fecmod * repentry_i;
+          }
+        } else if (vitaldist == 2) {
+          // Gaussian fecundity
+          all_out = preout * fecmod * repentry_i;
+          
+          if (negfec && all_out < 0.0) {
+            all_out = 0.0;
+          }
+        } else if (vitaldist == 3) {
+          // Gamma fecundity
+          all_out = (1.0 / preout) * fecmod * repentry_i;
+        }
+      } else {
+        all_out = maincoefs(0);
+      }
+    }
+    
+    return all_out;
+  }
   
   //' Estimate All Elements of Stage- and Function-based Population Projection Matrix
   //' 
@@ -88,10 +811,13 @@ namespace AdaptMats {
   //' holding values equal to the mean value of individual random covariate
   //' \code{c} at each time \emph{t}-1 to be used in analysis.
   //' @param dev_terms A numeric vector containing the deviations to the linear
-  //' models input by the user. The order is: survival, observation status, size,
-  //' size_b, size_c, reproductive status, fecundity, juvenile survival, juvenile
-  //' observation status, juvenile size, juvenile size_b, juvenile size_c,
-  //' juvenile reproductive status, and juvenile maturity status.
+  //' models input by the user, as well as individual covariate values. The
+  //' order is: survival (dev), observation status (dev), size (dev), size_b
+  //' (dev), size_c (dev), reproductive status (dev), fecundity (dev), juvenile
+  //' survival (dev), juvenile observation status (dev), juvenile size (dev),
+  //' juvenile size_b (dev), juvenile size_c (dev), juvenile reproductive status
+  //' (dev), juvenile maturity status (dev), individual covariate a (value),
+  //' individual covariate b (value), and individual covariate c (value).
   //' @param dens_vr A logical value indicating whether any vital rates are
   //' density dependent.
   //' @param dvr_yn A logical vector indicating whether each vital rate is density
@@ -884,7 +1610,7 @@ namespace AdaptMats {
           // Adult survival transitions
           if (survdist < 5) {
             //Rcout << "mazurekd s1 ";
-            out_vec(0) = preouterator(survproxy, survcoefs, rand_index, dev_terms,
+            out_vec(0) = preouterator_adapt3(survproxy, survcoefs, rand_index, dev_terms,
               vital_year, vital_patch, chosen_r2inda, chosen_r1inda, chosen_r2indb,
               chosen_r1indb, chosen_r2indc, chosen_r1indc, chosen_f2inda_cat,
               chosen_f1inda_cat, chosen_f2indb_cat, chosen_f1indb_cat,
@@ -904,7 +1630,7 @@ namespace AdaptMats {
           
           if (obsdist < 5) {
             //Rcout << "mazurekd s3 ";
-            out_vec(1) = preouterator(obsproxy, obscoefs, rand_index, dev_terms,
+            out_vec(1) = preouterator_adapt3(obsproxy, obscoefs, rand_index, dev_terms,
               vital_year, vital_patch, chosen_r2inda, chosen_r1inda, chosen_r2indb,
               chosen_r1indb, chosen_r2indc, chosen_r1indc, chosen_f2inda_cat,
               chosen_f1inda_cat, chosen_f2indb_cat, chosen_f1indb_cat,
@@ -929,7 +1655,7 @@ namespace AdaptMats {
               bool used_sizezero = false;
               if (sizezero && sz3(i) == 0) used_sizezero = sizezero;
               //Rcout << "mazurekd s5 ";
-              out_vec(3) = preouterator(sizeproxy, sizecoefs, rand_index,
+              out_vec(3) = preouterator_adapt3(sizeproxy, sizecoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -953,7 +1679,7 @@ namespace AdaptMats {
               bool used_sizebzero = false;
               if (sizebzero && szb3(i) == 0) used_sizebzero = sizebzero;
               //Rcout << "mazurekd s7 ";
-              out_vec(4) = preouterator(sizebproxy, sizebcoefs, rand_index,
+              out_vec(4) = preouterator_adapt3(sizebproxy, sizebcoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -976,7 +1702,7 @@ namespace AdaptMats {
               bool used_sizeczero = false;
               if (sizeczero && szc3(i) == 0) used_sizeczero = sizeczero;
               //Rcout << "mazurekd s9 ";
-              out_vec(5) = preouterator(sizecproxy, sizeccoefs, rand_index,
+              out_vec(5) = preouterator_adapt3(sizecproxy, sizeccoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -997,7 +1723,7 @@ namespace AdaptMats {
             
             if (repstdist < 5) {
               //Rcout << "mazurekd s11 ";
-              out_vec(2) = preouterator(repstproxy, repstcoefs, rand_index,
+              out_vec(2) = preouterator_adapt3(repstproxy, repstcoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1056,7 +1782,7 @@ namespace AdaptMats {
           //Rcout << "mazurekd s13 ";
           // Juvenile to adult transitions
           if (jmatstdist < 5) {
-            mat_predicted = preouterator(jmatstproxy, jmatstcoefs, rand_index,
+            mat_predicted = preouterator_adapt3(jmatstproxy, jmatstcoefs, rand_index,
               dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
               chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
               chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1084,7 +1810,7 @@ namespace AdaptMats {
           if (err_check) out(i, 6) = out_vec(6);
           
           if (jsurvdist < 5) {
-            out_vec(0) = preouterator(jsurvproxy, jsurvcoefs, rand_index,
+            out_vec(0) = preouterator_adapt3(jsurvproxy, jsurvcoefs, rand_index,
               dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
               chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
               chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1103,7 +1829,7 @@ namespace AdaptMats {
           if (err_check) out(i, 0) = out_vec(0);
           
           if (jobsdist < 5) {
-            out_vec(1) = preouterator(jobsproxy, jobscoefs, rand_index,
+            out_vec(1) = preouterator_adapt3(jobsproxy, jobscoefs, rand_index,
               dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
               chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
               chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1123,7 +1849,7 @@ namespace AdaptMats {
           
           if (ob3(i) == 1 || jobsdist == 5) {
             if (jsizedist < 5) {
-              out_vec(3) = preouterator(jsizeproxy, jsizecoefs, rand_index,
+              out_vec(3) = preouterator_adapt3(jsizeproxy, jsizecoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1142,7 +1868,7 @@ namespace AdaptMats {
             if (err_check) out(i, 3) = out_vec(3);
             
             if (jsizebdist < 5) {
-              out_vec(4) = preouterator(jsizebproxy, jsizebcoefs, rand_index,
+              out_vec(4) = preouterator_adapt3(jsizebproxy, jsizebcoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1162,7 +1888,7 @@ namespace AdaptMats {
             if (err_check) out(i, 4) = out_vec(4);
             
             if (jsizecdist < 5) {
-              out_vec(5) = preouterator(jsizecproxy, jsizeccoefs, rand_index,
+              out_vec(5) = preouterator_adapt3(jsizecproxy, jsizeccoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda,chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
                 chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1182,7 +1908,7 @@ namespace AdaptMats {
             if (err_check) out(i, 5) = out_vec(5);
             
             if (jrepstdist < 5) {
-              out_vec(2) = preouterator(jrepstproxy, jrepstcoefs, rand_index,
+              out_vec(2) = preouterator_adapt3(jrepstproxy, jrepstcoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda,
                 chosen_r1inda, chosen_r2indb, chosen_r1indb, chosen_r2indc,
                 chosen_r1indc, chosen_f2inda_cat, chosen_f1inda_cat,
@@ -1253,7 +1979,7 @@ namespace AdaptMats {
         if (fl2o(i) > 0.0 && ovgivenf(i) == -1.0) {
           
           if (!sparse) {
-            fectransmat(k) = preouterator(fecproxy, feccoefs, rand_index,
+            fectransmat(k) = preouterator_adapt3(fecproxy, feccoefs, rand_index,
               dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
               chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
               chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1266,7 +1992,7 @@ namespace AdaptMats {
               fectrunc);
             fectransmat(k) = fectransmat(k) * vr7_dcorr;
           } else {
-            fectransmat_sp(k) = preouterator(fecproxy, feccoefs, rand_index,
+            fectransmat_sp(k) = preouterator_adapt3(fecproxy, feccoefs, rand_index,
               dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
               chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
               chosen_f2inda_cat, chosen_f1inda_cat, chosen_f2indb_cat,
@@ -1548,9 +2274,9 @@ namespace AdaptMats {
     NumericVector f1_indb, NumericVector f2_indc, NumericVector f1_indc,
     StringVector r2_inda, StringVector r1_inda, StringVector r2_indb,
     StringVector r1_indb, StringVector r2_indc, StringVector r1_indc,
-    double surv_dev, double fec_dev, double dens, double fecmod,
-    unsigned int finalage, bool negfec, int yearnumber, int patchnumber,
-    bool dens_vr, LogicalVector dvr_yn, IntegerVector dvr_style,
+    NumericVector dev_terms3, double surv_dev, double fec_dev, double dens,
+    double fecmod, unsigned int finalage, bool negfec, int yearnumber,
+    int patchnumber, bool dens_vr, LogicalVector dvr_yn, IntegerVector dvr_style,
     NumericVector dvr_alpha, NumericVector dvr_beta, NumericVector dens_n,
     double exp_tol = 700.0, double theta_tol = 100000000.0,
     bool sparse = false, Nullable<DataFrame> supplement = R_NilValue) {
@@ -1771,8 +2497,10 @@ namespace AdaptMats {
         double chosen_fixcovc1 {0.0};
         
         double mainsum = rimeotam(survcoefs, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-          0.0, static_cast<double>(actualages(i)), inda1, inda2, indb1, indb2,
-          indc1, indc2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens, false); // Final 6 zeroes are anncov
+          0.0, static_cast<double>(actualages(i)), (inda1 + dev_terms3(0)),
+          (inda2 + dev_terms3(0)), (indb1 + dev_terms3(1)),
+          (indb2 + dev_terms3(1)), (indc1 + dev_terms3(2)),
+          (indc2 + dev_terms3(2)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens, false); // Final 6 zeroes are anncov
         
         //Rcout << "mdabrowskiego f4        ";
         
@@ -1966,8 +2694,10 @@ namespace AdaptMats {
             if (feczero) {
               
               double mainsum = rimeotam(feccoefs, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, static_cast<double>(actualages(i)), inda1, inda2,
-                indb1, indb2, indc1, indc2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens,
+                0.0, 0.0, static_cast<double>(actualages(i)), (inda1 + dev_terms3(0)),
+                (inda2 + dev_terms3(0)), (indb1 + dev_terms3(1)),
+                (indb2 + dev_terms3(1)), (indc1 + dev_terms3(2)),
+                (indc2 + dev_terms3(2)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens,
                 true); // Final 6 zeroes are anncov
               
               preoutx = (mainsum + chosen_randcova2zi + chosen_randcova1zi +
@@ -1984,8 +2714,10 @@ namespace AdaptMats {
           //Rcout << "mdabrowskiego f11d        ";
           
               double mainsum = rimeotam(feccoefs, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, static_cast<double>(actualages(i)), inda1, inda2,
-                indb1, indb2, indc1, indc2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens,
+                0.0, 0.0, static_cast<double>(actualages(i)), (inda1 + dev_terms3(0)),
+                (inda2 + dev_terms3(0)), (indb1 + dev_terms3(1)),
+                (indb2 + dev_terms3(1)), (indc1 + dev_terms3(2)),
+                (indc2 + dev_terms3(2)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens,
                 false); // Final 6 zeroes are anncov
               
               preoutx = (mainsum + chosen_randcova2 + chosen_randcova1 +
@@ -1995,12 +2727,12 @@ namespace AdaptMats {
                 chosen_fixcovc1 + fecgroups2(0) + fecgroups1(0) + 
                 vital_patch(patchnumber, 1) + vital_year(yearnumber, 1) +
                 fec_dev);
-          //Rcout << "mdabrowskiego f11e        ";
-          
+              //Rcout << "mdabrowskiego f11e        ";
+              
             }
             
-          //Rcout << "mdabrowskiego f11f        ";
-          
+            //Rcout << "mdabrowskiego f11f        ";
+            
             if (fecdist == 0 || fecdist == 1) {
               // Poisson and negative binomial fecundity
               
@@ -2020,11 +2752,11 @@ namespace AdaptMats {
                   fectransmat_sp(0, i) = exp(preoutx) * fecmod;
                 }
               }
-          //Rcout << "mdabrowskiego f11g        ";
-          
+              //Rcout << "mdabrowskiego f11g        ";
+            
             } else if (fecdist == 2) {
-          //Rcout << "mdabrowskiego f11h        ";
-          
+              //Rcout << "mdabrowskiego f11h        ";
+              
               // Gaussian fecundity
               
               if (!sparse) {
@@ -2040,11 +2772,11 @@ namespace AdaptMats {
                   fectransmat_sp(0, i) = 0.0;
                 }
               }
-          //Rcout << "mdabrowskiego f11i        ";
-          
+              //Rcout << "mdabrowskiego f11i        ";
+              
             } else if (fecdist == 3) {
-          //Rcout << "mdabrowskiego f11j        ";
-          
+              //Rcout << "mdabrowskiego f11j        ";
+              
               // Gamma fecundity
               if (!sparse) {
                 fectransmat(0, i) = (1.0 / preoutx) * fecmod;
@@ -2053,8 +2785,8 @@ namespace AdaptMats {
               }
             }
             
-          //Rcout << "mdabrowskiego f11k        ";
-          
+            //Rcout << "mdabrowskiego f11k        ";
+            
           } else {
             if (!sparse) {
               fectransmat(0, i) = feccoefs(0);

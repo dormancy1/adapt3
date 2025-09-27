@@ -1048,9 +1048,9 @@ namespace AdaptUtils {
   
   //' Create Data Frame to Hold Fitness Output from Function invade3()
   //' 
-  //' This function performs a simple linear / multiple regression quickly and
-  //' accurately using RcppArmadillo. Based on code by Dirk Eddelbuettel,
-  //' derived from 
+  //' This function takes the main Lyapunov data, and performs a simple linear /
+  //' multiple regression to estimate invasion fitness, quickly and accurately
+  //' using RcppArmadillo. Based on code by Dirk Eddelbuettel, derived from
   //' https://gallery.rcpp.org/articles/fast-linear-model-with-armadillo/
   //' 
   //' @name Lyapunov_df_maker
@@ -2407,7 +2407,7 @@ namespace AdaptUtils {
   //' 1, givenrate; 2, offset; 3, multiplier; 4, surv_dev; 5, obs_dev;
   //' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
   //' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
-  //' 16, jrepst_dev; and 17, jmatst_dev.
+  //' 16, jrepst_dev; 17, jmatst_dev; 18, indcova; 19, indcovb; and 20, indcovc.
   //' @param flipped_traits An integer vector modified by this function to
   //' indicate variables in the optimization trait axis that include both
   //' positive and negative values.
@@ -2430,7 +2430,7 @@ namespace AdaptUtils {
     
     DataFrame ESS_optim_ta;
     DataFrame cloned_ta_reassess;
-    IntegerVector ESS_variable_traits (17, 0);
+    IntegerVector ESS_variable_traits (20, 0);
     
     // Vectors for optim_ta
     IntegerVector optim_variant;
@@ -2470,6 +2470,10 @@ namespace AdaptUtils {
     NumericVector optim_jrepst_dev;
     NumericVector optim_jmatst_dev;
     
+    NumericVector optim_indcova;
+    NumericVector optim_indcovb;
+    NumericVector optim_indcovc;
+    
     // Vectors for optim_ta_995
     IntegerVector optim_variant_995;
     
@@ -2507,6 +2511,10 @@ namespace AdaptUtils {
     NumericVector optim_jsizec_dev_995;
     NumericVector optim_jrepst_dev_995;
     NumericVector optim_jmatst_dev_995;
+    
+    NumericVector optim_indcova_995;
+    NumericVector optim_indcovb_995;
+    NumericVector optim_indcovc_995;
     
     // Vectors for ESS_trait_axis
     IntegerVector ESS_variant = {1, 2};
@@ -2547,6 +2555,10 @@ namespace AdaptUtils {
     NumericVector ESS_jrepst_dev (2, NA_REAL);
     NumericVector ESS_jmatst_dev (2, NA_REAL);
     
+    NumericVector ESS_indcova (2, NA_REAL);
+    NumericVector ESS_indcovb (2, NA_REAL);
+    NumericVector ESS_indcovc (2, NA_REAL);
+    
     // Vectors supplied in ta_reassessed
     IntegerVector variant = as<IntegerVector>(ta_reassessed["variant"]);
     
@@ -2568,6 +2580,9 @@ namespace AdaptUtils {
     NumericVector jsizec_dev = as<NumericVector>(ta_reassessed["jsizec_dev"]);
     NumericVector jrepst_dev = as<NumericVector>(ta_reassessed["jrepst_dev"]);
     NumericVector jmatst_dev = as<NumericVector>(ta_reassessed["jmatst_dev"]);
+    NumericVector indcova = as<NumericVector>(ta_reassessed["indcova"]);
+    NumericVector indcovb = as<NumericVector>(ta_reassessed["indcovb"]);
+    NumericVector indcovc = as<NumericVector>(ta_reassessed["indcovc"]);
     
     StringVector stage3 = as<StringVector>(ta_reassessed["stage3"]);
     StringVector stage2 = as<StringVector>(ta_reassessed["stage2"]);
@@ -2602,6 +2617,10 @@ namespace AdaptUtils {
     NumericVector jsizec_dev_noNA = na_omit(jsizec_dev);
     NumericVector jrepst_dev_noNA = na_omit(jrepst_dev);
     NumericVector jmatst_dev_noNA = na_omit(jmatst_dev);
+    
+    NumericVector indcova_noNA = na_omit(indcova);
+    NumericVector indcovb_noNA = na_omit(indcovb);
+    NumericVector indcovc_noNA = na_omit(indcovc);
     
     int var1_length {0};
     
@@ -2660,6 +2679,13 @@ namespace AdaptUtils {
     double jmatst_dev_min {0.};
     double jmatst_dev_max {0.};
     
+    double indcova_min {0.};
+    double indcova_max {0.};
+    double indcovb_min {0.};
+    double indcovb_max {0.};
+    double indcovc_min {0.};
+    double indcovc_max {0.};
+    
     bool givenrate_flipped {false};
     bool offset_flipped {false};
     bool multiplier_flipped {false};
@@ -2677,6 +2703,9 @@ namespace AdaptUtils {
     bool jsizec_dev_flipped {false};
     bool jrepst_dev_flipped {false};
     bool jmatst_dev_flipped {false};
+    bool indcova_flipped {false};
+    bool indcovb_flipped {false};
+    bool indcovc_flipped {false};
     
     if (static_cast<int>(givenrate_noNA.length()) > 0) {
       givenrate_min = min(givenrate_noNA);
@@ -3036,6 +3065,69 @@ namespace AdaptUtils {
       }
     }
     
+    if (static_cast<int>(indcova_noNA.length()) > 0) {
+      indcova_min = min(indcova_noNA);
+      indcova_max = max(indcova_noNA);
+      
+      if (indcova_min < 0. && indcova_max > 0.) {
+        indcova_flipped = true;
+        flipped_traits(17) = 1;
+      }
+      
+      unsigned int indcova_min_pos = which_min(indcova_noNA);
+      unsigned int indcova_max_pos = which_max(indcova_noNA);
+      
+      if (indcova_min_pos < indcova_max_pos) {
+        ESS_indcova(0) = indcova_min;
+        ESS_indcova(1) = indcova_max;
+      } else {
+        ESS_indcova(0) = indcova_max;
+        ESS_indcova(1) = indcova_min;
+      }
+    }
+    
+    if (static_cast<int>(indcovb_noNA.length()) > 0) {
+      indcovb_min = min(indcovb_noNA);
+      indcovb_max = max(indcovb_noNA);
+      
+      if (indcovb_min < 0. && indcovb_max > 0.) {
+        indcovb_flipped = true;
+        flipped_traits(18) = 1;
+      }
+      
+      unsigned int indcovb_min_pos = which_min(indcovb_noNA);
+      unsigned int indcovb_max_pos = which_max(indcovb_noNA);
+      
+      if (indcovb_min_pos < indcovb_max_pos) {
+        ESS_indcovb(0) = indcovb_min;
+        ESS_indcovb(1) = indcovb_max;
+      } else {
+        ESS_indcovb(0) = indcovb_max;
+        ESS_indcovb(1) = indcovb_min;
+      }
+    }
+    
+    if (static_cast<int>(indcovc_noNA.length()) > 0) {
+      indcovc_min = min(indcovc_noNA);
+      indcovc_max = max(indcovc_noNA);
+      
+      if (indcovc_min < 0. && indcovc_max > 0.) {
+        indcovc_flipped = true;
+        flipped_traits(19) = 1;
+      }
+      
+      unsigned int indcovc_min_pos = which_min(indcovc_noNA);
+      unsigned int indcovc_max_pos = which_max(indcovc_noNA);
+      
+      if (indcovc_min_pos < indcovc_max_pos) {
+        ESS_indcovc(0) = indcovc_min;
+        ESS_indcovc(1) = indcovc_max;
+      } else {
+        ESS_indcovc(0) = indcovc_max;
+        ESS_indcovc(1) = indcovc_min;
+      }
+    }
+    
     
     int found_variables_all {0};
     
@@ -3083,7 +3175,7 @@ namespace AdaptUtils {
     StringVector unique_core_stages = unique(core_stage_index);
     int found_core_stage_indices = unique_core_stages.length();
     
-    arma::mat ta_rows_per_change_per_variant (found_core_stage_indices, 17, fill::zeros); // rows = var_rows, cols = vital rates
+    arma::mat ta_rows_per_change_per_variant (found_core_stage_indices, 20, fill::zeros); // rows = var_rows, cols = vital rates
     IntegerVector place_holder_for_mat (found_core_stage_indices, 0);
     
     StringVector new_stage3_found_variables (found_core_stage_indices);
@@ -3243,6 +3335,24 @@ namespace AdaptUtils {
       
       ta_rows_per_change_per_variant(0, 16) = 1;
     }
+    if (indcova_min != indcova_max) {
+      ESS_variable_traits(17) = 1;
+      found_variables_all++;
+      
+      ta_rows_per_change_per_variant(0, 17) = 1;
+    }
+    if (indcovb_min != indcovb_max) {
+      ESS_variable_traits(18) = 1;
+      found_variables_all++;
+      
+      ta_rows_per_change_per_variant(0, 18) = 1;
+    }
+    if (indcovc_min != indcovc_max) {
+      ESS_variable_traits(19) = 1;
+      found_variables_all++;
+      
+      ta_rows_per_change_per_variant(0, 19) = 1;
+    }
     
     int data_frame_length = opt_res * var1_length;
     cloned_ta_reassess = clone(ta_reassessed);
@@ -3302,6 +3412,9 @@ namespace AdaptUtils {
     optim_jsizec_dev = as<NumericVector>(cloned_ta_reassess["jsizec_dev"]);
     optim_jrepst_dev = as<NumericVector>(cloned_ta_reassess["jrepst_dev"]);
     optim_jmatst_dev = as<NumericVector>(cloned_ta_reassess["jmatst_dev"]);
+    optim_indcova = as<NumericVector>(cloned_ta_reassess["indcova"]);
+    optim_indcovb = as<NumericVector>(cloned_ta_reassess["indcovb"]);
+    optim_indcovc = as<NumericVector>(cloned_ta_reassess["indcovc"]);
     
     optim_givenrate_995 = clone(optim_givenrate);
     optim_offset_995 = clone(optim_offset);
@@ -3320,7 +3433,9 @@ namespace AdaptUtils {
     optim_jsizec_dev_995 = clone(optim_jsizec_dev);
     optim_jrepst_dev_995 = clone(optim_jrepst_dev);
     optim_jmatst_dev_995 = clone(optim_jmatst_dev);
-    
+    optim_indcova_995 = clone(optim_indcova);
+    optim_indcovb_995 = clone(optim_indcovb);
+    optim_indcovc_995 = clone(optim_indcovc);
     
     int og995_length = static_cast<int>(optim_givenrate_995.length());
     
@@ -3562,6 +3677,48 @@ namespace AdaptUtils {
         }
       }
     }
+    if (ESS_variable_traits(17) > 0) {
+      if (!indcova_flipped) {
+        optim_indcova_995 = optim_indcova_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_indcova_995(i) < 0.) {
+            double opt_difference = optim_indcova_995(i) - (optim_indcova_995(i) * elast_multiplier);
+            optim_indcova_995(i) = optim_indcova_995(i) + opt_difference;
+          } else {
+            optim_indcova_995(i) = optim_indcova_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(18) > 0) {
+      if (!indcovb_flipped) {
+        optim_indcovb_995 = optim_indcovb_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_indcovb_995(i) < 0.) {
+            double opt_difference = optim_indcovb_995(i) - (optim_indcovb_995(i) * elast_multiplier);
+            optim_indcovb_995(i) = optim_indcovb_995(i) + opt_difference;
+          } else {
+            optim_indcovb_995(i) = optim_indcovb_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
+    if (ESS_variable_traits(19) > 0) {
+      if (!indcovc_flipped) {
+        optim_indcovc_995 = optim_indcovc_995 * elast_multiplier;
+      } else {
+        for (int i = 0; i < og995_length; i++) {
+          if (optim_indcovc_995(i) < 0.) {
+            double opt_difference = optim_indcovc_995(i) - (optim_indcovc_995(i) * elast_multiplier);
+            optim_indcovc_995(i) = optim_indcovc_995(i) + opt_difference;
+          } else {
+            optim_indcovc_995(i) = optim_indcovc_995(i) * elast_multiplier;
+          }
+        }
+      }
+    }
     
     optim_variant_995 = clone(optim_variant);
     
@@ -3581,7 +3738,7 @@ namespace AdaptUtils {
     optim_mpm_altered_995 = clone(optim_mpm_altered);
     optim_vrm_altered_995 = clone(optim_vrm_altered);
     
-    List output (33);
+    List output (36);
     
     output(0) = optim_variant;
     output(1) = optim_stage3;
@@ -3613,9 +3770,12 @@ namespace AdaptUtils {
     output(27) = optim_jsizec_dev;
     output(28) = optim_jrepst_dev;
     output(29) = optim_jmatst_dev;
-    output(30) = optim_year2;
-    output(31) = optim_mpm_altered;
-    output(32) = optim_vrm_altered;
+    output(30) = optim_indcova;
+    output(31) = optim_indcovb;
+    output(32) = optim_indcovc;
+    output(33) = optim_year2;
+    output(34) = optim_mpm_altered;
+    output(35) = optim_vrm_altered;
     
     CharacterVector ta_names = as<CharacterVector>(ta_reassessed.attr("names"));
     output.attr("names") = clone(ta_names);
@@ -3624,7 +3784,7 @@ namespace AdaptUtils {
     
     optim_ta = output;
     
-    List output_995 (33);
+    List output_995 (36);
     
     output_995(0) = optim_variant_995;
     output_995(1) = optim_stage3_995;
@@ -3656,9 +3816,12 @@ namespace AdaptUtils {
     output_995(27) = optim_jsizec_dev_995;
     output_995(28) = optim_jrepst_dev_995;
     output_995(29) = optim_jmatst_dev_995;
-    output_995(30) = optim_year2_995;
-    output_995(31) = optim_mpm_altered_995;
-    output_995(32) = optim_vrm_altered_995;
+    output_995(30) = optim_indcova_995;
+    output_995(31) = optim_indcovb_995;
+    output_995(32) = optim_indcovc_995;
+    output_995(33) = optim_year2_995;
+    output_995(34) = optim_mpm_altered_995;
+    output_995(35) = optim_vrm_altered_995;
     
     output_995.attr("names") = clone(ta_names);
     output_995.attr("class") = "data.frame";
@@ -3666,7 +3829,7 @@ namespace AdaptUtils {
     
     optim_ta_995 = output_995;
     
-    List output_ESS (33);
+    List output_ESS (36);
     
     output_ESS(0) = ESS_variant;
     output_ESS(1) = ESS_stage3;
@@ -3698,9 +3861,12 @@ namespace AdaptUtils {
     output_ESS(27) = ESS_jsizec_dev;
     output_ESS(28) = ESS_jrepst_dev;
     output_ESS(29) = ESS_jmatst_dev;
-    output_ESS(30) = ESS_year2;
-    output_ESS(31) = ESS_mpm_altered;
-    output_ESS(32) = ESS_vrm_altered;
+    output_ESS(30) = ESS_indcova;
+    output_ESS(31) = ESS_indcovb;
+    output_ESS(32) = ESS_indcovc;
+    output_ESS(33) = ESS_year2;
+    output_ESS(34) = ESS_mpm_altered;
+    output_ESS(35) = ESS_vrm_altered;
     
     output_ESS.attr("names") = clone(ta_names);
     output_ESS.attr("class") = "data.frame";

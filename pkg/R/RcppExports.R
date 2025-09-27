@@ -637,12 +637,12 @@ NULL
 #' fitness values.
 #' @param optim_trait_axis Main trait axis data frame corresponding to
 #' \code{Lyapunov_optim}.
-#' @param ESS_var_traits An integer vector modifed by this function by
+#' @param ESS_var_traits An integer vector modified by this function by
 #' reference, indicating the actual traits that vary. The element order is:
 #' 1, givenrate; 2, offset; 3, multiplier; 4, surv_dev; 5, obs_dev;
 #' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
 #' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
-#' 16, jrepst_dev; and 17, jmatst_dev.
+#' 16, jrepst_dev; 17, jmatst_dev; 18, indcova; 19, indcovb; and 20, indcovc.
 #' @param flipped_traits An integer vector with 17 elements, giving the
 #' identities of variables with both positive and negative values.
 #' @param new_stageexpansion_list A list with stage expansions for all
@@ -747,6 +747,12 @@ NULL
 #' @param jrepst_dev_nta The juvenile reproductive status column in the
 #' reassessed trait axis.
 #' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
+#' trait axis.
+#' @param indcova_nta The individual covariate a column in the reassessed
+#' trait axis.
+#' @param indcovb_nta The individual covariate b column in the reassessed
+#' trait axis.
+#' @param indcovc_nta The individual covariate c column in the reassessed
 #' trait axis.
 #' @param variant_nta The variant column in the reassessed 995 trait axis.
 #' @param base_trait_axis The currently used trait axis.
@@ -871,7 +877,7 @@ NULL
 #' 1, givenrate; 2, offset; 3, multiplier; 4, surv_dev; 5, obs_dev;
 #' 6, size_dev; 7, sizeb_dev; 8, sizec_dev; 9, repst_dev; 10, fec_dev;
 #' 11, jsurv_dev; 12, jobs_dev; 13, jsize_dev; 14, jsizeb_dev; 15, jsizec_dev;
-#' 16, jrepst_dev; and 17, jmatst_dev.
+#' 16, jrepst_dev; 17, jmatst_dev; 18, indcova; 19, indcovb; and 20, indcovc.
 #' @param flipped_traits An integer vector with 17 elements, giving the
 #' identities of variables with both positive and negative values.
 #' @param surv_dev_nta The survival column in the reassessed trait axis.
@@ -896,6 +902,12 @@ NULL
 #' @param jrepst_dev_nta The juvenile reproductive status column in the
 #' reassessed trait axis.
 #' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
+#' trait axis.
+#' @param indcova_nta The individual covariate a column in the reassessed
+#' trait axis.
+#' @param indcovb_nta The individual covariate b column in the reassessed
+#' trait axis.
+#' @param indcovc_nta The individual covariate c column in the reassessed
 #' trait axis.
 #' @param variant_nta The variant column in the reassessed 995 trait axis.
 #' @param new_stageexpansion_list A list with stage expansions for all
@@ -1331,6 +1343,12 @@ NULL
 #' reassessed trait axis.
 #' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
 #' trait axis.
+#' @param indcova_nta The individual covariate a column in the reassessed trait
+#' axis.
+#' @param indcovb_nta The individual covariate b column in the reassessed trait
+#' axis.
+#' @param indcovc_nta The individual covariate c column in the reassessed trait
+#' axis.
 #' @param variant_nta The variant column in the reassessed trait axis.
 #' @param N_out_pre The main list of final population sizes, supplied as a
 #' reference and altered by this function.
@@ -1486,6 +1504,12 @@ NULL
 #' reassessed trait axis.
 #' @param jmatst_dev_nta The juvenile maturity status column in the reassessed
 #' trait axis.
+#' @param indcova_nta The individual covariate a column in the reassessed
+#' trait axis.
+#' @param indcovb_nta The individual covariate b column in the reassessed
+#' trait axis.
+#' @param indcovc_nta The individual covariate c column in the reassessed
+#' trait axis.
 #' @param variant_nta The variant column in the reassessed 995 trait axis.
 #' @param surv_dev_nta_995 The survival column in the reassessed 995 trait
 #' axis.
@@ -1515,6 +1539,12 @@ NULL
 #' reassessed 995 trait axis.
 #' @param jmatst_dev_nta_995 The juvenile maturity status column in the
 #' reassessed 995 trait axis.
+#' @param indcova_nta_995 The individual covariate a column in the reassessed
+#' 995 trait axis.
+#' @param indcovb_nta_995 The individual covariate b column in the reassessed
+#' 995 trait axis.
+#' @param indcovc_nta_995 The individual covariate c column in the reassessed
+#' 995 trait axis.
 #' @param variant_nta_995 The variant column in the reassessed 995 trait axis.
 #' @param N_out_pre The main list of final population sizes, supplied as a
 #' reference and altered by this function.
@@ -2113,6 +2143,50 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' if any occur.
 #' 
 #' @name invade3
+#' 
+#' @usage axis = NULL,
+#' @usage mpm = NULL,
+#' @usage vrm = NULL,
+#' @usage stageframe = NULL,
+#' @usage supplement = NULL,
+#' @usage equivalence = NULL,
+#' @usage starts = NULL,
+#' @usage years = NULL,
+#' @usage patches = NULL,
+#' @usage tweights = NULL,
+#' @usage format = 3,
+#' @usage entry_time = NULL,
+#' @usage sp_density = NULL,
+#' @usage ind_terms = NULL,
+#' @usage dev_terms = NULL,
+#' @usage fb_sparse = FALSE,
+#' @usage firstage = NULL,
+#' @usage finalage = NULL,
+#' @usage fecage_min = firstage,
+#' @usage fecage_max = finalage,
+#' @usage cont = NULL,
+#' @usage prebreeding = TRUE,
+#' @usage fecmod = 1,
+#' @usage density = NULL,
+#' @usage density_vr = NULL,
+#' @usage stochastic = FALSE,
+#' @usage A_only = TRUE,
+#' @usage integeronly = FALSE,
+#' @usage fitness_table = TRUE,
+#' @usage trait_optima = FALSE,
+#' @usage zap_min = FALSE,
+#' @usage converged_only = FALSE,
+#' @usage err_check = FALSE,
+#' @usage var_per_run = 2,
+#' @usage substoch = 0,
+#' @usage elast_mult = 0.995,
+#' @usage nreps = 1,
+#' @usage times = 10000,
+#' @usage fitness_times = 100,
+#' @usage exp_tol = 700.0,
+#' @usage theta_tol = 100000000.0,
+#' @usage threshold = 0.00000001,
+#' @usage loop_max = 150
 #' 
 #' @param axis The \code{adaptAxis} object detailing all variant
 #' characteristics. Essentially, a data frame giving the values of all changes
