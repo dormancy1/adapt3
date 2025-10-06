@@ -161,43 +161,6 @@ DataFrame ta_skeleton (int rows = 10) {
 //' 
 //' @name trait_axis
 //' 
-//' @usage historical = TRUE,
-//' @usage stagebased = TRUE,
-//' @usage agebased = FALSE,
-//' @usage stageframe = NULL,
-//' @usage stage3 = NULL,
-//' @usage stage2 = NULL,
-//' @usage stage1 = NULL,
-//' @usage age3 = NULL,
-//' @usage age2 = NULL,
-//' @usage eststage3 = NULL,
-//' @usage eststage2 = NULL,
-//' @usage eststage1 = NULL,
-//' @usage estage3 = NULL,
-//' @usage estage2 = NULL,
-//' @usage givenrate = NULL,
-//' @usage offset = NULL,
-//' @usage multiplier = NULL,
-//' @usage type = NULL,
-//' @usage type_t12 = NULL,
-//' @usage surv_dev = NULL,
-//' @usage obs_dev = NULL,
-//' @usage size_dev = NULL,
-//' @usage sizeb_dev = NULL,
-//' @usage sizec_dev = NULL,
-//' @usage repst_dev = NULL,
-//' @usage fec_dev = NULL,
-//' @usage jsurv_dev = NULL,
-//' @usage jobs_dev = NULL,
-//' @usage jsize_dev = NULL,
-//' @usage jsizeb_dev = NULL,
-//' @usage jsizec_dev = NULL,
-//' @usage jrepst_dev = NULL,
-//' @usage jmatst_dev = NULL,
-//' @usage indcova = NULL,
-//' @usage indcovb = NULL,
-//' @usage indcovc = NULL
-//' 
 //' @param historical A single logical value indicating whether the MPMs
 //' intended will be historical or ahistorical. Defaults to \code{TRUE}.
 //' @param stagebased A single logical value indicating whether the MPM will be

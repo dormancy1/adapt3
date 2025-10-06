@@ -10715,12 +10715,12 @@ inline void ESS_optimizer_pre (DataFrame& ESS_Lyapunov,
     //int df1_rows = static_cast<int>(df1.nrows());
     //int df2_rows = static_cast<int>(df2.nrows());
     
-    DataFrame final_output_df_pre = AdaptUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
+    DataFrame final_output_df_pre = LefkoUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
     
     //Rcout << "ESS_optimizer_pre AJ" << endl;
     if (total_optima > 2) {
       for (int i = 2; i < total_optima; i++) {
-        final_output_df_pre = AdaptUtils::df_rbind(final_output_df_pre, as<DataFrame>(final_output(i)));
+        final_output_df_pre = LefkoUtils::df_rbind(final_output_df_pre, as<DataFrame>(final_output(i)));
       }
     }
     
@@ -12769,12 +12769,12 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
     //int df1_rows = static_cast<int>(df1.nrows());
     //int df2_rows = static_cast<int>(df2.nrows());
     
-    DataFrame final_output_df_pre = AdaptUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
+    DataFrame final_output_df_pre = LefkoUtils::df_rbind(as<DataFrame>(final_output(0)), as<DataFrame>(final_output(1)));
     
     //Rcout << "ESS_optimizer_fb Z" << endl;
     if (total_optima > 2) {
       for (int i = 2; i < total_optima; i++) {
-        final_output_df_pre = AdaptUtils::df_rbind(final_output_df_pre, as<DataFrame>(final_output(i)));
+        final_output_df_pre = LefkoUtils::df_rbind(final_output_df_pre, as<DataFrame>(final_output(i)));
       }
     }
     
@@ -17153,50 +17153,6 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' if any occur.
 //' 
 //' @name invade3
-//' 
-//' @usage axis = NULL,
-//' @usage mpm = NULL,
-//' @usage vrm = NULL,
-//' @usage stageframe = NULL,
-//' @usage supplement = NULL,
-//' @usage equivalence = NULL,
-//' @usage starts = NULL,
-//' @usage years = NULL,
-//' @usage patches = NULL,
-//' @usage tweights = NULL,
-//' @usage format = 3,
-//' @usage entry_time = NULL,
-//' @usage sp_density = NULL,
-//' @usage ind_terms = NULL,
-//' @usage dev_terms = NULL,
-//' @usage fb_sparse = FALSE,
-//' @usage firstage = NULL,
-//' @usage finalage = NULL,
-//' @usage fecage_min = firstage,
-//' @usage fecage_max = finalage,
-//' @usage cont = NULL,
-//' @usage prebreeding = TRUE,
-//' @usage fecmod = 1,
-//' @usage density = NULL,
-//' @usage density_vr = NULL,
-//' @usage stochastic = FALSE,
-//' @usage A_only = TRUE,
-//' @usage integeronly = FALSE,
-//' @usage fitness_table = TRUE,
-//' @usage trait_optima = FALSE,
-//' @usage zap_min = FALSE,
-//' @usage converged_only = FALSE,
-//' @usage err_check = FALSE,
-//' @usage var_per_run = 2,
-//' @usage substoch = 0,
-//' @usage elast_mult = 0.995,
-//' @usage nreps = 1,
-//' @usage times = 10000,
-//' @usage fitness_times = 100,
-//' @usage exp_tol = 700.0,
-//' @usage theta_tol = 100000000.0,
-//' @usage threshold = 0.00000001,
-//' @usage loop_max = 150
 //' 
 //' @param axis The \code{adaptAxis} object detailing all variant
 //' characteristics. Essentially, a data frame giving the values of all changes

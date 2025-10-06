@@ -12,7 +12,7 @@
 * ESS trait value optimization now handled via Golden section Nelder-Mead
   search algorithm.
   
-* Standard error bootstrapping exmple added to invasibility analysis vignette.
+* Standard error bootstrapping example added to invasibility analysis vignette.
 
 ## USER-VISIBLE CHANGES
 

@@ -28,10 +28,9 @@ using namespace LefkoUtils;
 // 9. void Lyapunov_df_maker  Create Data Frame to Hold Fitness Output from Function invade3()
 // 10. DataFrame ta_reassess  Expand Trait Axis Table Given User Input
 // 11. void pop_error2  Standardized Error Messages
-// 12. DataFrame df_rbind  Bind Two Data Frames By Row
-// 13. List df_indices  Subset A Data Frame By Row Index
-// 14. void Lyapunov_creator  Creates Final Table of Lyapunov Estimates
-// 15. void optim_ta_setup  Create Trait Axis Reassessed for Trait Optimization
+// 12. List df_indices  Subset A Data Frame By Row Index
+// 13. void Lyapunov_creator  Creates Final Table of Lyapunov Estimates
+// 14. void optim_ta_setup  Create Trait Axis Reassessed for Trait Optimization
 
 
 namespace AdaptUtils {
@@ -2030,117 +2029,6 @@ namespace AdaptUtils {
     throw Rcpp::exception(eat_my_shorts.get_cstring(), false);
     
     return;
-  }
-  
-  //' Bind Two Data Frames By Row
-  //' 
-  //' This function takes two data frames, which must be composed of the same
-  //' variables in the same order. Although the variables may have different
-  //' names, the variables must be of the same type. The names of the variables in
-  //' the new merged data frame will match those of the first data frame.
-  //' Developed with the help of Microsoft Gemini AI.
-  //' 
-  //' @name df_rbind
-  //' 
-  //' @param df1 The first data frame, which will form the top of the new data
-  //' frame and will be used as a reference for variable names.
-  //' @param df2 The second data frame, which will be attached below data frame
-  //' \code{df1}.
-  //' 
-  //' @return A new data frame composed of the merged data frames.
-  //' 
-  //' @keywords internal
-  //' @noRd
-  inline DataFrame df_rbind(DataFrame df1, DataFrame df2) {
-    
-    int nrows1 = df1.nrows();
-    int nrows2 = df2.nrows();
-    int ncols = df1.size();
-  
-    if (ncols != df2.size()) {
-      stop("Data frames must have the same number of columns.");
-    }
-    
-    CharacterVector df_names = df1.names();
-  
-    List out_df (ncols);
-  
-    for (int i = 0; i < ncols; ++i) {
-      SEXP col1 = df1[i];
-      SEXP col2 = df2[i];
-  
-      if (TYPEOF(col1) != TYPEOF(col2)) {
-        stop("Columns must have the same type");
-      }
-  
-      switch(TYPEOF(col1)){
-        case INTSXP: {
-          IntegerVector combinedCol(nrows1 + nrows2);
-          IntegerVector col1Vector = as<IntegerVector>(col1);
-          IntegerVector col2Vector = as<IntegerVector>(col2);
-          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
-          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
-          
-          bool current_int_class1 = col1Vector.hasAttribute("levels");
-          if (current_int_class1) {
-            CharacterVector col1lvls = col1Vector.attr("levels");
-            CharacterVector col2lvls = col2Vector.attr("levels");
-            
-            CharacterVector col_mergedLevels = LefkoUtils::concat_str(col1lvls, col2lvls);
-            CharacterVector unique_levels = unique(col_mergedLevels);
-            
-            combinedCol.attr("levels") = unique_levels;
-          }
-          out_df(i) = combinedCol;
-          break;
-        }
-  
-        case LGLSXP: {
-          LogicalVector combinedCol(nrows1 + nrows2);
-          LogicalVector col1Vector = as<LogicalVector>(col1);
-          LogicalVector col2Vector = as<LogicalVector>(col2);
-          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
-          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
-          
-          out_df(i) = combinedCol;
-          break;
-        }
-  
-        case REALSXP: {
-          NumericVector combinedCol(nrows1 + nrows2);
-          NumericVector col1Vector = as<NumericVector>(col1);
-          NumericVector col2Vector = as<NumericVector>(col2);
-          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
-          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
-          
-          out_df(i) = combinedCol;
-          break;
-        }
-  
-        case STRSXP: {
-          CharacterVector combinedCol(nrows1 + nrows2);
-          CharacterVector col1Vector = as<CharacterVector>(col1);
-          CharacterVector col2Vector = as<CharacterVector>(col2);
-          std::copy(col1Vector.begin(), col1Vector.end(), combinedCol.begin());
-          std::copy(col2Vector.begin(), col2Vector.end(), combinedCol.begin() + nrows1);
-          
-          out_df(i) = combinedCol;
-          break;
-        }
-        default:
-          stop("Unsupported column type.");
-      }
-    }
-    
-    out_df.attr("names") = df_names;
-    out_df.attr("class") = "data.frame";
-    StringVector row_names(nrows1 + nrows2);
-    for (int i = 0; i < (nrows1 + nrows2); i++) {
-      row_names(i) = std::to_string(i+1);
-    }
-    out_df.attr("row.names") = row_names;
-    
-    return out_df;
   }
   
   //' Subset A Data Frame By Row Index
