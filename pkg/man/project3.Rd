@@ -61,17 +61,17 @@ that do not need supplemental data should be entered as \code{NULL} in this
 list. See \code{\link[lefko3]{supplemental}()} for details.}
 
 \item{equivalence}{An optional numeric vector, list of numeric vectors,
-data frame of class \code{adaptEq}, or list of data frames of class
-\code{adaptEq}. If a numeric vector, then must have the same number of
-elements as the number of MPMs, with each element giving the effect of an
-individual of each MPM relative to a reference individual. If a list of
-vectors, then the list should be composed of as many numeric vectors as
-MPMs, with each vector giving the effect of each individual in each stage
-relative to a reference individual. Data frames of class \code{adaptEq}, and
-lists of such data frames, can be made with function
-\code{\link{equiv_input}()}. Numeric entries used in these vectors can be
-thought of as Lotka-Volterra competition terms, such as are used in multiple
-species competition models.}
+data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
+data frames. If a numeric vector, then must have the same number of elements
+as the number of MPMs, with each element giving the effect of an individual
+of each MPM relative to a reference individual. If a list of vectors, then
+the list should be composed of as many numeric vectors as MPMs, or as a two-
+layered list of such vectors for each annual matrix per MPM, with each
+vector giving the effect of each individual in each stage relative to a
+reference individual. Data frames of class \code{adaptEq}, and lists of such
+data frames, can be made with function \code{\link{equiv_input}()}. Numeric
+entries used in these vectors can be thought of as Lotka-Volterra
+competition terms, such as are used in multiple species competition models.}
 
 \item{starts}{An optional list of \code{lefkoSV} objects, which are data
 frames providing the starting numbers of individuals of each stage. If
@@ -191,9 +191,9 @@ collective fecundity per individual. Each entry refers to each
 
 \item{density}{An optional list of data frames of class \code{lefkoDens},
 which provide details for density dependence in MPM elements and have been
-created with function \code{\link[lefko3]{density_input}()}. If used, then
-one such data frame per MPM is required. MPMs to be run without density
-dependence should be set to \code{NULL}.}
+created with function \code{\link[lefko3]{density_input}()}, or a two-
+layered list of such data frames, with a data frame per annual matrix per
+MPM.}
 
 \item{density_vr}{An optional list of data frames of class
 \code{lefkoDensVR}, which provide details for density dependence in vital

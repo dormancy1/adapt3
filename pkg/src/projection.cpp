@@ -126,9 +126,9 @@ using namespace AdaptUtils;
 //' required, with equal weighting assumed for any element set to \code{NULL}.
 //' @param density An optional list of data frames of class \code{lefkoDens},
 //' which provide details for density dependence in MPM elements and have been
-//' created with function \code{\link[lefko3]{density_input}()}. If used, then
-//' one such data frame per MPM is required. MPMs to be run without density
-//' dependence should be set to \code{NULL}.
+//' created with function \code{\link[lefko3]{density_input}()}, or a two-
+//' layered list of such data frames, with a data frame per annual matrix per
+//' MPM.
 //' @param entry_time An optional integer vector giving the entry time for each
 //' MPM into the projection. Defaults to a zero vector with the length of the
 //' number of MPMs, as given either by argument \code{mpms} or \code{vrms}.
@@ -173,14 +173,18 @@ using namespace AdaptUtils;
 //' @param fb_sparse A logical vector indicating whether function-based MPMs
 //' should be produced in sparse matrix format. Defaults to \code{FALSE} for
 //' each MPM.
-//' @param equivalence An optional numeric vector or list of numeric vectors. If
-//' a numeric Vector, then must have the same number of elements as the number
-//' of MPMs, with each element giving the effect of an individual of each
-//' MPM relative to a reference individual. If a list, then the list should be
-//' composed of as many numeric vectors as MPMs, with each vector giving the
-//' effect of each individual in each stage relative to a reference individual.
-//' Numeric entries used in these vectors can be thought of as Lotka-Volterra
-//' interaction terms, such as are used in multiple species competition models.
+//' @param equivalence An optional numeric vector, list of numeric vectors,
+//' data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
+//' data frames. If a numeric vector, then must have the same number of elements
+//' as the number of MPMs, with each element giving the effect of an individual
+//' of each MPM relative to a reference individual. If a list of vectors, then
+//' the list should be composed of as many numeric vectors as MPMs, or as a two-
+//' layered list of such vectors for each annual matrix per MPM, with each
+//' vector giving the effect of each individual in each stage relative to a
+//' reference individual. Data frames of class \code{adaptEq}, and lists of such
+//' data frames, can be made with function \code{\link{equiv_input}()}. Numeric
+//' entries used in these vectors can be thought of as Lotka-Volterra
+//' competition terms, such as are used in multiple species competition models.
 //' @param exp_tol A numeric value used to indicate a maximum value to set
 //' exponents to in the core kernel to prevent numerical overflow. Defaults to
 //' \code{700}.
@@ -281,6 +285,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   IntegerVector indb_terms_cat_vec;
   IntegerVector indc_terms_cat_vec; 
   NumericVector equivalence_vec;
+  IntegerVector dens_list_length_vec;
+  IntegerVector eq_list_length_vec;
   
   DataFrame labels;
   
@@ -298,7 +304,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   int entry_time_count {0};
   int density_vr_count {0};
   int equivalence_count {0};
-
+  
   bool preexisting {false};
   bool funcbased {false};
   bool pure_fleslie {false};
@@ -477,8 +483,6 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     funcbased = true;
   }
   
-  //Rcout << "cleanup3 C    ";
-  
   if (!preexisting && !funcbased) {
     throw Rcpp::exception("Cannot proceed without either argument mpms, or arguments vrms and stageframes set.",
       false);
@@ -488,6 +492,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   }
   
   total_mpms = mpm_count + vrm_count;
+  
+  //Rcout << "cleanup3 C    ";
   
   if (supplements.isNotNull()) {
     if (!funcbased) {
@@ -1231,7 +1237,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   
   //Rcout << "cleanup3 K    ";
   
-  // label construction
+  // loy label df construction (no years)
   {
     CharacterVector labels_pops (total_mpms);
     CharacterVector labels_patches (total_mpms);
@@ -1448,6 +1454,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   
   //Rcout << "cleanup3 M    ";
   
+  //Rcout << "total_years_vec: " << total_years_vec << endl;
+  
   // tweights list
   if (tweights.isNotNull()) {
     int assumed_mpms = mpm_count;
@@ -1536,223 +1544,55 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       }
       IntegerVector dens_yn_vec_temp (density_count);
       List dens_index_list_pre (density_count);
+      IntegerVector dens_list_length_vec_pre (density_count);
       //List hstages_list_fb_pre (density_count);
       
       for (int i = 0; i < density_count; i++) {
         if (is<DataFrame>(density_list(i))) {
           DataFrame chosen_density = as<DataFrame>(density_list(i));
           
-          if (chosen_density.hasAttribute("class")) {
-            CharacterVector chosen_density_class = chosen_density.attr("class");
-            bool found_lefkoDens {false};
-            
-            for (int j = 0; j < static_cast<int>(chosen_density_class.length()); j++) {
-              if (chosen_density_class(j) == "lefkoDens") found_lefkoDens = true;
-            }
-            if (!found_lefkoDens) {
-              AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
-            }
-            
-            CharacterVector dl_stage1 = as<CharacterVector>(chosen_density["stage1"]);
-            IntegerVector dl_age2 = as<IntegerVector>(chosen_density["age2"]);
-            
-            if (format_vec(i) < 3) {
-              if (is<LogicalVector>(chosen_density["stage1"])) {
-                throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
-              }
-              for (int j = 0; j < static_cast<int>(dl_stage1.length()); j++) {
-                if (CharacterVector::is_na(dl_stage1(j))) {
-                  throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
-                }
-              }
-            } else if (format_vec(i) > 3) {
-              if (is<LogicalVector>(chosen_density["age2"])) {
-                throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
-              }
-              for (int j = 0; j < static_cast<int>(dl_age2.length()); j++) {
-                if (IntegerVector::is_na(dl_age2(j)) || LogicalVector::is_na(dl_age2(j))) {
-                  throw Rcpp::exception("Argument density requires real age2 entries other than NA if MPMs are age-by-stage.", false);
-                }
-              }
-            }
-            
-            dens_yn_vec_temp(i) = 1;
+          DataFrame hstages = as<DataFrame>(hstages_list(i));
+          DataFrame agestages = as<DataFrame>(agestages_list(i));
+          
+          DataFrame stageframe;
+          if (preexisting) {
+            List chosen_mpm = as<List>(mpm_list(i));
+            stageframe = as<DataFrame>(chosen_mpm["ahstages"]);
           } else {
-            AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
+            stageframe = as<DataFrame>(stageframe_list(i));
           }
           
-          Rcpp::StringVector di_stage3 = as<StringVector>(chosen_density["stage3"]);
-          Rcpp::StringVector di_stage2 = as<StringVector>(chosen_density["stage2"]);
-          Rcpp::StringVector di_stage1 = as<StringVector>(chosen_density["stage1"]);
-          int di_size = di_stage3.length();
+          int format = format_vec(i);
+          int finalage = finalage_vec(i);
           
-          if (format_vec(i) < 3) {
+          List dens_index;
+          arma::uvec dyn_style;
+          arma::vec dyn_alpha;
+          arma::vec dyn_beta;
+          int dens_yn_int {0};
+          
+          density_prep (dens_index, dyn_style, dyn_alpha, dyn_beta, dens_yn_int,
+            chosen_density, hstages, agestages, stageframe, exp_tol, format,
+            finalage, preexisting, funcbased);
+          
+          dens_index_list_pre(i) = dens_index;
+          dens_yn_vec_temp(i) = dens_yn_int;
+          
+        } else if (is<List>(density_list(i))) {
+          List density_second_tier = as<List>(density_list(i));
+          int length_of_density_list_i = static_cast<int>(density_second_tier.length());
+          dens_list_length_vec_pre(i) = length_of_density_list_i;
+          List dens_index_list_pre_pre (length_of_density_list_i);
+          int finalage = finalage_vec(i);
+          
+          int dens_yn_int {0};
+          for (int j = 0; j < length_of_density_list_i; j++) {
+            DataFrame chosen_density = as<DataFrame>(density_second_tier(j));
+            
             DataFrame hstages = as<DataFrame>(hstages_list(i));
-            
-            StringVector stage3 = as<StringVector>(hstages["stage_2"]);
-            StringVector stage2r = as<StringVector>(hstages["stage_1"]);
-            StringVector stage2c = as<StringVector>(hstages["stage_2"]);
-            StringVector stage1 = as<StringVector>(hstages["stage_1"]);
-            int hst_size = stage3.length();
-            
-            arma::uvec hst_3(hst_size, fill::zeros);
-            arma::uvec hst_2r(hst_size, fill::zeros);
-            arma::uvec hst_2c(hst_size, fill::zeros);
-            arma::uvec hst_1(hst_size, fill::zeros);
-            
-            arma::uvec di_stage32_id(di_size, fill::zeros);
-            arma::uvec di_stage21_id(di_size, fill::zeros);
-            arma::uvec di_index(di_size, fill::zeros);
-            
-            for (int j = 0; j < di_size; j++) { // Loop through each density_input line
-              for (int k = 0; k < hst_size; k++) {
-                if (di_stage3(j) == stage3(k)) {
-                  hst_3(k) = 1;
-                } else {
-                  hst_3(k) = 0;
-                }
-              }
-              
-              for (int k = 0; k < hst_size; k++) {
-                if (di_stage2(j) == stage2r(k)) {
-                  hst_2r(k) = 1;
-                } else {
-                  hst_2r(k) = 0;
-                }
-              }
-              
-              for (int k = 0; k < hst_size; k++) {
-                if (di_stage2(j) == stage2c(k)) {
-                  hst_2c(k) = 1;
-                } else {
-                  hst_2c(k) = 0;
-                }
-              }
-              
-              for (int k = 0; k < hst_size; k++) {
-                if (di_stage1(j) == stage1(k)) {
-                  hst_1(k) = 1;
-                } else {
-                  hst_1(k) = 0;
-                }
-              }
-              
-              arma::uvec find_hst3 = find(hst_3);
-              arma::uvec find_hst2r = find(hst_2r);
-              arma::uvec find_hst2c = find(hst_2c);
-              arma::uvec find_hst1 = find(hst_1);
-              
-              arma::uvec pop_32 = intersect(find_hst3, find_hst2r);
-              arma::uvec pop_21 = intersect(find_hst2c, find_hst1);
-              
-              if (static_cast<int>(pop_32.n_elem) == 0 || static_cast<int>(pop_21.n_elem) == 0) {
-                throw Rcpp::exception("Some stages in argument density could not be found.", 
-                  false);
-              }
-              di_stage32_id(j) = pop_32(0);
-              di_stage21_id(j) = pop_21(0);
-              di_index(j) = pop_32(0) + (pop_21(0) * hst_size);
-              
-              hst_3.zeros();
-              hst_2r.zeros();
-              hst_2c.zeros();
-              hst_1.zeros();
-            }
-            
-            List dens_index_list_mpm = Rcpp::List::create(_["index32"] = di_stage32_id,
-              _["index21"] = di_stage21_id, _["index321"] = di_index);
-            dens_index_list_pre(i) = dens_index_list_mpm;
-            
-          } else if (format_vec(i) == 4 ) { 
-            IntegerVector di_age2 = as<IntegerVector>(chosen_density["age2"]);
             DataFrame agestages = as<DataFrame>(agestages_list(i));
             
-            StringVector stage3 = as<StringVector>(agestages["stage"]);
-            StringVector stage2 = as<StringVector>(agestages["stage"]);
-            IntegerVector age2 = as<IntegerVector>(agestages["age"]);
-            int agst_size = stage3.length();
-            
-            arma::uvec agst_s3(agst_size, fill::zeros);
-            arma::uvec agst_a3(agst_size, fill::zeros);
-            arma::uvec agst_s2(agst_size, fill::zeros);
-            arma::uvec agst_a2(agst_size, fill::zeros);
-            
-            arma::uvec di_s3a3_id(di_size, fill::zeros);
-            arma::uvec di_s2a2_id(di_size, fill::zeros);
-            arma::uvec di_index(di_size, fill::zeros);
-            
-            for (int j = 0; j < di_size; j++) { // Loop through each density_input line
-              for (int k = 0; k < agst_size; k++) {
-                if (di_stage3(j) == stage3(k)) {
-                  agst_s3(k) = 1;
-                } else {
-                  agst_s3(k) = 0;
-                }
-              }
-              
-              for (int k = 0; k < agst_size; k++) {
-                if (di_stage2(j) == stage2(k)) {
-                  agst_s2(k) = 1;
-                } else {
-                  agst_s2(k) = 0;
-                }
-              }
-              
-              for (int k = 0; k < agst_size; k++) {
-                if (di_age2(j) < finalage_vec(i)) {
-                  if (di_age2(j) == age2(k)) {
-                    agst_a2(k) = 1;
-                    
-                    for (int l = 0; l < agst_size; l++) {
-                      if ((di_age2(j) + 1) == age2(l)) {
-                        agst_a3(l) = 1;
-                      } else {
-                        agst_a3(l) = 0;
-                      }
-                    }
-                  } else {
-                    agst_a2(k) = 0;
-                  }
-                } else {
-                  if (di_age2(j) == age2(k)) {
-                    agst_a2(k) = 1;
-                    agst_a3(k) = 1;
-                  } else {
-                    agst_a2(k) = 0;
-                    agst_a3(k) = 0;
-                  }
-                }
-              }
-              
-              arma::uvec find_agst_s3 = find(agst_s3);
-              arma::uvec find_agst_s2 = find(agst_s2);
-              arma::uvec find_agst_a3 = find(agst_a3);
-              arma::uvec find_agst_a2 = find(agst_a2);
-              
-              arma::uvec pop_32 = intersect(find_agst_s3, find_agst_a3);
-              arma::uvec pop_21 = intersect(find_agst_s2, find_agst_a2);
-              
-              if (static_cast<int>(pop_32.n_elem) == 0 || static_cast<int>(pop_21.n_elem) == 0) {
-                throw Rcpp::exception("Some age-stages in argument density could not be found.", 
-                  false);
-              }
-              di_s3a3_id(j) = pop_32(0);
-              di_s2a2_id(j) = pop_21(0);
-              di_index(j) = pop_32(0) + (pop_21(0) * agst_size);
-              
-              agst_s3.zeros();
-              agst_s2.zeros();
-              agst_a3.zeros();
-              agst_a2.zeros();
-            }
-            
-            List dens_index_list_mpm = Rcpp::List::create(_["index32"] = di_s3a3_id,
-              _["index21"] = di_s2a2_id, _["index321"] = di_index);
-            dens_index_list_pre(i) = dens_index_list_mpm;
-            
-          } else {
             DataFrame stageframe;
-            
             if (preexisting) {
               List chosen_mpm = as<List>(mpm_list(i));
               stageframe = as<DataFrame>(chosen_mpm["ahstages"]);
@@ -1760,94 +1600,31 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
               stageframe = as<DataFrame>(stageframe_list(i));
             }
             
-            StringVector stage3 = as<StringVector>(stageframe["stage"]);
-            StringVector stage2 = as<StringVector>(stageframe["stage"]);
-            int ahst_size = stage3.length();
-            if (funcbased) ahst_size--;
+            int format = format_vec(i);
             
-            arma::uvec ahst_3(ahst_size, fill::zeros);
-            arma::uvec ahst_2(ahst_size, fill::zeros);
+            List dens_index;
+            arma::uvec dyn_style;
+            arma::vec dyn_alpha;
+            arma::vec dyn_beta;
+            int dens_yn_int_i {0};
             
-            arma::uvec di_stage32_id(di_size, fill::zeros);
-            arma::uvec di_stage21_id(di_size, fill::zeros);
-            arma::uvec di_index(di_size, fill::zeros);
+            density_prep (dens_index, dyn_style, dyn_alpha, dyn_beta, dens_yn_int_i,
+              chosen_density, hstages, agestages, stageframe, exp_tol, format,
+              finalage, preexisting, funcbased);
             
-            for (int j = 0; j < di_size; j++) { // Loop through each density_input
-              for (int k = 0; k < ahst_size; k++) {
-                if (di_stage3(j) == stage3(k)) {
-                  ahst_3(k) = 1;
-                } else {
-                  ahst_3(k) = 0;
-                }
-              }
-              
-              for (int k = 0; k < ahst_size; k++) {
-                if (di_stage2(j) == stage2(k)) {
-                  ahst_2(k) = 1;
-                } else {
-                  ahst_2(k) = 0;
-                }
-              }
-              
-              arma::uvec find_ahst3 = find(ahst_3);
-              arma::uvec find_ahst2 = find(ahst_2);
-              di_stage32_id(j) = find_ahst3(0);
-              di_stage21_id(j) = find_ahst2(0);
-              di_index(j) = find_ahst3(0) + (find_ahst2(0) * ahst_size);
-              
-              ahst_3.zeros();
-              ahst_2.zeros();
-            }
+            dens_index_list_pre_pre(j) = dens_index;
             
-            List dens_index_list_mpm = Rcpp::List::create(_["index3"] = di_stage32_id,
-              _["index2"] = di_stage21_id, _["index321"] = di_index);
-            dens_index_list_pre(i) = dens_index_list_mpm;
+            if (dens_yn_int_i > 0) dens_yn_int = 1;
           }
-          
-          
-          arma::uvec dyn_style = as<arma::uvec>(chosen_density["style"]);
-          arma::vec dyn_alpha = as<arma::vec>(chosen_density["alpha"]);
-          arma::vec dyn_beta = as<arma::vec>(chosen_density["beta"]);
-          
-          for (int j = 0; j < static_cast<int>(dyn_style.n_elem); j++) {
-            if (dyn_style(j) < 1 || dyn_style(j) > 4) {
-              String eat_my_shorts = "Some density inputs are stated as yielding density ";
-              eat_my_shorts += "dependence but not in an accepted style.";
-              
-              throw Rcpp::exception(eat_my_shorts.get_cstring(), false);
-            }
-            
-            if (dyn_style(j) == 1) {
-              if (dyn_beta(j) > exp_tol) {
-                Rf_warningcall(R_NilValue,
-                  "Beta used in Ricker function may be too high. Results may be unpredictable.");
-                
-              } else if (dyn_beta(j) < (-1.0 * exp_tol)) {
-                Rf_warningcall(R_NilValue,
-                  "Beta used in Ricker function may be too high. Results may be unpredictable.");
-                
-              }
-              
-            } else if (dyn_style(j) == 3) {
-              double summed_stuff = dyn_alpha(j) + dyn_beta(j);
-              
-              if (summed_stuff > exp_tol) {
-                Rf_warningcall(R_NilValue,
-                  "Alpha and beta used in Usher function may be too high.");
-                
-              } else if (summed_stuff < (-1.0 * exp_tol)) {
-                Rf_warningcall(R_NilValue,
-                  "Alpha and beta used in Usher function may be too high.");
-              }
-            }
-          }
-          
+          dens_index_list_pre(i) = dens_index_list_pre_pre;
+          dens_yn_vec_temp(i) = dens_yn_int;
         } else if (density_list(i) != R_NilValue) { 
           AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
         }
       }
       dens_index_list = dens_index_list_pre;
       dens_yn_vec = dens_yn_vec_temp;
+      dens_list_length_vec = dens_list_length_vec_pre;
       
     } else {
       AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
@@ -2308,6 +2085,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       //if (vrm_count > mpm_count) trial_count = vrm_count;
       
       equivalence_count = static_cast<int>(equivalence_vec.length());
+      IntegerVector eq_list_length_vec_pre (equivalence_count);
+      eq_list_length_vec = eq_list_length_vec_pre;
       
       for (int i = 0; i < equivalence_count; i++) {
         if (equivalence_vec(i) < 0.0) {
@@ -2326,12 +2105,15 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       if (vrm_count > mpm_count) trial_count = vrm_count;
       
       equivalence_count = static_cast<int>(equivalence_list_temp.length());
+      IntegerVector eq_list_length_vec_pre (equivalence_count);
+      
       if (equivalence_count != trial_count) {
         throw Rcpp::exception("There must be as many elements in argument equivalence as MPMs.",
           false);
       }
       
       List equivalence_list_pre (equivalence_count);
+      
       for (int i = 0; i < equivalence_count; i++) {
         if (is<NumericVector>(equivalence_list_temp(i))) {
           NumericVector trial_equivalence = as<NumericVector>(equivalence_list(i));
@@ -2362,6 +2144,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           bool found_adaptEq {false};
           for (int j = 0; j < static_cast<int>(eq_list_df_class.length()); j++) {
             if (eq_list_df_class(j) == "adaptEq") found_adaptEq = true;
+            if (eq_list_df_class(j) == "lefkoEq") found_adaptEq = true;
           }
           if (!found_adaptEq) {
             throw Rcpp::exception("Argument equivalence should include data frames of class adaptEq, or numeric vectors.", false);
@@ -2416,9 +2199,81 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           
           equivalence_list_pre(i) = current_eq;
           
+        } else if (is<List>(equivalence_list_temp(i))) {
+          List equiv_list_current = as<List>(equivalence_list_temp(i));
+          int equiv_list_current_length = static_cast<int>(equiv_list_current.length());
+          eq_list_length_vec_pre(i) = equiv_list_current_length;
+          List equivalence_list_pre_pre (equiv_list_current_length);
+          
+          for (int m = 0; m < equiv_list_current_length; m++) {
+            DataFrame eq_list_df = as<DataFrame>(equiv_list_current(m));
+            if (!eq_list_df.hasAttribute("class")) {
+              throw Rcpp::exception("Argument equivalence should include data frames of class adaptEq, or numeric vectors.", false);
+            }
+            CharacterVector eq_list_df_class = eq_list_df.attr("class");
+            bool found_adaptEq {false};
+            for (int j = 0; j < static_cast<int>(eq_list_df_class.length()); j++) {
+              if (eq_list_df_class(j) == "adaptEq") found_adaptEq = true;
+              if (eq_list_df_class(j) == "lefkoEq") found_adaptEq = true;
+            }
+            if (!found_adaptEq) {
+              throw Rcpp::exception("Argument equivalence should include data frames of class adaptEq, or numeric vectors.", false);
+            }
+            
+            IntegerVector eq_s2 = as<IntegerVector>(eq_list_df["stage_id_2"]);
+            IntegerVector eq_s1 = as<IntegerVector>(eq_list_df["stage_id_1"]);
+            IntegerVector eq_a2 = as<IntegerVector>(eq_list_df["age2"]);
+            IntegerVector eq_rn = clone(as<IntegerVector>(eq_list_df["row_num"]));
+            NumericVector eq_val = as<NumericVector>(eq_list_df["value"]);
+            
+            eq_rn = eq_rn - 1;
+            
+            if (format_vec(i) < 3) {
+              if (IntegerVector::is_na(eq_s1(0))) {
+                throw Rcpp::exception("Enter stage pairs in adaptEq objects used for historical MPMs.", 
+                  false);
+              }
+              if (IntegerVector::is_na(eq_s2(0))) {
+                throw Rcpp::exception("Entries in column stage2 of adaptEq objects cannot be empty except in Leslie MPMs.", false);
+              }
+            } else if (format_vec(i) > 3) {
+              if (IntegerVector::is_na(eq_a2(0))) {
+                throw Rcpp::exception("Enter ages in adaptEq objects used for age-by-stage MPMs.",
+                  false);
+              }
+              if (format_vec(i) == 4) {
+                if (IntegerVector::is_na(eq_s2(0))) {
+                  throw Rcpp::exception("Entries in column stage2 of adaptEq objects cannot be empty except in Leslie MPMs.", false);
+                }
+              }
+            } else {
+              if (IntegerVector::is_na(eq_s2(0))) {
+                throw Rcpp::exception("Entries in column stage2 of adaptEq objects cannot be empty except in Leslie MPMs.", false);
+              }
+            }
+            
+            if (max(eq_rn) > matrowcounts(i)) {
+              throw Rcpp::exception("Highest row numbers in an entered adaptEq object are too high.", 
+                false);
+            }
+            
+            if (min(eq_val) < 0.0) {
+              throw Rcpp::exception("Entered equivalence values cannot be negative.",
+                false);
+            }
+            
+            NumericVector current_eq (matrowcounts(i), 1.0);
+            for (int j = 0; j < static_cast<int>(eq_rn.length()); j++) {
+              current_eq(eq_rn(j)) = eq_val(j);
+            }
+            
+            equivalence_list_pre_pre(m) = current_eq;
+          }
+          equivalence_list_pre(i) = equivalence_list_pre_pre;
         }
       }
       equivalence_list = equivalence_list_pre;
+      eq_list_length_vec = eq_list_length_vec_pre;
     } else {
       throw Rcpp::exception("Argument equivalence should be either a numeric vector or a list of such vectors.", false);
     }
@@ -3867,6 +3722,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         if (indb_cat_terms_counter(i) >= indb_terms_cat_vec(i)) indb_cat_terms_counter(i) = 0;
         if (indc_cat_terms_counter(i) >= indc_terms_cat_vec(i)) indc_cat_terms_counter(i) = 0;
         
+        //Rcout << "cleanup3 T7    ";
+        
         List current_ind_terms_num = ind_terms_num_list(i);
         List current_ind_terms_cat = ind_terms_cat_list(i);
         
@@ -3876,6 +3733,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         CharacterVector r_inda_full = as<CharacterVector>(current_ind_terms_cat(0));
         CharacterVector r_indb_full = as<CharacterVector>(current_ind_terms_cat(1));
         CharacterVector r_indc_full = as<CharacterVector>(current_ind_terms_cat(2));
+        
+        //Rcout << "cleanup3 T8    ";
         
         NumericVector f2_inda = {f_inda_full(inda_num_terms_counter(i))};
         NumericVector f1_inda = {f_inda_full(inda_num_terms_previous(i))};
@@ -3890,6 +3749,11 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         CharacterVector r2_indc = as<CharacterVector>(r_indc_full(indc_cat_terms_counter(i)));
         CharacterVector r1_indc = as<CharacterVector>(r_indc_full(indc_cat_terms_previous(i)));
         
+        //Rcout << "cleanup3 T9    ";
+        
+        //Rcout << "i: " << i << endl;
+        //Rcout << "dev_terms_num_vec: " << dev_terms_num_vec << endl;
+        
         NumericVector dv_terms (14);
         if (dev_terms_num_vec(i) > 0) {
           DataFrame used_dv_df = as<DataFrame>(dev_terms_list(i));
@@ -3902,6 +3766,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           dev_num_counter(i) = dev_num_counter(i) + 1;
         }
         
+        //Rcout << "cleanup3 T10    ";
+        
         bool dvr_bool {false};
         
         LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -3909,6 +3775,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         IntegerVector dvr_time_delay (14);
         NumericVector dvr_alpha (14);
         NumericVector dvr_beta (14);
+        
+        //Rcout << "cleanup3 T11    ";
         
         if (dens_vr_yn_vec(i) > 0) {
           dvr_bool = true;
@@ -3927,11 +3795,15 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           dvr_beta = true_dvr_beta;
         }
         
+        //Rcout << "cleanup3 T12    ";
+        
         double maxsize {0.0};
         double maxsizeb {0.0};
         double maxsizec {0.0};
         
         if (format_vec(i) < 5) {
+          //Rcout << "cleanup3 T13    ";
+          
           DataFrame current_allstages = as<DataFrame>(allstages_all(i));
           
           NumericVector size3 = as<NumericVector>(current_allstages["size3"]);
@@ -3953,6 +3825,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           maxsizec = max(maxvecc);
         }
         
+        //Rcout << "cleanup3 T14    ";
+        
         double dens_sp {1.0};
         
         if (sp_density_num_vec(i) > 0) {
@@ -3964,11 +3838,15 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           sp_density_counter(i) = sp_density_counter(i) + 1;
         }
         
+        //Rcout << "cleanup3 T15    ";
+        
         NumericVector dens_n (14, 1.0); // This needs to be updated with the actual pop size
         
         List current_mpm;
         if (format_vec(i) < 5) {
-          current_mpm = AdaptMats::mazurekd(current_mpm_allstages,
+          //Rcout << "cleanup3 T16    ";
+          
+          current_mpm = AdaptMats::mazurekd(current_mpm_allstages, // AdaptMats::mazurekd
             current_stageframe, format_vec(i), surv_proxy, obs_proxy,
             size_proxy, sizeb_proxy, sizec_proxy, repst_proxy, fec_proxy,
             jsurv_proxy, jobs_proxy, jsize_proxy, jsizeb_proxy, jsizec_proxy,
@@ -3981,11 +3859,15 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
             patchnumber, exp_tol, theta_tol, true, err_check, sparse_vec(i),
             true);
             
+          //Rcout << "cleanup3 T16a    ";
+          
           if (err_check) {
             NumericMatrix mpm_out = as<NumericMatrix>(current_mpm["out"]);
             errcheck_mpmout_vrm_time(j) = mpm_out; 
           }
         } else {
+          //Rcout << "cleanup3 T17    ";
+          
           IntegerVector all_ages = seq(firstage_vec(i), finalage_vec(i));
           DataFrame current_supplement;
           if (supplement_list(i) == R_NilValue) {
@@ -4011,6 +3893,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
               sparse_vec(i), current_supplement);
           }
         }
+        //Rcout << "cleanup3 T18    ";
+        
         arma::mat pulled_matrix = as<arma::mat>(current_mpm(0));
         current_building_mpm(j) = pulled_matrix;
         
@@ -4018,9 +3902,11 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         labels_patch_terms(j) = current_mainpatches(patchnumber);
         
         year_counter(i) = year_counter(i) + 1;
+        //Rcout << "cleanup3 T19    ";
+        
       } // time loop (j)
       if (err_check) errcheck_mpmout_vrm(i) = errcheck_mpmout_vrm_time;
-      //Rcout << "cleanup3 T7    ";
+      //Rcout << "cleanup3 T20    ";
       
       List A_mats = current_building_mpm;
       DataFrame current_labels = DataFrame::create(_["patch"] = labels_patch_terms,
@@ -4041,7 +3927,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   //Rcout << "cleanup3 U    ";
   
   // Output processing
-  List out_list (72);
+  List out_list (74);
   out_list(0) = mpm_list;
   out_list(1) = mpm_count;
   out_list(2) = vrm_list;
@@ -4114,6 +4000,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   out_list(69) = allmodels_all;
   out_list(70) = fb_override;
   out_list(71) = errcheck_mpmout_vrm;
+  out_list(72) = dens_list_length_vec;
+  out_list(73) = eq_list_length_vec;
   
   CharacterVector out_list_names = {"mpm_list", "mpm_count", "vrm_list",
     "vrm_count", "A_list", "stageframe_list", "stageframe_list_fb",
@@ -4134,7 +4022,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     "indc_terms_cat_vec", "sparse_vec", "density_vr_count", "sparse_vec_count",
     "sp_density_list", "equivalence_list", "equivalence_vec",
     "equivalence_count", "stages_not_equal", "allstages_all", "allmodels_all",
-    "fb_override", "errcheck_mpmout_vrm"};
+    "fb_override", "errcheck_mpmout_vrm", "dens_list_length_vec",
+    "eq_list_length_vec"};
   out_list.attr("names") = out_list_names;
   
   return(out_list);
@@ -4219,6 +4108,10 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
 //' each MPM, given through \code{lefkoDens} objects.
 //' @param dens_vr_yn_vec A vector stating whether density dependence is used in
 //' each MPM, given through \code{lefkoDensVR} objects.
+//' @param dens_list_length_vec A vector giving the number of data frames of
+//' density info per MPM, if lists of such data frames are used.
+//' @param eq_list_length_vec A vector giving the number of data frames of
+//' equivalence info per MPM, if lists of such data frames are used.
 //' @param tweights_type_vec An integer vector giving the style of
 //' \code{tweights} used in each MPM.
 //' @param fecmod_vec A numeric vector giving the fecmod values for all MPMs.
@@ -4269,6 +4162,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   const IntegerVector indc_terms_num_vec, const IntegerVector inda_terms_cat_vec,
   const IntegerVector indb_terms_cat_vec, const IntegerVector indc_terms_cat_vec,
   const IntegerVector dens_yn_vec, const IntegerVector dens_vr_yn_vec,
+  const IntegerVector dens_list_length_vec, const IntegerVector eq_list_length_vec,
   const IntegerVector tweights_type_vec, const NumericVector fecmod_vec,
   const LogicalVector sparse_vec, const CharacterVector patch_vec,
   const int vrm_count, const int mpm_count, const int nreps, const int times,
@@ -4280,13 +4174,13 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   // start_list
   
   // Matrix order set up and creation of zero stage vectors
-  //Rcout << "Entered project3_pre_core          ";
+  //Rcout << "Entered project3_pre_core          " << endl;
   
   List matrix_choice_list (mpm_count);
   List zvl (mpm_count);
   for (int i = 0; i < mpm_count; i++) {
     
-    //Rcout << "project3_pre_core a  i (mpm): " << i << "          ";
+    //Rcout << "project3_pre_core A  i (mpm): " << i << "          ";
     
     IntegerVector chosen_matrix_vec;
     
@@ -4339,7 +4233,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
       //Rcout << "chosen_mats_pre: " << chosen_mats_pre << endl;
     }
     
-    //Rcout << "project3_pre_core b    ";
+    //Rcout << "project3_pre_core B    ";
     
     matrix_choice_list(i) = chosen_mats;
   }
@@ -4348,7 +4242,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   List comm_out_pre (mpm_count);
   List used_times (mpm_count);
   
-  //Rcout << "project3_pre_core c    ";
+  //Rcout << "project3_pre_core C    " << endl;
   
   for (int i = 0; i < mpm_count; i++) {
     List pop_reps (nreps);
@@ -4437,7 +4331,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     comm_out_pre(i) = pop_reps;
   }
   
-  //Rcout << "project3_pre_core d    ";
+  //Rcout << "project3_pre_core D    " << endl;
   
   // Main projection
   List N_out_pre (nreps);
@@ -4448,19 +4342,19 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     NumericMatrix N_mpm (mpm_count, (times + 1));
     List extreme_mpm_reps_times (times);
     
-    //Rcout << "project3_pre_core e i (rep): " << i << "      ";
+    //Rcout << "project3_pre_core E i (rep): " << i << "      ";
     
     for (int j = 0; j < times; j++) {
       if (j % 10 == 0){
         Rcpp::checkUserInterrupt();
       }
       
-      //Rcout << "project3_pre_core f j (time): " << j << "      ";
+      //Rcout << "project3_pre_core F j (time): " << j << "      ";
       
       List extreme_mpm_reps_times_mpms (mpm_count);
       
       for (int k = 0; k < mpm_count; k++) {
-        //Rcout << "project3_pre_core g k (mpm): " << k << "      ";
+        //Rcout << "project3_pre_core G k (mpm): " << k << "      ";
         
         List reps_out = comm_out_pre(k);
         arma::mat pops_out = as<arma::mat>(reps_out(i));
@@ -4481,7 +4375,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           List chosen_As = as<List>(A_list(k));
           
           if (dens_yn_vec(k) == 0) {
-            //Rcout << "project3_pre_core h no density       ";
+            //Rcout << "project3_pre_core H no density       ";
             
             if (sparse_vec(k) == 0) {
               arma::mat current_A = as<arma::mat>(chosen_As(current_times_vec(j)));
@@ -4494,10 +4388,22 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
               if (err_check_extreme) extreme_mpm_reps_times_mpms(k) = current_A;
             }
           } else {
-            //Rcout << "project3_pre_core i density       ";
+            //Rcout << "project3_pre_core I density       ";
             
-            DataFrame used_density_input = as<DataFrame>(density_list(k));
-            DataFrame used_density_index_input = as<DataFrame>(dens_index_list(k));
+            DataFrame used_density_input;
+            DataFrame used_density_index_input;
+            
+            if (dens_list_length_vec(k) > 0) {
+              List used_density_input_list = as<List>(density_list(k));
+              List used_density_index_input_list = as<List>(dens_index_list(k));
+              
+              used_density_input = as<DataFrame>(used_density_input_list(current_times_vec(j)));
+              used_density_index_input = as<DataFrame>(used_density_index_input_list(current_times_vec(j)));
+              
+            } else {
+              used_density_input = as<DataFrame>(density_list(k));
+              used_density_index_input = as<DataFrame>(dens_index_list(k));
+            }
             
             IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
             int used_delay = max(ud_delay_vec);
@@ -4514,7 +4420,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                 arma::mat new_projmat;
                 arma::sp_mat new_projsp;
                 
-                proj3dens_ad(new_popvec, new_projmat, new_projsp,
+                AdaptUtils::proj3dens_ad(new_popvec, new_projmat, new_projsp,
                   running_popvec_mpm, chosen_As, delay_N_sum,
                   static_cast<int>(current_times_vec(j)), integeronly,
                   substoch, used_density_input, used_density_index_input,
@@ -4531,10 +4437,19 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                 
                 if (j > 0) {
                   for (int l = 0; l < mpm_count; l++) {
+                    
+                    arma::vec current_equiv_vec;
+                    if (eq_list_length_vec(l) > 0) {
+                      List used_equivalence_list = as<List>(equivalence_list(l));
+                      current_equiv_vec = as<arma::vec>(used_equivalence_list(current_times_vec(j)));
+                    
+                    } else {
+                      current_equiv_vec = as<arma::vec>(equivalence_list(l));
+                    }
+                    
                     List current_pop_list = as<List>(comm_out_pre(l));
                     arma::mat delay_pop = as<arma::mat>(current_pop_list(i));
                     arma::vec delay_pop_vec = delay_pop.col(j + 1 - used_delay);
-                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(l));
                     arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
                     double delay_pop_N = accu(adjusted_delay_pop_vec);
                     
@@ -4546,7 +4461,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                 arma::mat new_projmat;
                 arma::sp_mat new_projsp;
                 
-                proj3dens_ad(new_popvec, new_projmat, new_projsp,
+                AdaptUtils::proj3dens_ad(new_popvec, new_projmat, new_projsp,
                   running_popvec_mpm, chosen_As, delay_N_sum,
                   static_cast<int>(current_times_vec(j)), integeronly,
                   substoch, used_density_input, used_density_index_input,
@@ -4563,7 +4478,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
               arma::mat new_projmat;
               arma::sp_mat new_projsp;
               
-              proj3dens_ad(new_popvec, new_projmat, new_projsp,
+              AdaptUtils::proj3dens_ad(new_popvec, new_projmat, new_projsp,
                 running_popvec_mpm, chosen_As, 0.0,
                 static_cast<int>(current_times_vec(j)), integeronly, substoch,
                 used_density_input, used_density_index_input, false,
@@ -4675,6 +4590,10 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' each MPM, given through \code{lefkoDens} objects.
 //' @param dens_vr_yn_vec A vector stating whether density dependence is used in
 //' each MPM, given through \code{lefkoDensVR} objects.
+//' @param dens_list_length_vec A vector giving the number of data frames of
+//' density info per MPM, if lists of such data frames are used.
+//' @param eq_list_length_vec A vector giving the number of data frames of
+//' equivalence info per MPM, if lists of such data frames are used.
 //' @param tweights_type_vec An integer vector giving the style of
 //' \code{tweights} used in each MPM.
 //' @param fecmod_vec A numeric vector giving the fecmod values for all MPMs.
@@ -4721,7 +4640,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   const IntegerVector indb_terms_num_vec, const IntegerVector indc_terms_num_vec,
   const IntegerVector inda_terms_cat_vec, const IntegerVector indb_terms_cat_vec,
   const IntegerVector indc_terms_cat_vec, const IntegerVector dens_yn_vec,
-  const IntegerVector dens_vr_yn_vec, const IntegerVector tweights_type_vec,
+  const IntegerVector dens_vr_yn_vec, const IntegerVector dens_list_length_vec,
+  const IntegerVector eq_list_length_vec, const IntegerVector tweights_type_vec,
   const NumericVector fecmod_vec, const LogicalVector sparse_vec,
   const CharacterVector patch_vec, const int vrm_count, const int nreps,
   const int times, const int substoch, const double exp_tol,
@@ -4732,7 +4652,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   // density_vr_list
   // dens_vr_yn_vec
 
-  //Rcout << "Entered project3_fb_core          ";
+  //Rcout << "Entered project3_fb_core          " << endl;
   
   //int year_counter {0};
   IntegerVector inda_num_terms_counter (vrm_count);
@@ -4821,10 +4741,9 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     }
   }
   
+  //Rcout << "project3_fb_core A          " << endl;
+  
   for (int i = 0; i < vrm_count; i++) {
-    
-    //Rcout << "project3_fb_core a i: " << i << "          ";
-    
     List pop_reps (nreps);
     
     arma::mat pops_out_pre (stagecounts(i), (times + 1), fill::zeros);
@@ -4839,6 +4758,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   List errcheck_mpmout_rep (nreps);
   
   // Main projection
+  //Rcout << "project3_fb_core B          " << endl;
+  
   for (int current_rep = 0; current_rep < nreps; current_rep++) {
     //Rcout << "\nMain projection start" << endl;
     //Rcout << "project3_fb_core b current_rep: " << current_rep << "          ";
@@ -4888,6 +4809,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           
           DataFrame current_mpm_allstages = as<DataFrame>(allstages_all(i));
           
+          //Rcout << "project3_fb_core B1          " << endl;
+          
           List surv_proxy = as<List>(current_vrm_extract(0));
           List obs_proxy = as<List>(current_vrm_extract(1));
           List size_proxy = as<List>(current_vrm_extract(2));
@@ -4902,7 +4825,11 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           List jsizec_proxy = as<List>(current_vrm_extract(11));
           List jrepst_proxy = as<List>(current_vrm_extract(12));
           List jmatst_proxy = as<List>(current_vrm_extract(13));
+          //Rcout << "project3_fb_core B2          " << endl;
+          
           DataFrame current_paramnames = as<DataFrame>(current_vrm_extract(14));
+          
+          //Rcout << "project3_fb_core B3          " << endl;
           
           CharacterVector current_mainyears = as<CharacterVector>(year_list(i));
           unsigned int no_mainyears = static_cast<unsigned int>(current_mainyears.length());
@@ -4983,6 +4910,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           CharacterVector r1_indc = 
             as<CharacterVector>(r_indc_full(indc_cat_terms_previous(i)));
           
+          //Rcout << "project3_fb_core B4          " << endl;
+          
           NumericVector dv_terms (14);
           if (dev_terms_num_vec(i) > 0) {
             DataFrame used_dv_df = as<DataFrame>(dev_terms_list(i));
@@ -4996,6 +4925,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           }
           
           bool dvr_bool {false};
+          
+          //Rcout << "project3_fb_core B5          " << endl;
           
           LogicalVector dvr_yn = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
           IntegerVector dvr_style (14);
@@ -5023,6 +4954,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           double maxsize {0.0};
           double maxsizeb {0.0};
           double maxsizec {0.0};
+          
+          //Rcout << "project3_fb_core B6          " << endl;
           
           if (format_vec(i) < 5) {
             DataFrame current_allstages = as<DataFrame>(allstages_all(i));
@@ -5105,7 +5038,10 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                 dens_n, exp_tol, theta_tol, sparse_vec(i), current_supplement);
             }
           }
+          
           if (dens_yn_vec(i) == 0) {
+            //Rcout << "project3_fb_core C no density       " << endl;
+            
             if (!sparse_vec(i)) {
               arma::mat current_A = as<arma::mat>(current_mpm(0));
               
@@ -5118,13 +5054,29 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
               if (err_check_extreme) extreme_mpm_reps_times_vrms(i) = current_A;
             }
           } else {
-            //Rcout << "project3_fb_core l          ";
+            //Rcout << "project3_fb_core D density       " << endl;
             
-            DataFrame used_density_input = as<DataFrame>(density_list(i));
-            DataFrame used_density_index_input = as<DataFrame>(dens_index_list(i));
+            DataFrame used_density_input;
+            DataFrame used_density_index_input;
+            
+            if (dens_list_length_vec(i) > 0) {
+              List used_density_input_list = as<List>(density_list(i));
+              List used_density_index_input_list = as<List>(dens_index_list(i));
+              
+              int current_used_index = yearnumber;
+              if (current_used_index >= static_cast<int>(dens_list_length_vec(i))) current_used_index = 0;
+              used_density_input = as<DataFrame>(used_density_input_list(current_used_index));
+              used_density_index_input = as<DataFrame>(used_density_index_input_list(current_used_index));
+              
+            } else {
+              used_density_input = as<DataFrame>(density_list(i));
+              used_density_index_input = as<DataFrame>(dens_index_list(i));
+            }
             
             IntegerVector ud_delay_vec = as<IntegerVector>(used_density_input["time_delay"]);
             int used_delay = max(ud_delay_vec);
+            
+            //Rcout << "project3_fb_core E density       " << endl;
             
             if (current_time > used_delay) { // Changed to allow different delay Ns
               if (!stages_not_equal) {
@@ -5136,7 +5088,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                 arma::mat new_projmat;
                 arma::sp_mat new_projsp;
                 
-                proj3dens_ad(new_popvec, new_projmat, new_projsp,
+                AdaptUtils::proj3dens_ad(new_popvec, new_projmat, new_projsp,
                   running_popvec_vrm, current_mpm, delay_N_sum, 0, integeronly,
                   substoch, used_density_input, used_density_index_input, false,
                   static_cast<bool>(sparse_vec(i)),
@@ -5152,7 +5104,18 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                     List current_pop_list = as<List>(comm_out_pre(l));
                     arma::mat delay_pop = as<arma::mat>(current_pop_list(current_rep));
                     arma::vec delay_pop_vec = delay_pop.col(current_time + 1 - used_delay);
-                    arma::vec current_equiv_vec = as<arma::vec>(equivalence_list(l));
+                    
+                    arma::vec current_equiv_vec;
+                    if (eq_list_length_vec(l) > 0) {
+                      List used_equivalence_list = as<List>(equivalence_list(l));
+                      int current_used_index = yearnumber;
+                      if (current_used_index >= static_cast<int>(eq_list_length_vec(l))) current_used_index = 0;
+                      current_equiv_vec = as<arma::vec>(used_equivalence_list(current_used_index));
+                    
+                    } else {
+                      current_equiv_vec = as<arma::vec>(equivalence_list(l));
+                    }
+                    
                     arma::vec adjusted_delay_pop_vec = delay_pop_vec % current_equiv_vec;
                     double delay_pop_N = accu(adjusted_delay_pop_vec);
                     
@@ -5164,7 +5127,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
                 arma::mat new_projmat;
                 arma::sp_mat new_projsp;
                 
-                proj3dens_ad(new_popvec, new_projmat, new_projsp,
+                AdaptUtils::proj3dens_ad(new_popvec, new_projmat, new_projsp,
                   running_popvec_vrm, current_mpm, delay_N_sum, 0, integeronly,
                   substoch, used_density_input, used_density_index_input, false,
                   static_cast<bool>(sparse_vec(i)),
@@ -5178,7 +5141,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
               arma::mat new_projmat;
               arma::sp_mat new_projsp;
               
-              proj3dens_ad(new_popvec, new_projmat, new_projsp,
+              AdaptUtils::proj3dens_ad(new_popvec, new_projmat, new_projsp,
                 running_popvec_vrm, current_mpm, 0.0, 0, integeronly, substoch,
                 used_density_input, used_density_index_input, false,
                 static_cast<bool>(sparse_vec(i)), static_cast<bool>(sparse_vec(i)),
@@ -5188,8 +5151,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
               if (err_check_extreme) extreme_mpm_reps_times_vrms(i) = new_projmat;
             }
           }
-          
-          //Rcout << "project3_fb_core m          ";
+          //Rcout << "project3_fb_core F       " << endl;
           
           if (integeronly) running_popvec_vrm = floor(running_popvec_vrm);
           double N_current = accu(running_popvec_vrm);
@@ -5219,6 +5181,8 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
         comm_out_pre(i) = reps_out;
       } // vrm loop
       
+      //Rcout << "project3_fb_core G       " << endl;
+      
       if (err_check_extreme) extreme_mpm_reps_times(current_time) = extreme_mpm_reps_times_vrms;
       if (err_check) errcheck_mpmout_rep_time(current_time) = errcheck_mpmout_rep_time_vrm;
     } // current_time loop
@@ -5227,9 +5191,10 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     if (err_check_extreme) extreme_mpm_reps(current_rep) = extreme_mpm_reps_times;
     if (err_check) errcheck_mpmout_rep(current_rep) = errcheck_mpmout_rep_time;
     
-    //Rcout << "project3_fb_core n          ";
+    //Rcout << "project3_fb_core H          " << endl;
     
   } // current_rep loop
+  
   N_out = N_out_pre;
   if (err_check_extreme) extreme_mpm_out = extreme_mpm_reps;
   if (err_check) errcheck_fb_out = errcheck_mpmout_rep;
@@ -5261,17 +5226,17 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' that do not need supplemental data should be entered as \code{NULL} in this
 //' list. See \code{\link[lefko3]{supplemental}()} for details.
 //' @param equivalence An optional numeric vector, list of numeric vectors,
-//' data frame of class \code{adaptEq}, or list of data frames of class
-//' \code{adaptEq}. If a numeric vector, then must have the same number of
-//' elements as the number of MPMs, with each element giving the effect of an
-//' individual of each MPM relative to a reference individual. If a list of
-//' vectors, then the list should be composed of as many numeric vectors as
-//' MPMs, with each vector giving the effect of each individual in each stage
-//' relative to a reference individual. Data frames of class \code{adaptEq}, and
-//' lists of such data frames, can be made with function
-//' \code{\link{equiv_input}()}. Numeric entries used in these vectors can be
-//' thought of as Lotka-Volterra competition terms, such as are used in multiple
-//' species competition models.
+//' data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
+//' data frames. If a numeric vector, then must have the same number of elements
+//' as the number of MPMs, with each element giving the effect of an individual
+//' of each MPM relative to a reference individual. If a list of vectors, then
+//' the list should be composed of as many numeric vectors as MPMs, or as a two-
+//' layered list of such vectors for each annual matrix per MPM, with each
+//' vector giving the effect of each individual in each stage relative to a
+//' reference individual. Data frames of class \code{adaptEq}, and lists of such
+//' data frames, can be made with function \code{\link{equiv_input}()}. Numeric
+//' entries used in these vectors can be thought of as Lotka-Volterra
+//' competition terms, such as are used in multiple species competition models.
 //' @param starts An optional list of \code{lefkoSV} objects, which are data
 //' frames providing the starting numbers of individuals of each stage. If
 //' provided, then one is needed per MPM. If not provided, then all projections
@@ -5374,9 +5339,9 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' \code{vrm_input} object in argument \code{vrms}, in the same order.
 //' @param density An optional list of data frames of class \code{lefkoDens},
 //' which provide details for density dependence in MPM elements and have been
-//' created with function \code{\link[lefko3]{density_input}()}. If used, then
-//' one such data frame per MPM is required. MPMs to be run without density
-//' dependence should be set to \code{NULL}.
+//' created with function \code{\link[lefko3]{density_input}()}, or a two-
+//' layered list of such data frames, with a data frame per annual matrix per
+//' MPM.
 //' @param density_vr An optional list of data frames of class
 //' \code{lefkoDensVR}, which provide details for density dependence in vital
 //' rate models and have been created with function
@@ -5655,6 +5620,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   IntegerVector indc_terms_cat_vec; // # of indcovc (cat) times per MPM
   IntegerVector dev_terms_num_vec; // dev_terms rows input for each MPM
   NumericVector fecmod_vec; // fecundity multipliers for multiple offspring stages
+  IntegerVector dens_list_length_vec;
+  IntegerVector eq_list_length_vec;
   List fb_mpmout;
   
   List comm_out; // List of matrices of population vectors (top lvl: mpm, lower lvl: reps, mats: stages x times)
@@ -5662,7 +5629,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   DataFrame labels;  // Data frame to provide order of MPMs
   List labels_list;  // List to hold data for data frame labels
   
-  //Rcout << "a ";
+  //Rcout << "project3 A " << endl;
   
   List cleaned_input = cleanup3(mpms, vrms, stageframes, supplements, format,
     firstage, finalage, fecage_min, fecage_max, cont, fecmod, starts, patches,
@@ -5670,7 +5637,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
     dev_terms, fb_sparse, equivalence, exp_tol, theta_tol, prep_mats, substoch,
     force_fb, stochastic, err_check_bool);
   
-  //Rcout << "a1 ";
+  //Rcout << "project3 B " << endl;
   
   mpm_list = as<List>(cleaned_input(0));
   mpm_count = static_cast<int>(cleaned_input(1));
@@ -5744,16 +5711,18 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   allmodels_all = as<List>(cleaned_input(69));
   fb_override = static_cast<bool>(cleaned_input(70));
   fb_mpmout = as<List>(cleaned_input(71));
+  dens_list_length_vec = as<IntegerVector>(cleaned_input(72));
+  eq_list_length_vec = as<IntegerVector>(cleaned_input(73));
+  
+  //Rcout << "project3 C " << endl;
   
   List final_out_matrices;
   //total_mpms = mpm_count + vrm_count;
   
-  //Rcout << "b ";
-  
   // Projection runs
-  
-  // nreps
-  if (preexisting || fb_override) {
+  if (preexisting || fb_override) { // Preexisting MPMs
+    //Rcout << "project3 D pre_core" << endl;
+    
     project3_pre_core (N_out, comm_out, extreme_mpm_out, mpm_list, A_list,
       tweights_list, start_list, vrm_list, stageframe_list, allmodels_all,
       allstages_all, supplement_list, year_list, ind_terms_num_list,
@@ -5762,27 +5731,32 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
       sp_density_num_vec, firstage_vec, finalage_vec, stagecounts,
       entry_time_vec, format_vec, inda_terms_num_vec, indb_terms_num_vec,
       indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
-      indc_terms_cat_vec, dens_yn_vec, dens_vr_yn_vec, tweights_type_vec,
-      fecmod_vec, sparse_vec, patch_vec, vrm_count, mpm_count, nreps, times,
-      substoch, exp_tol, theta_tol, integeronly, stages_not_equal, stochastic, 
-      entry_time_vec_use, err_check_bool, err_check_extreme);
+      indc_terms_cat_vec, dens_yn_vec, dens_vr_yn_vec, dens_list_length_vec,
+      eq_list_length_vec, tweights_type_vec, fecmod_vec, sparse_vec, patch_vec,
+      vrm_count, mpm_count, nreps, times, substoch, exp_tol, theta_tol,
+      integeronly, stages_not_equal, stochastic,  entry_time_vec_use,
+      err_check_bool, err_check_extreme);
     final_out_matrices = fb_mpmout;
-  } else if (funcbased && !fb_override) {
+    
+  } else if (funcbased && !fb_override) { // Function-based MPMs
+    //Rcout << "project3 E fb_core" << endl;
+    
     project3_fb_core (N_out, comm_out, extreme_mpm_out, err_check_fb_out,
-      start_list, vrm_list, tweights_list, stageframe_list, allmodels_all, allstages_all,
-      supplement_list, year_list, ind_terms_num_list, ind_terms_cat_list,
-      dev_terms_list, density_vr_list, sp_density_list, density_list,
-      dens_index_list, equivalence_list, dev_terms_num_vec, sp_density_num_vec,
-      firstage_vec, finalage_vec, stagecounts, entry_time_vec, format_vec,
-      inda_terms_num_vec, indb_terms_num_vec, indc_terms_num_vec,
-      inda_terms_cat_vec, indb_terms_cat_vec, indc_terms_cat_vec, dens_yn_vec,
-      dens_vr_yn_vec, tweights_type_vec, fecmod_vec, sparse_vec, patch_vec, vrm_count, nreps,
-      times, substoch, exp_tol, theta_tol, integeronly, stages_not_equal,
-      stochastic, err_check_bool, err_check_extreme);
+      start_list, vrm_list, tweights_list, stageframe_list, allmodels_all,
+      allstages_all, supplement_list, year_list, ind_terms_num_list,
+      ind_terms_cat_list, dev_terms_list, density_vr_list, sp_density_list,
+      density_list, dens_index_list, equivalence_list, dev_terms_num_vec,
+      sp_density_num_vec, firstage_vec, finalage_vec, stagecounts,
+      entry_time_vec, format_vec, inda_terms_num_vec, indb_terms_num_vec,
+      indc_terms_num_vec, inda_terms_cat_vec, indb_terms_cat_vec,
+      indc_terms_cat_vec, dens_yn_vec, dens_vr_yn_vec, dens_list_length_vec,
+      eq_list_length_vec, tweights_type_vec, fecmod_vec, sparse_vec, patch_vec,
+      vrm_count, nreps, times, substoch, exp_tol, theta_tol, integeronly,
+      stages_not_equal, stochastic, err_check_bool, err_check_extreme);
     final_out_matrices = err_check_fb_out;
-  } // funcbased processing
+  }
   
-  //Rcout << "m ";
+  //Rcout << "project3 F " << endl;
   
   int out_dim = 6;
   if (err_check_bool) out_dim++;
@@ -5819,7 +5793,6 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
     output.attr("names") = output_main_names;
     
   } else if (err_check_bool) {
-    
     List output_errcheck (7);
     output_errcheck(0) = allstages_all;
     output_errcheck(1) = allmodels_all;
@@ -5845,7 +5818,6 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
       "hstages_list", "agestages_list", "labels"};
     output.attr("names") = output_main_names;
   }
-  
   output.attr("class") = "adaptProj";
   
   return output;

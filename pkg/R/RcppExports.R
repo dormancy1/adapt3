@@ -88,9 +88,9 @@
 #' required, with equal weighting assumed for any element set to \code{NULL}.
 #' @param density An optional list of data frames of class \code{lefkoDens},
 #' which provide details for density dependence in MPM elements and have been
-#' created with function \code{\link[lefko3]{density_input}()}. If used, then
-#' one such data frame per MPM is required. MPMs to be run without density
-#' dependence should be set to \code{NULL}.
+#' created with function \code{\link[lefko3]{density_input}()}, or a two-
+#' layered list of such data frames, with a data frame per annual matrix per
+#' MPM.
 #' @param entry_time An optional integer vector giving the entry time for each
 #' MPM into the projection. Defaults to a zero vector with the length of the
 #' number of MPMs, as given either by argument \code{mpms} or \code{vrms}.
@@ -135,14 +135,18 @@
 #' @param fb_sparse A logical vector indicating whether function-based MPMs
 #' should be produced in sparse matrix format. Defaults to \code{FALSE} for
 #' each MPM.
-#' @param equivalence An optional numeric vector or list of numeric vectors. If
-#' a numeric Vector, then must have the same number of elements as the number
-#' of MPMs, with each element giving the effect of an individual of each
-#' MPM relative to a reference individual. If a list, then the list should be
-#' composed of as many numeric vectors as MPMs, with each vector giving the
-#' effect of each individual in each stage relative to a reference individual.
-#' Numeric entries used in these vectors can be thought of as Lotka-Volterra
-#' interaction terms, such as are used in multiple species competition models.
+#' @param equivalence An optional numeric vector, list of numeric vectors,
+#' data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
+#' data frames. If a numeric vector, then must have the same number of elements
+#' as the number of MPMs, with each element giving the effect of an individual
+#' of each MPM relative to a reference individual. If a list of vectors, then
+#' the list should be composed of as many numeric vectors as MPMs, or as a two-
+#' layered list of such vectors for each annual matrix per MPM, with each
+#' vector giving the effect of each individual in each stage relative to a
+#' reference individual. Data frames of class \code{adaptEq}, and lists of such
+#' data frames, can be made with function \code{\link{equiv_input}()}. Numeric
+#' entries used in these vectors can be thought of as Lotka-Volterra
+#' competition terms, such as are used in multiple species competition models.
 #' @param exp_tol A numeric value used to indicate a maximum value to set
 #' exponents to in the core kernel to prevent numerical overflow. Defaults to
 #' \code{700}.
@@ -257,6 +261,10 @@ NULL
 #' each MPM, given through \code{lefkoDens} objects.
 #' @param dens_vr_yn_vec A vector stating whether density dependence is used in
 #' each MPM, given through \code{lefkoDensVR} objects.
+#' @param dens_list_length_vec A vector giving the number of data frames of
+#' density info per MPM, if lists of such data frames are used.
+#' @param eq_list_length_vec A vector giving the number of data frames of
+#' equivalence info per MPM, if lists of such data frames are used.
 #' @param tweights_type_vec An integer vector giving the style of
 #' \code{tweights} used in each MPM.
 #' @param fecmod_vec A numeric vector giving the fecmod values for all MPMs.
@@ -372,6 +380,10 @@ NULL
 #' each MPM, given through \code{lefkoDens} objects.
 #' @param dens_vr_yn_vec A vector stating whether density dependence is used in
 #' each MPM, given through \code{lefkoDensVR} objects.
+#' @param dens_list_length_vec A vector giving the number of data frames of
+#' density info per MPM, if lists of such data frames are used.
+#' @param eq_list_length_vec A vector giving the number of data frames of
+#' equivalence info per MPM, if lists of such data frames are used.
 #' @param tweights_type_vec An integer vector giving the style of
 #' \code{tweights} used in each MPM.
 #' @param fecmod_vec A numeric vector giving the fecmod values for all MPMs.
@@ -1844,17 +1856,17 @@ NULL
 #' that do not need supplemental data should be entered as \code{NULL} in this
 #' list. See \code{\link[lefko3]{supplemental}()} for details.
 #' @param equivalence An optional numeric vector, list of numeric vectors,
-#' data frame of class \code{adaptEq}, or list of data frames of class
-#' \code{adaptEq}. If a numeric vector, then must have the same number of
-#' elements as the number of MPMs, with each element giving the effect of an
-#' individual of each MPM relative to a reference individual. If a list of
-#' vectors, then the list should be composed of as many numeric vectors as
-#' MPMs, with each vector giving the effect of each individual in each stage
-#' relative to a reference individual. Data frames of class \code{adaptEq}, and
-#' lists of such data frames, can be made with function
-#' \code{\link{equiv_input}()}. Numeric entries used in these vectors can be
-#' thought of as Lotka-Volterra competition terms, such as are used in multiple
-#' species competition models.
+#' data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
+#' data frames. If a numeric vector, then must have the same number of elements
+#' as the number of MPMs, with each element giving the effect of an individual
+#' of each MPM relative to a reference individual. If a list of vectors, then
+#' the list should be composed of as many numeric vectors as MPMs, or as a two-
+#' layered list of such vectors for each annual matrix per MPM, with each
+#' vector giving the effect of each individual in each stage relative to a
+#' reference individual. Data frames of class \code{adaptEq}, and lists of such
+#' data frames, can be made with function \code{\link{equiv_input}()}. Numeric
+#' entries used in these vectors can be thought of as Lotka-Volterra
+#' competition terms, such as are used in multiple species competition models.
 #' @param starts An optional list of \code{lefkoSV} objects, which are data
 #' frames providing the starting numbers of individuals of each stage. If
 #' provided, then one is needed per MPM. If not provided, then all projections
@@ -1957,9 +1969,9 @@ NULL
 #' \code{vrm_input} object in argument \code{vrms}, in the same order.
 #' @param density An optional list of data frames of class \code{lefkoDens},
 #' which provide details for density dependence in MPM elements and have been
-#' created with function \code{\link[lefko3]{density_input}()}. If used, then
-#' one such data frame per MPM is required. MPMs to be run without density
-#' dependence should be set to \code{NULL}.
+#' created with function \code{\link[lefko3]{density_input}()}, or a two-
+#' layered list of such data frames, with a data frame per annual matrix per
+#' MPM.
 #' @param density_vr An optional list of data frames of class
 #' \code{lefkoDensVR}, which provide details for density dependence in vital
 #' rate models and have been created with function

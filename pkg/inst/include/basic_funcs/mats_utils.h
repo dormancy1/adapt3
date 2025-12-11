@@ -129,6 +129,8 @@ namespace AdaptMats {
     int matrixformat, double fecmod, double repentry_i, bool negfec,
     double stage2n_i, int nostages, int modeltrunc) {
     
+    //Rcout << "preouterator_adapt3 A" << endl;
+    
     double preout {0.0};
     double all_out {0.0};
     double all_out_zi {0.0};
@@ -148,17 +150,24 @@ namespace AdaptMats {
     
     //Rcout << "preouterator_adapt3 dev_terms: " << dev_terms << endl;
     
+    //Rcout << "status_terms: " << status_terms << endl;
+    //Rcout << " length of status_terms: " << static_cast<int>(status_terms.length()) << endl;
+    //Rcout << "maincoefs: " << maincoefs << endl;
+    //Rcout << " length of maincoefs: " << static_cast<int>(maincoefs.length()) << endl;
+    
     // For all / conditional models
     double mainsum = rimeotam(maincoefs, status_terms(0), status_terms(1),
       status_terms(2), status_terms(3), status_terms(4), status_terms(5),
       status_terms(6), status_terms(7), status_terms(8),
-      (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14)),
-      (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15)),
-      (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16)),
+      (status_terms(9)), (status_terms(10)), //  (status_terms(9) + dev_terms(14)), (status_terms(10)dev_terms(14))
+      (status_terms(11)), (status_terms(12)), // (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15))
+      (status_terms(13)), (status_terms(14)), // (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16))
       status_terms(22), status_terms(23), status_terms(24), status_terms(25),
       status_terms(26), status_terms(27), status_terms(15), false);
     
     bool zi_processing = false;
+    
+    //Rcout << "preouterator_adapt3 B" << endl;
     
     if (vitaltype == 1) {
       if (vitalrate == 3 || vitalrate == 10) {
@@ -171,6 +180,8 @@ namespace AdaptMats {
     } else if (vitaltype == 2) {
       if (zi && vitaldist < 2) zi_processing = true;  
     }
+    
+    //Rcout << "preouterator_adapt3 C" << endl;
     
     // Creates covariate numerics for all models
     // Random covariate processing
@@ -300,15 +311,17 @@ namespace AdaptMats {
     if (preout > exp_tol && vitaldist < 2) preout = exp_tol;
     
     
+    //Rcout << "preouterator_adapt3 D" << endl;
+    
     double preout_zi {0.0};
     
     if (zi_processing) {
       double mainsum_zi = rimeotam(maincoefs, status_terms(0), status_terms(1),
         status_terms(2), status_terms(3), status_terms(4), status_terms(5),
         status_terms(6), status_terms(7), status_terms(8),
-        (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14)),
-        (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15)),
-        (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16)),
+        (status_terms(9)), (status_terms(10)), // (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14))
+        (status_terms(11)), (status_terms(12)), // (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15))
+        (status_terms(13)), (status_terms(14)), // (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16))
         status_terms(22), status_terms(23), status_terms(24), status_terms(25),
         status_terms(26), status_terms(27), status_terms(15), true);
         
@@ -435,7 +448,11 @@ namespace AdaptMats {
         dev_terms(placeholder));
     }
     
+    //Rcout << "preouterator_adapt3 E" << endl;
+    
     if (vitaltype == 0) {
+      //Rcout << "preouterator_adapt3 E1" << endl;
+      
       // Binomial vital rates only
       if (preout > exp_tol) preout = exp_tol;
         
@@ -446,8 +463,9 @@ namespace AdaptMats {
       //   " all_out: " << all_out << "\n";
       
     } else if (vitaltype == 1) {
-      // Size vital rates
+      //Rcout << "preouterator_adapt3 E2" << endl;
       
+      // Size vital rates
       double Used_size3 = status_terms(16);
       double Used_binwidth3 = status_terms(19);
       
@@ -685,6 +703,8 @@ namespace AdaptMats {
       }
       
     } else if (vitaltype == 2) {
+      //Rcout << "preouterator_adapt3 E3" << endl;
+      
       // Fecundity
       if (matrixformat != 2 || stage2n_i != static_cast<double>(nostages+1)) {
         if (vitaldist == 0 || vitaldist == 1) {
@@ -926,7 +946,6 @@ namespace AdaptMats {
     }
     
     //Rcout << "mazurekd - matrixformat: " << matrixformat << endl;
-    
     
     if (matrixformat == 1) { // Ehrlen-format hMPM
       matrixdim = nostages * nostages;
@@ -1537,7 +1556,6 @@ namespace AdaptMats {
           if (dvr_beta(13) != 0 && vr14_dcorr < -1.0) vr14_dcorr = 0.0; 
         }
       }
-      
       //Rcout << "mazurekd p ";
       
     }

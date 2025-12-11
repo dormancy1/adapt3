@@ -24,13 +24,14 @@ using namespace LefkoUtils;
 // 5. arma::mat exp_grid_single  Create Expanded Matrix Giving Permutations with Replacement
 // 6. void fastLm_sl  Fast Linear Regression, Slopes Only
 // 7. void proj3dens_ad  Project Forward By One Time Step
-// 8. void proj3dens_inv  Project Forward By One Time Step in Invastion Run
+// 8. void proj3dens_inv  Project Forward By One Time Step in Invasion Run
 // 9. void Lyapunov_df_maker  Create Data Frame to Hold Fitness Output from Function invade3()
 // 10. DataFrame ta_reassess  Expand Trait Axis Table Given User Input
 // 11. void pop_error2  Standardized Error Messages
 // 12. List df_indices  Subset A Data Frame By Row Index
 // 13. void Lyapunov_creator  Creates Final Table of Lyapunov Estimates
 // 14. void optim_ta_setup  Create Trait Axis Reassessed for Trait Optimization
+// 15. void density_prep  Format All Density-related Variables Based on Density Inputs
 
 
 namespace AdaptUtils {
@@ -530,6 +531,7 @@ namespace AdaptUtils {
     // Density dependence
     arma::uvec dyn_index321 = as<arma::uvec>(dens_index["index321"]);
     arma::uvec dyn_index_col = as<arma::uvec>(dens_index[1]);
+    arma::uvec dyn_index_s3 = as<arma::uvec>(dens_index[0]);
     arma::uvec dyn_style = as<arma::uvec>(dens_input["style"]);
     arma::vec dyn_alpha = as<arma::vec>(dens_input["alpha"]);
     arma::vec dyn_beta = as<arma::vec>(dens_input["beta"]);
@@ -583,6 +585,9 @@ namespace AdaptUtils {
           }
           changing_element = theprophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
+        } else if (dyn_style(j) == 5) { // Additive limit function
+          changing_element = theprophecy(dyn_index321(j)) + 
+            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -635,8 +640,35 @@ namespace AdaptUtils {
       if (integeronly) {
         theseventhson = floor(theseventhson);
       }
-      if (err_check) prophesized_mat = theprophecy;
       
+      // Adjust pop size for additive limit
+      for (int j = 0; j < n_dyn_elems; j++) {
+        if (dyn_style(j) == 5) {
+          double Nsum = sum(theseventhson);
+          double K_limit = dyn_alpha(j);
+          
+          unsigned int current_stage = dyn_index_s3(j);
+          double NK_diff = Nsum - K_limit;
+          
+          double current_stage_inds = theseventhson(current_stage);
+          
+          if (NK_diff < 0.) {
+            if (current_stage_inds < (-1 * NK_diff)) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds += NK_diff;
+            }
+          } else {
+            if (current_stage_inds < NK_diff) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds -= NK_diff;
+            }
+          }
+          theseventhson(current_stage) = current_stage_inds;
+        }
+      }
+      if (err_check) prophesized_mat = theprophecy;
       proj_vec = theseventhson;
       
     } else {
@@ -687,6 +719,9 @@ namespace AdaptUtils {
           }
           changing_element = sparse_prophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
+        } else if (dyn_style(j) == 5) { // Additive limit function
+          changing_element = theprophecy(dyn_index321(j)) + 
+            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -740,14 +775,41 @@ namespace AdaptUtils {
       if (integeronly) {
         sparse_seventhson = floor(sparse_seventhson);
       }
-      if (err_check) prophesized_sp = sparse_prophecy;
       
+      // Adjust pop size for additive limit
+      for (int j = 0; j < n_dyn_elems; j++) {
+        if (dyn_style(j) == 5) {
+          double Nsum = sum(theseventhson);
+          double K_limit = dyn_alpha(j);
+          
+          unsigned int current_stage = dyn_index_s3(j);
+          double NK_diff = Nsum - K_limit;
+          
+          double current_stage_inds = theseventhson(current_stage);
+          
+          if (NK_diff < 0.) {
+            if (current_stage_inds < (-1 * NK_diff)) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds += NK_diff;
+            }
+          } else {
+            if (current_stage_inds < NK_diff) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds -= NK_diff;
+            }
+          }
+          theseventhson(current_stage) = current_stage_inds;
+        }
+      }
+      if (err_check) prophesized_sp = sparse_prophecy;
       popproj = arma::vec(arma::mat(sparse_seventhson));
       proj_vec = popproj;
     }
   }
   
-  //' Project Forward By One Time Step in Invastion Run
+  //' Project Forward By One Time Step in Invasion Run
   //' 
   //' This function projects the community forward by one time step.
   //' 
@@ -826,6 +888,7 @@ namespace AdaptUtils {
     // Density dependence
     arma::uvec dyn_index321 = as<arma::uvec>(dens_index["index321"]);
     arma::uvec dyn_index_col = as<arma::uvec>(dens_index[1]);
+    arma::uvec dyn_index_s3 = as<arma::uvec>(dens_index[0]);
     arma::uvec dyn_style = as<arma::uvec>(dens_input["style"]);
     arma::vec dyn_alpha = as<arma::vec>(dens_input["alpha"]);
     arma::vec dyn_beta = as<arma::vec>(dens_input["beta"]);
@@ -880,6 +943,9 @@ namespace AdaptUtils {
           }
           changing_element = theprophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
+        } else if (dyn_style(j) == 5) { // Additive limit function
+          changing_element = theprophecy(dyn_index321(j)) + 
+            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -931,6 +997,33 @@ namespace AdaptUtils {
       theseventhson = theprophecy * theseventhson;
       if (integeronly) {
         theseventhson = floor(theseventhson);
+      }
+      // Adjust pop size for additive limit
+      for (int j = 0; j < n_dyn_elems; j++) {
+        if (dyn_style(j) == 5) {
+          double Nsum = sum(theseventhson);
+          double K_limit = dyn_alpha(j);
+          
+          unsigned int current_stage = dyn_index_s3(j);
+          double NK_diff = Nsum - K_limit;
+          
+          double current_stage_inds = theseventhson(current_stage);
+          
+          if (NK_diff < 0.) {
+            if (current_stage_inds < (-1 * NK_diff)) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds += NK_diff;
+            }
+          } else {
+            if (current_stage_inds < NK_diff) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds -= NK_diff;
+            }
+          }
+          theseventhson(current_stage) = current_stage_inds;
+        }
       }
       if (err_check) prophesized_mat = theprophecy;
       
@@ -985,6 +1078,9 @@ namespace AdaptUtils {
           }
           changing_element = sparse_prophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
+        } else if (dyn_style(j) == 5) { // Additive limit function
+          changing_element = theprophecy(dyn_index321(j)) + 
+            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -1037,6 +1133,34 @@ namespace AdaptUtils {
       sparse_seventhson = sparse_prophecy * sparse_seventhson;
       if (integeronly) {
         sparse_seventhson = floor(sparse_seventhson);
+      }
+      
+      // Adjust pop size for additive limit
+      for (int j = 0; j < n_dyn_elems; j++) {
+        if (dyn_style(j) == 5) {
+          double Nsum = sum(theseventhson);
+          double K_limit = dyn_alpha(j);
+          
+          unsigned int current_stage = dyn_index_s3(j);
+          double NK_diff = Nsum - K_limit;
+          
+          double current_stage_inds = theseventhson(current_stage);
+          
+          if (NK_diff < 0.) {
+            if (current_stage_inds < (-1 * NK_diff)) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds += NK_diff;
+            }
+          } else {
+            if (current_stage_inds < NK_diff) {
+              current_stage_inds = 0.;
+            } else {
+              current_stage_inds -= NK_diff;
+            }
+          }
+          theseventhson(current_stage) = current_stage_inds;
+        }
       }
       if (err_check) prophesized_sp = sparse_prophecy;
       
@@ -3764,7 +3888,359 @@ namespace AdaptUtils {
     
     variable_traits = ESS_variable_traits;
   }
-
+  
+  //' Format All Density-related Variables Based on Density Inputs
+  //' 
+  //' Function \code{density_prep()} takes the objects input in arguement
+  //' \code{density} within the core projection functions and formats a number
+  //' of control variables dictating how density will be interpreted during the
+  //' projection.
+  //' 
+  //' @name density_prep
+  //' 
+  //' @param dens_index A reference to an empty List, which will be modified via
+  //' this function. Will provide an index to the elements of the matrix to be
+  //' altered during density adjustment.
+  //' @param dyn_style An empty Armadillo unsigned integer vector, given as a
+  //' reference to be modified. Will provide the density dependence styles to be
+  //' used in density adjustment.
+  //' @param dyn_alpha An empty Armadillo double floating point vector, given as
+  //' a reference to be modified. Will provide the values of alpha to be used in
+  //' density adjustment.
+  //' @param dyn_beta An empty Armadillo double floating point vector, given as
+  //' a reference to be modified. Will provide the values of beta to be used in
+  //' density adjustment.
+  //' @param dens_yn_int An integer giving whether density dependence
+  //' information has been provided. Altered by reference.
+  //' @param dens_input The data frame input via the \code{density} argument, or
+  //' a single data frame from the list input there.
+  //' @param hstages The \code{hstages} data frame within the input lefkoMat
+  //' object.
+  //' @param agestagews The \code{agestages} data frame within the input
+  //' lefkoMat object.
+  //' @param stageframe The stageframe, typically within object \code{ahstages}
+  //' within the lefkoMat object input.
+  //' @param exp_tol The exponent maximmum limit being used.
+  //' @param format An integer giving the format of the MPM.
+  //' @param finalage The final age to use in age-based or age-by-stage MPMs.
+  //' @param preexisting A Boolean value indicating whether the MPM is already
+  //' built.
+  //' @param funcbased A Boolean value indicating whether the MPM is function-
+  //' based and will be built during projection.
+  //' 
+  //' @return No objects are returned, though some inputs are modified.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline void density_prep (List& dens_index, arma::uvec& dyn_style,
+    arma::vec& dyn_alpha, arma::vec& dyn_beta, int& dens_yn_int,
+    const DataFrame dens_input, const DataFrame hstages,
+    const DataFrame agestages, const DataFrame stageframe, const double exp_tol,
+    const int format, const int finalage, const bool preexisting,
+    const bool funcbased) {
+    
+    //Rcout << "density_prep A" << endl;
+    
+    if (dens_input.hasAttribute("class")) {
+      //Rcout << "density_prep B" << endl;
+      
+      CharacterVector chosen_density_class = dens_input.attr("class");
+      bool found_lefkoDens {false};
+      
+      //Rcout << "density_prep C" << endl;
+      
+      for (int j = 0; j < static_cast<int>(chosen_density_class.length()); j++) {
+        if (chosen_density_class(j) == "lefkoDens") found_lefkoDens = true;
+      }
+      if (!found_lefkoDens) {
+        AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
+      }
+      
+      //Rcout << "density_prep D" << endl;
+      
+      CharacterVector dl_stage1 = as<CharacterVector>(dens_input["stage1"]);
+      IntegerVector dl_age2 = as<IntegerVector>(dens_input["age2"]);
+      
+      //Rcout << "density_prep E" << endl;
+      
+      if (format < 3) {
+        if (is<LogicalVector>(dens_input["stage1"])) {
+          throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
+        }
+        for (int j = 0; j < static_cast<int>(dl_stage1.length()); j++) {
+          if (CharacterVector::is_na(dl_stage1(j))) {
+            throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
+          }
+        }
+      } else if (format > 3) {
+        if (is<LogicalVector>(dens_input["age2"])) {
+          throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
+        }
+        for (int j = 0; j < static_cast<int>(dl_age2.length()); j++) {
+          if (IntegerVector::is_na(dl_age2(j)) || LogicalVector::is_na(dl_age2(j))) {
+            throw Rcpp::exception("Argument density requires real age2 entries other than NA if MPMs are age-by-stage.", false);
+          }
+        }
+      }
+      
+      dens_yn_int = 1;
+    } else {
+      AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
+    }
+    
+    //Rcout << "density_prep F" << endl;
+    
+    Rcpp::StringVector di_stage3 = as<StringVector>(dens_input["stage3"]);
+    Rcpp::StringVector di_stage2 = as<StringVector>(dens_input["stage2"]);
+    Rcpp::StringVector di_stage1 = as<StringVector>(dens_input["stage1"]);
+    int di_size = di_stage3.length();
+    
+    //Rcout << "density_prep G" << endl;
+    
+    if (format < 3) {
+      //Rcout << "density_prep H" << endl;
+      
+      StringVector stage3 = as<StringVector>(hstages["stage_2"]);
+      StringVector stage2r = as<StringVector>(hstages["stage_1"]);
+      StringVector stage2c = as<StringVector>(hstages["stage_2"]);
+      StringVector stage1 = as<StringVector>(hstages["stage_1"]);
+      int hst_size = stage3.length();
+      
+      arma::uvec hst_3(hst_size, fill::zeros);
+      arma::uvec hst_2r(hst_size, fill::zeros);
+      arma::uvec hst_2c(hst_size, fill::zeros);
+      arma::uvec hst_1(hst_size, fill::zeros);
+      
+      arma::uvec di_stage32_id(di_size, fill::zeros);
+      arma::uvec di_stage21_id(di_size, fill::zeros);
+      arma::uvec di_index(di_size, fill::zeros);
+      
+      for (int j = 0; j < di_size; j++) { // Loop through each density_input line
+        for (int k = 0; k < hst_size; k++) {
+          if (di_stage3(j) == stage3(k)) {
+            hst_3(k) = 1;
+          } else {
+            hst_3(k) = 0;
+          }
+        }
+        
+        for (int k = 0; k < hst_size; k++) {
+          if (di_stage2(j) == stage2r(k)) {
+            hst_2r(k) = 1;
+          } else {
+            hst_2r(k) = 0;
+          }
+        }
+        
+        for (int k = 0; k < hst_size; k++) {
+          if (di_stage2(j) == stage2c(k)) {
+            hst_2c(k) = 1;
+          } else {
+            hst_2c(k) = 0;
+          }
+        }
+        
+        for (int k = 0; k < hst_size; k++) {
+          if (di_stage1(j) == stage1(k)) {
+            hst_1(k) = 1;
+          } else {
+            hst_1(k) = 0;
+          }
+        }
+        
+        arma::uvec find_hst3 = find(hst_3);
+        arma::uvec find_hst2r = find(hst_2r);
+        arma::uvec find_hst2c = find(hst_2c);
+        arma::uvec find_hst1 = find(hst_1);
+        
+        arma::uvec pop_32 = intersect(find_hst3, find_hst2r);
+        arma::uvec pop_21 = intersect(find_hst2c, find_hst1);
+        
+        if (static_cast<int>(pop_32.n_elem) == 0 || static_cast<int>(pop_21.n_elem) == 0) {
+          throw Rcpp::exception("Some stages in argument density could not be found.", 
+            false);
+        }
+        di_stage32_id(j) = pop_32(0);
+        di_stage21_id(j) = pop_21(0);
+        di_index(j) = pop_32(0) + (pop_21(0) * hst_size);
+        
+        hst_3.zeros();
+        hst_2r.zeros();
+        hst_2c.zeros();
+        hst_1.zeros();
+      }
+      
+      dens_index = Rcpp::List::create(_["index32"] = di_stage32_id,
+        _["index21"] = di_stage21_id, _["index321"] = di_index);
+      
+    } else if (format == 4 ) {
+      //Rcout << "density_prep I" << endl;
+      
+      IntegerVector di_age2 = as<IntegerVector>(dens_input["age2"]);
+      StringVector stage3 = as<StringVector>(agestages["stage"]);
+      StringVector stage2 = as<StringVector>(agestages["stage"]);
+      IntegerVector age2 = as<IntegerVector>(agestages["age"]);
+      int agst_size = stage3.length();
+      
+      arma::uvec agst_s3(agst_size, fill::zeros);
+      arma::uvec agst_a3(agst_size, fill::zeros);
+      arma::uvec agst_s2(agst_size, fill::zeros);
+      arma::uvec agst_a2(agst_size, fill::zeros);
+      
+      arma::uvec di_s3a3_id(di_size, fill::zeros);
+      arma::uvec di_s2a2_id(di_size, fill::zeros);
+      arma::uvec di_index(di_size, fill::zeros);
+      
+      for (int j = 0; j < di_size; j++) { // Loop through each density_input line
+        for (int k = 0; k < agst_size; k++) {
+          if (di_stage3(j) == stage3(k)) {
+            agst_s3(k) = 1;
+          } else {
+            agst_s3(k) = 0;
+          }
+        }
+        
+        for (int k = 0; k < agst_size; k++) {
+          if (di_stage2(j) == stage2(k)) {
+            agst_s2(k) = 1;
+          } else {
+            agst_s2(k) = 0;
+          }
+        }
+        
+        for (int k = 0; k < agst_size; k++) {
+          if (di_age2(j) < finalage) {
+            if (di_age2(j) == age2(k)) {
+              agst_a2(k) = 1;
+              
+              for (int l = 0; l < agst_size; l++) {
+                if ((di_age2(j) + 1) == age2(l)) {
+                  agst_a3(l) = 1;
+                } else {
+                  agst_a3(l) = 0;
+                }
+              }
+            } else {
+              agst_a2(k) = 0;
+            }
+          } else {
+            if (di_age2(j) == age2(k)) {
+              agst_a2(k) = 1;
+              agst_a3(k) = 1;
+            } else {
+              agst_a2(k) = 0;
+              agst_a3(k) = 0;
+            }
+          }
+        }
+        
+        arma::uvec find_agst_s3 = find(agst_s3);
+        arma::uvec find_agst_s2 = find(agst_s2);
+        arma::uvec find_agst_a3 = find(agst_a3);
+        arma::uvec find_agst_a2 = find(agst_a2);
+        
+        arma::uvec pop_32 = intersect(find_agst_s3, find_agst_a3);
+        arma::uvec pop_21 = intersect(find_agst_s2, find_agst_a2);
+        
+        if (static_cast<int>(pop_32.n_elem) == 0 || static_cast<int>(pop_21.n_elem) == 0) {
+          throw Rcpp::exception("Some age-stages in argument density could not be found.", 
+            false);
+        }
+        di_s3a3_id(j) = pop_32(0);
+        di_s2a2_id(j) = pop_21(0);
+        di_index(j) = pop_32(0) + (pop_21(0) * agst_size);
+        
+        agst_s3.zeros();
+        agst_s2.zeros();
+        agst_a3.zeros();
+        agst_a2.zeros();
+      }
+      
+      dens_index = Rcpp::List::create(_["index32"] = di_s3a3_id,
+        _["index21"] = di_s2a2_id, _["index321"] = di_index);
+      
+    } else {
+      //Rcout << "density_prep J" << endl;
+      
+      StringVector stage3 = as<StringVector>(stageframe["stage"]);
+      StringVector stage2 = as<StringVector>(stageframe["stage"]);
+      int ahst_size = stage3.length();
+      if (funcbased) ahst_size--;
+      
+      arma::uvec ahst_3(ahst_size, fill::zeros);
+      arma::uvec ahst_2(ahst_size, fill::zeros);
+      
+      arma::uvec di_stage32_id(di_size, fill::zeros);
+      arma::uvec di_stage21_id(di_size, fill::zeros);
+      arma::uvec di_index(di_size, fill::zeros);
+      
+      for (int j = 0; j < di_size; j++) { // Loop through each density_input
+        for (int k = 0; k < ahst_size; k++) {
+          if (di_stage3(j) == stage3(k)) {
+            ahst_3(k) = 1;
+          } else {
+            ahst_3(k) = 0;
+          }
+        }
+        
+        for (int k = 0; k < ahst_size; k++) {
+          if (di_stage2(j) == stage2(k)) {
+            ahst_2(k) = 1;
+          } else {
+            ahst_2(k) = 0;
+          }
+        }
+        
+        arma::uvec find_ahst3 = find(ahst_3);
+        arma::uvec find_ahst2 = find(ahst_2);
+        di_stage32_id(j) = find_ahst3(0);
+        di_stage21_id(j) = find_ahst2(0);
+        di_index(j) = find_ahst3(0) + (find_ahst2(0) * ahst_size);
+        
+        ahst_3.zeros();
+        ahst_2.zeros();
+      }
+      
+      dens_index = Rcpp::List::create(_["index3"] = di_stage32_id,
+        _["index2"] = di_stage21_id, _["index321"] = di_index);
+    }
+    
+    //Rcout << "density_prep K" << endl;
+    
+    dyn_style = as<arma::uvec>(dens_input["style"]);
+    dyn_alpha = as<arma::vec>(dens_input["alpha"]);
+    dyn_beta = as<arma::vec>(dens_input["beta"]);
+    
+    //Rcout << "density_prep L" << endl;
+    
+    for (int i = 0; i < static_cast<int>(dyn_style.n_elem); i++) {
+      if (dyn_style(i) < 1 || dyn_style(i) > 5) pop_error("density inputs", "", "", 21);
+      
+      if (dyn_style(i) == 1) {
+        if (dyn_beta(i) > exp_tol) {
+          Rf_warningcall(R_NilValue,
+            "Beta used in Ricker function may be too high. Results may be unpredictable.");
+          
+        } else if (dyn_beta(i) < (-1.0 * exp_tol)) {
+          Rf_warningcall(R_NilValue,
+            "Beta used in Ricker function may be too high. Results may be unpredictable.");
+          
+        }
+        
+      } else if (dyn_style(i) == 3) {
+        double summed_stuff = dyn_alpha(i) + dyn_beta(i);
+        
+        if (summed_stuff > exp_tol) {
+          Rf_warningcall(R_NilValue,
+            "Alpha and beta used in Usher function may be too high. Results may be unpredictable.");
+          
+        } else if (summed_stuff < (-1.0 * exp_tol)) {
+          Rf_warningcall(R_NilValue,
+            "Alpha and beta used in Usher function may be too high. Results may be unpredictable.");
+        }
+      }
+    }
+  }
 }
 
 #endif

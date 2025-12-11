@@ -4,6 +4,15 @@
 
 * Trait axes now include individual covariate values that can be used to create
   variants.
+  
+* Density dependence through the additive limit function has been added to
+  projection and invasion functions.
+  
+* Equivalence frames and density frames can now be added per annual matrix.
+
+## BUGS FIXED
+
+* Projection via vrm_input with deviance terms now no longer crashes.
 
 # adapt3 1.0.2 (2025-08-27)
 
