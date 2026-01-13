@@ -17,7 +17,11 @@ using namespace LefkoMats;
 // 1. double preouterator_adapt3  Estimate Value for Vital Rate Based on Inputs
 // 2. List mazurekd  Estimate All Elements of Stage- and Function-based Population Projection Matrix
 // 3. List mdabrowskiego  Estimate All Elements of Function-based Leslie Population Projection Matrix
+// 
 // 4. List thenewpizzle  Create Element Index for Matrix Estimation with Trait Variants
+// 5. List theoldpizzle_adapt3  Create Element Index for Supplemental Post-Processing
+// 
+// 6. void matrix_post  Alter Matrices in MPMs Using Info In Post-Processing Supplements
 
 
 
@@ -25,8 +29,8 @@ namespace AdaptMats {
   
   //' Estimate Value for Vital Rate Based on Inputs
   //' 
-  //' Function \code{preouterator_adapt3()} calculates the value of the vital rate called
-  //' for by the function \code{jerzeibalowski()}.
+  //' Function \code{preouterator_adapt3()} calculates the value of the vital
+  //' rate called for by the function \code{jerzeibalowski()}.
   //' 
   //' @name preouterator_adapt3
   //' 
@@ -159,9 +163,9 @@ namespace AdaptMats {
     double mainsum = rimeotam(maincoefs, status_terms(0), status_terms(1),
       status_terms(2), status_terms(3), status_terms(4), status_terms(5),
       status_terms(6), status_terms(7), status_terms(8),
-      (status_terms(9)), (status_terms(10)), //  (status_terms(9) + dev_terms(14)), (status_terms(10)dev_terms(14))
-      (status_terms(11)), (status_terms(12)), // (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15))
-      (status_terms(13)), (status_terms(14)), // (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16))
+      (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14)),
+      (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15)),
+      (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16)),
       status_terms(22), status_terms(23), status_terms(24), status_terms(25),
       status_terms(26), status_terms(27), status_terms(15), false);
     
@@ -319,9 +323,9 @@ namespace AdaptMats {
       double mainsum_zi = rimeotam(maincoefs, status_terms(0), status_terms(1),
         status_terms(2), status_terms(3), status_terms(4), status_terms(5),
         status_terms(6), status_terms(7), status_terms(8),
-        (status_terms(9)), (status_terms(10)), // (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14))
-        (status_terms(11)), (status_terms(12)), // (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15))
-        (status_terms(13)), (status_terms(14)), // (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16))
+        (status_terms(9) + dev_terms(14)), (status_terms(10) + dev_terms(14)),
+        (status_terms(11) + dev_terms(15)), (status_terms(12) + dev_terms(15)),
+        (status_terms(13) + dev_terms(16)), (status_terms(14) + dev_terms(16)),
         status_terms(22), status_terms(23), status_terms(24), status_terms(25),
         status_terms(26), status_terms(27), status_terms(15), true);
         
@@ -2243,6 +2247,8 @@ namespace AdaptMats {
   //' @param r1_indc A numeric vector of length equal to the number of years,
   //' holding values equal to the mean value of individual random covariate
   //' \code{c} at each time \emph{t}-1 to be used in analysis.
+  //' @param dev_terms3 A numeric vector giving the values of any additive
+  //' deviations to inda, indb, and indc.
   //' @param surv_dev A numeric value indicating the deviation to the linear
   //' model of survival input by the user.
   //' @param fec_dev A numeric value indicating the deviation to the linear
@@ -3558,6 +3564,2144 @@ namespace AdaptMats {
     output_longlist.attr("class") = "data.frame";
     
     return output_longlist;
+  }
+  
+  //' Create Element Index for Supplemental Post-Processing
+  //' 
+  //' Function \code{theoldpizzle_adapt3()} creates a supplemental data frame
+  //' object used in post-processing of preexisting MPMs.
+  //' 
+  //' @name theoldpizzle_adapt3
+  //'
+  //' @param StageFrame The stageframe object identifying the life history model
+  //' being operationalized.
+  //' @param OverWrite The supplement or overwrite table used in analysis, as
+  //' modified by \code{sf_reassess()}.
+  //' @param repmatrix The reproductive matrix used in analysis.
+  //' @param firstage The first age to be used in the analysis. Should typically
+  //' be \code{0} for pre-breeding and \code{1} for post-breeding life history
+  //' models. If not building age-by-stage MPMs, then should be set to \code{0}
+  //' or \code{NA}.
+  //' @param finalage The final age to be used in analysis. If not building
+  //' age-by-stage MPMs, then should be set to \code{0} or \code{NA}.
+  //' @param format Indicates whether historical matrices should be in (\code{1})
+  //' Ehrlen or (\code{2}) deVries format.
+  //' @param style The style of analysis, where \code{0} is historical, \code{1}
+  //' is ahistorical, and \code{2} is age-by-stage.
+  //' @param cont Denotes whether age-by-stage matrix continues past the final
+  //' age.
+  //' @param filter An integer denoting whether to filter the output data frame to
+  //' eliminate unusable rows, and if so, how to do so. Possible values: \code{0}:
+  //' no filtering, \code{1}: filter out rows with \code{index321 == -1}, and
+  //' \code{2}: filter out rows with \code{aliveandequal == -1}.
+  //' @param nodead A Boolean value indicating whether the stageframe being passed
+  //' includes a dead stage.
+  //' 
+  //' @return The output is a large data frame describing every element to be
+  //' estimated in matrices.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline Rcpp::List theoldpizzle_adapt3(const DataFrame& StageFrame,
+    const DataFrame& OverWrite, const arma::mat& repmatrix, int firstage,
+    int finalage, int format, int style, int cont, int filter,
+    bool nodead = false) {
+    
+    //Rcout << "Entered theoldpizzle_adapt3" << endl;
+    
+    StringVector ovstage3 = as<StringVector>(OverWrite["stage3"]);
+    StringVector ovstage2 = as<StringVector>(OverWrite["stage2"]);
+    StringVector ovstage1 = as<StringVector>(OverWrite["stage1"]);
+    StringVector oveststage3 = as<StringVector>(OverWrite["eststage3"]);
+    StringVector oveststage2 = as<StringVector>(OverWrite["eststage2"]);
+    StringVector oveststage1 = as<StringVector>(OverWrite["eststage1"]);
+    arma::vec ovgivenrate = as<arma::vec>(OverWrite["givenrate"]);
+    arma::vec ovoffset = as<arma::vec>(OverWrite["offset"]);
+    arma::vec ovmultiplier = as<arma::vec>(OverWrite["multiplier"]);
+    arma::vec ovconvtype = as<arma::vec>(OverWrite["convtype"]);
+    arma::vec ovconvt12 = as<arma::vec>(OverWrite["convtype_t12"]);
+    int ovrows = static_cast<int>(ovconvtype.n_elem);
+    
+    IntegerVector ovage2;
+    IntegerVector ovestage2;
+    if (OverWrite.containsElementNamed("age2")) {
+      ovage2 = as<IntegerVector>(OverWrite["age2"]);
+      ovestage2 = as<IntegerVector>(OverWrite["estage2"]);
+    }
+    
+    int totalages = (finalage - firstage) + 1;
+    
+    //Rcout << "theoldpizzle_adapt3 A" << endl;
+    
+    arma::vec ovindex3 (ovrows); 
+    arma::vec ovindex2 (ovrows);
+    arma::vec ovindex1 (ovrows);
+    arma::vec ovnew3 (ovrows);
+    arma::vec ovnew2 (ovrows);
+    arma::vec ovnew1 (ovrows);
+    arma::vec ovindexold321 (ovrows);
+    arma::vec ovindexnew321 (ovrows);
+    arma::vec ovnewgivenrate (ovrows);
+    arma::vec ovnewoffset (ovrows, fill::zeros);
+    arma::vec ovnewmultiplier (ovrows, fill::zeros);
+    arma::vec ovconvtypeage (ovrows);
+    ovindex3.fill(-1.0);
+    ovindex2.fill(-1.0);
+    ovindex1.fill(-1.0);
+    ovnew3.fill(-1.0);
+    ovnew2.fill(-1.0);
+    ovnew1.fill(-1.0);
+    ovindexold321.fill(-1.0);
+    ovindexnew321.fill(-1.0);
+    ovnewgivenrate.fill(-1.0);
+    ovconvtypeage.fill(-1.0);
+    
+    //Rcout << "theoldpizzle_adapt3 B" << endl;
+    
+    arma::ivec newstageid = as<arma::ivec>(StageFrame["stage_id"]);
+    StringVector origstageid = as<StringVector>(StageFrame["stage"]);
+    arma::vec binsizectr = as<arma::vec>(StageFrame["sizebin_center"]);
+    arma::vec repstatus = as<arma::vec>(StageFrame["repstatus"]);
+    arma::vec obsstatus = as<arma::vec>(StageFrame["obsstatus"]);
+    arma::vec immstatus = as<arma::vec>(StageFrame["immstatus"]);
+    arma::vec matstatus = as<arma::vec>(StageFrame["matstatus"]);
+    arma::vec indata = as<arma::vec>(StageFrame["indataset"]);
+    arma::vec binsizewidth = as<arma::vec>(StageFrame["sizebin_width"]);
+    arma::vec alive = as<arma::vec>(StageFrame["alive"]);
+    arma::vec minage = as<arma::vec>(StageFrame["min_age"]);
+    arma::vec maxage = as<arma::vec>(StageFrame["max_age"]);
+    arma::vec group = as<arma::vec>(StageFrame["group"]);
+    arma::vec almostborn = as<arma::vec>(StageFrame["almostborn"]);
+    
+    arma::vec binsizebctr = as<arma::vec>(StageFrame["sizebinb_center"]);
+    arma::vec binsizecctr = as<arma::vec>(StageFrame["sizebinc_center"]);
+    arma::vec binsizebwidth = as<arma::vec>(StageFrame["sizebinb_width"]);
+    arma::vec binsizecwidth = as<arma::vec>(StageFrame["sizebinc_width"]);
+    
+    //Rcout << "theoldpizzle_adapt3 C" << endl;
+    
+    // Determine length of matrix map data frame
+    int nostages = static_cast<int>(newstageid.n_elem);
+    int nostages_nodead = nostages - 1;
+    if (nodead) nostages_nodead = nostages;
+    
+    int nostages_nounborn = nostages;
+    int nostages_nodead_nounborn = nostages_nodead;
+    int prior_stage = -1;
+    arma::vec ovrepentry_prior(nostages, fill::zeros);
+    IntegerVector stageorder = seq(1, nostages);
+    int totallength {0};
+    
+    if (style == 2) {
+      totallength = (nostages * nostages * totalages * totalages);
+    } else if (style == 1) {
+      totallength = (nostages * nostages_nodead);
+    } else {
+      if (format == 2) {
+        nostages_nodead_nounborn = nostages - 2;
+        prior_stage = nostages_nodead_nounborn;
+        nostages_nounborn = nostages - 1;
+        totallength = (2 * nostages_nodead_nounborn * nostages_nounborn * nostages_nounborn);
+      } else {
+        totallength = (nostages * (nostages_nodead * nostages_nodead));
+      }
+    }
+    
+    //Rcout << "theoldpizzle_adapt3 D" << endl;
+    
+    // Set up repmatrix
+    int reprows = repmatrix.n_rows;
+    int repmattype = 0;
+    
+    if (!nodead) {
+      if (reprows == (nostages - 1) || reprows == (nostages - 2)) {
+        repmattype = 1; // repmatrix is ahistorical
+      } else if (reprows == ((nostages - 1) * (nostages - 1)) || 
+          reprows == ((nostages - 2) * (nostages - 2))) {
+        repmattype = 2; // repmatrix is historical
+      }
+    } else {
+      if (reprows == nostages) {
+        repmattype = 1;
+      } else if (reprows >= (nostages * nostages)) {
+        repmattype = 2;
+      }
+    }
+    
+    // Set up vectors that will be put together into matrix map data frame
+    arma::ivec stage3 (totallength, fill::zeros);
+    arma::ivec stage2n (totallength, fill::zeros);
+    arma::ivec stage2o (totallength, fill::zeros);
+    arma::ivec stage1 (totallength, fill::zeros);
+    
+    arma::ivec stageorder3 (totallength, fill::zeros);
+    arma::ivec stageorder2n (totallength, fill::zeros);
+    arma::ivec stageorder2o (totallength, fill::zeros);
+    arma::ivec stageorder1 (totallength, fill::zeros);
+    
+    arma::vec size3 (totallength, fill::zeros);
+    arma::vec size2n (totallength, fill::zeros);
+    arma::vec size2o (totallength, fill::zeros);
+    arma::vec size1 (totallength, fill::zeros);
+    
+    arma::vec sizeb3 (totallength, fill::zeros);
+    arma::vec sizeb2n (totallength, fill::zeros);
+    arma::vec sizeb2o (totallength, fill::zeros);
+    arma::vec sizeb1 (totallength, fill::zeros);
+    
+    arma::vec sizec3 (totallength, fill::zeros);
+    arma::vec sizec2n (totallength, fill::zeros);
+    arma::vec sizec2o (totallength, fill::zeros);
+    arma::vec sizec1 (totallength, fill::zeros);
+    
+    arma::vec obs3 (totallength, fill::zeros);
+    arma::vec obs2n (totallength, fill::zeros);
+    arma::vec obs2o (totallength, fill::zeros);
+    arma::vec obs1 (totallength, fill::zeros);
+    
+    arma::vec rep3 (totallength, fill::zeros);
+    arma::vec rep2n (totallength, fill::zeros);
+    arma::vec rep2o (totallength, fill::zeros);
+    arma::vec rep1 (totallength, fill::zeros);
+    
+    arma::vec mat3 (totallength, fill::zeros);
+    arma::vec mat2n (totallength, fill::zeros);
+    arma::vec mat2o (totallength, fill::zeros);
+    arma::vec mat1 (totallength, fill::zeros);
+    
+    arma::vec imm3 (totallength, fill::zeros);
+    arma::vec imm2n (totallength, fill::zeros);
+    arma::vec imm2o (totallength, fill::zeros);
+    arma::vec imm1 (totallength, fill::zeros);
+    
+    arma::vec repentry3 (totallength, fill::zeros);
+    arma::vec repentry2o (totallength, fill::zeros);
+    arma::vec almostborn1 (totallength, fill::zeros);
+    
+    arma::vec binwidth (totallength, fill::zeros);
+    arma::vec binbwidth (totallength, fill::zeros);
+    arma::vec bincwidth (totallength, fill::zeros);
+    
+    arma::vec indata3 (totallength, fill::zeros);
+    arma::vec indata2n (totallength, fill::zeros);
+    arma::vec indata2o (totallength, fill::zeros);
+    arma::vec indata1 (totallength, fill::zeros);
+    
+    arma::vec minage3 (totallength, fill::zeros);
+    arma::vec minage2 (totallength, fill::zeros);
+    arma::vec maxage3 (totallength, fill::zeros);
+    arma::vec maxage2 (totallength, fill::zeros);
+    
+    arma::vec grp3 (totallength, fill::zeros);
+    arma::vec grp2n (totallength, fill::zeros);
+    arma::vec grp2o (totallength, fill::zeros);
+    arma::vec grp1 (totallength, fill::zeros);
+    
+    arma::vec actualage (totallength, fill::zeros);
+    arma::vec index321 (totallength); // No death transitions
+    arma::vec index321d (totallength); // Death transitions included
+    arma::vec index21 (totallength);
+    arma::vec indatalong (totallength, fill::zeros);
+    arma::vec aliveequal (totallength);
+    arma::vec included (totallength, fill::zeros);
+    index321.fill(-1.0);
+    index321d.fill(-1.0);
+    index21.fill(-1.0);
+    aliveequal.fill(-1.0);
+    
+    arma::mat asadditions (totallength, 5, fill::zeros);
+    
+    arma::vec ovgivent (totallength);
+    arma::vec ovgivenf (totallength);
+    arma::vec ovestt (totallength);
+    arma::vec ovestf (totallength);
+    arma::vec ovoffsett (totallength, fill::zeros);
+    arma::vec ovoffsetf (totallength, fill::zeros);
+    arma::vec ovrepentry (totallength, fill::zeros);
+    arma::vec ovsurvmult (totallength, fill::ones);
+    arma::vec ovfecmult (totallength, fill::ones);
+    ovgivent.fill(-1.0);
+    ovestt.fill(-1.0);
+    ovgivenf.fill(-1.0);
+    ovestf.fill(-1.0);
+    
+    int repm_elem {-1};
+    double deadandnasty {0};
+    long long int currentindex {0};
+    
+    //Rcout << "theoldpizzle_adapt3 F" << endl;
+    
+    // Change stage names to stage numbers per input stageframe for styles 0 and 1
+    if (style < 2) {
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          for (int i = 0; i < ovrows; i++) { // Loop across overwrite rows
+            for (int j = 0; j < nostages; j++) { // Loop across stageframe rows
+              if (ovstage3(i) == origstageid(j)) {
+                ovindex3(i) = newstageid(j);
+              }
+              
+              if (ovstage2(i) == origstageid(j)) {
+                ovindex2(i) = newstageid(j);
+              }
+              
+              if (ovstage1(i) == origstageid(j)) {
+                ovindex1(i) = newstageid(j);
+              }
+              
+              if (oveststage3(i) == origstageid(j)) {
+                ovnew3(i) = newstageid(j);
+              }
+              
+              if (oveststage2(i) == origstageid(j)) {
+                ovnew2(i) = newstageid(j);
+              }
+              
+              if (oveststage1(i) == origstageid(j)) {
+                ovnew1(i) = newstageid(j);
+              }
+            } // j for loop
+          } // i for loop
+        } // ovrows if statement
+      }
+    } // style if statement
+    
+    //Rcout << "theoldpizzle_adapt3 G" << endl;
+    
+    // Main data frame creation loops
+    if (style == 0 && format == 2) { // Historical MPM deVries format
+      //Rcout << "theoldpizzle_adapt3 G1 deVries Historical" << endl;
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          for (int i = 0; i < ovrows; i++) {  // Loop across overwrite rows
+            if (ovconvtype(i) > 1.0) { // Catches all changes to fecundity and reproductive multipliers
+              ovindexold321(i) = (ovindex3(i) - 1) + (prior_stage * nostages) + 
+                ((ovindex2(i) - 1) * nostages * nostages) + 
+                ((ovindex1(i) - 1) * nostages * nostages * nostages);
+                
+              ovindexnew321(i) = (ovnew3(i) - 1) + (prior_stage * nostages) + 
+                ((ovnew2(i) - 1) * nostages * nostages) + 
+                ((ovnew1(i) - 1) * nostages * nostages * nostages);
+            } else if (ovconvt12(i) == 2.0) { // Catches all survival terms with historical reproduction events
+              ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages) + 
+                ((ovindex2(i) - 1) * nostages * nostages) + 
+                (prior_stage * nostages * nostages * nostages);
+                
+              ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages) + 
+                ((ovnew2(i) - 1) * nostages * nostages) + 
+                (prior_stage * nostages * nostages * nostages);
+            } else { // Full survival transitions
+              ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages) + 
+                ((ovindex2(i) - 1) * nostages * nostages) + 
+                ((ovindex1(i) - 1) * nostages * nostages * nostages);
+                
+              ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages) + 
+                ((ovnew2(i) - 1) * nostages * nostages) + 
+                ((ovnew1(i) - 1) * nostages * nostages * nostages);
+            }
+            if (ovindexold321(i) < 0.0) ovindexold321(i) = -1.0;
+            if (ovindexnew321(i) < 0.0) ovindexnew321(i) = -1.0;
+            
+            if (!NumericVector::is_na(ovgivenrate(i))) {
+              ovnewgivenrate(i) = ovgivenrate(i);
+            }
+            if (!NumericVector::is_na(ovoffset(i))) {
+              if (ovoffset(i) != 0.) ovnewoffset(i) = ovoffset(i);
+            }
+            if (NumericVector::is_na(ovmultiplier(i))) {
+              ovmultiplier(i) = 1;
+            }
+            ovnewmultiplier(i) = ovmultiplier(i);
+            
+            if (ovconvtype(i) == 3.0) {
+              for (int j = 0; j < nostages; j++) {
+                if (origstageid(j) == ovstage3(i)) ovrepentry_prior(j) = 1.0;
+              }
+            }
+          } // i for loop
+        } // ovrows if statement
+      }
+      
+      arma::uvec marked_for_repentry (nostages, fill::zeros); // Only in deVries format
+      
+      for (int time1 = 0; time1 < nostages_nodead; time1++) {
+        for (int time2o = 0; time2o < nostages_nodead_nounborn; time2o++) {
+          for (int time2n = 0; time2n < nostages; time2n++) {
+            for (int time3 = 0; time3 < nostages; time3++) {
+              
+              if (time3 != prior_stage) {
+                if (time2n == time2o || time2n == prior_stage){
+                  
+                  included(currentindex) = 1.0;
+                  
+                  stageorder3(currentindex) = stageorder(time3);
+                  stageorder2n(currentindex) = stageorder(time2n);
+                  stageorder2o(currentindex) = stageorder(time2o);
+                  stageorder1(currentindex) = stageorder(time1);
+                  
+                  stage3(currentindex) = newstageid(time3);
+                  stage2n(currentindex) = newstageid(time2n);
+                  stage2o(currentindex) = newstageid(time2o);
+                  stage1(currentindex) = newstageid(time1);
+                  
+                  size3(currentindex) = binsizectr(time3);
+                  size2n(currentindex) = binsizectr(time2n);
+                  size2o(currentindex) = binsizectr(time2o);
+                  size1(currentindex) = binsizectr(time1);
+                  
+                  sizeb3(currentindex) = binsizebctr(time3);
+                  sizeb2n(currentindex) = binsizebctr(time2n);
+                  sizeb2o(currentindex) = binsizebctr(time2o);
+                  sizeb1(currentindex) = binsizebctr(time1);
+                  
+                  if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb1(currentindex))) sizeb1(currentindex) = 0.0;
+                  
+                  sizec3(currentindex) = binsizecctr(time3);
+                  sizec2n(currentindex) = binsizecctr(time2n);
+                  sizec2o(currentindex) = binsizecctr(time2o);
+                  sizec1(currentindex) = binsizecctr(time1);
+                  
+                  if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec1(currentindex))) sizec1(currentindex) = 0.0;
+                  
+                  obs3(currentindex) = obsstatus(time3);
+                  obs2n(currentindex) = obsstatus(time2n);
+                  obs2o(currentindex) = obsstatus(time2o);
+                  obs1(currentindex) = obsstatus(time1);
+                  
+                  rep3(currentindex) = repstatus(time3);
+                  rep2n(currentindex) = repstatus(time2n);
+                  rep2o(currentindex) = repstatus(time2o);
+                  rep1(currentindex) = repstatus(time1);
+                  
+                  mat3(currentindex) = matstatus(time3);
+                  mat2n(currentindex) = matstatus(time2n);
+                  mat2o(currentindex) = matstatus(time2o);
+                  mat1(currentindex) = matstatus(time1);
+                  
+                  imm3(currentindex) = immstatus(time3);
+                  imm2n(currentindex) = immstatus(time2n);
+                  imm2o(currentindex) = immstatus(time2o);
+                  imm1(currentindex) = immstatus(time1);
+                  
+                  // Fill in repentry info from repmatrix
+                  if (time2n == prior_stage && time3 < prior_stage && time2o < prior_stage) {
+                    if (repmattype == 1) { 
+                      repm_elem = (time3 + (time2o * nostages_nodead_nounborn));
+                    } else if (repmattype == 2) {
+                      repm_elem = time3 + (time2o * nostages_nodead_nounborn) + 
+                        (time2o * nostages_nodead_nounborn * nostages_nodead_nounborn) +
+                        (time1 * nostages_nodead_nounborn * nostages_nodead_nounborn * nostages_nodead_nounborn);
+                    } else repm_elem = -1;
+                    
+                    if (repmatrix(repm_elem) > 0.0) {
+                      repentry3(currentindex) = repmatrix(repm_elem);
+                      if (repentry3(currentindex) == 0.0 && ovrepentry_prior(time3) != 0.0) {
+                        repentry3(currentindex) = 1.0;
+                        marked_for_repentry(stage3(currentindex)) = 1;
+                      } 
+                    }
+                  } else repentry3(currentindex) = 0.0;
+                  
+                  almostborn1(currentindex) = almostborn(time1);
+                  
+                  indata3(currentindex) = indata(time3);
+                  indata2n(currentindex) = indata(time2n);
+                  indata2o(currentindex) = indata(time2o);
+                  indata1(currentindex) = indata(time1);
+                  
+                  binwidth(currentindex) = binsizewidth(time3);
+                  binbwidth(currentindex) = binsizebwidth(time3);
+                  bincwidth(currentindex) = binsizecwidth(time3);
+                  
+                  if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+                  if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+                  
+                  minage3(currentindex) = minage(time3);
+                  minage2(currentindex) = minage(time2o);
+                  maxage3(currentindex) = maxage(time3);
+                  maxage2(currentindex) = maxage(time2o);
+                  actualage(currentindex) = 0.0;
+                  
+                  grp3(currentindex) = group(time3);
+                  grp2n(currentindex) = group(time2n);
+                  grp2o(currentindex) = group(time2o);
+                  grp1(currentindex) = group(time1);
+                  
+                  if (stage3(currentindex) == nostages || stage2n(currentindex) == nostages) {
+                    deadandnasty = 1.0;
+                  } else if (stage2o(currentindex) == nostages || stage1(currentindex) == nostages) {
+                    deadandnasty = 1.0;
+                  } else {
+                    deadandnasty = 0.0;
+                  }
+                  
+                  // Required for proper fecundity estimation in rlefko3
+                  index321d(currentindex) = (stage3(currentindex) - 1) + 
+                    ((stage2n(currentindex) - 1) * nostages) + 
+                    ((stage2o(currentindex) - 1) * nostages * nostages) + 
+                    ((stage1(currentindex) - 1) * nostages * nostages * nostages);
+                  
+                  if (deadandnasty == 0.0) {
+                    // Next index variable gives element in the final matrix
+                    aliveequal(currentindex) = (stageorder3(currentindex) - 1) + 
+                      ((stageorder2n(currentindex) - 1) * nostages_nodead_nounborn) + 
+                      ((stageorder2o(currentindex) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                      ((stageorder1(currentindex) - 1) * nostages_nodead_nounborn * 
+                        nostages_nodead * nostages_nodead_nounborn);
+                    
+                    // Next two index variables used by ovreplace
+                    index321(currentindex) = (stage3(currentindex) - 1) + 
+                      ((stage2n(currentindex) - 1) * nostages) + 
+                      ((stage2o(currentindex) - 1) * nostages * nostages) + 
+                      ((stage1(currentindex) - 1) * nostages * nostages * nostages);
+                      
+                    index21(currentindex) = (stage2o(currentindex) - 1) + 
+                      ((stage1(currentindex) - 1) * nostages);
+                  }
+                  
+                  indatalong(currentindex) = indata3(currentindex) * indata2n(currentindex) * 
+                    indata2o(currentindex) * indata1(currentindex);
+                  
+                  currentindex += 1;
+                } // if (time2n == tim2o || time2n == prior_stage) statement
+              } // if (time3n != dead_stage) statement
+            } // time3 loop
+          } // time2n loop
+        } // time2o loop
+      } // time1 loop 
+      
+      // Edit data frame to make sure that almostborn situations in time 1
+      // lead to estimated elements only if a repentry stage occurs in time 2
+      arma::uvec marked_only = find(marked_for_repentry);
+      if (marked_only.n_elem > 0) {
+        for (int i = 0; i < static_cast<int>(marked_only.n_elem); i++) {
+          arma::uvec total_indices_to_change = find(stage2o == marked_only(i));
+          
+          if (total_indices_to_change.n_elem > 0) {
+            for (int j = 0; j < static_cast<int>(total_indices_to_change.n_elem); j++) {
+              repentry2o(total_indices_to_change(j)) = 1;
+            }
+          }
+        }
+      }
+      
+      arma::uvec alm_only = find(almostborn1);
+      if (alm_only.n_elem > 0) {
+        for (int i = 0; i < static_cast<int>(alm_only.n_elem); i++) {
+          if (repentry2o(alm_only(i)) < 1.0) {
+            index321(alm_only(i)) = -1.0;
+          }
+        }
+      }
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          asadditions = LefkoMats::ovreplace(index321, ovindexold321,
+            ovindexnew321, ovconvtype, ovnew3, ovnewgivenrate, ovnewoffset,
+            ovnewmultiplier);
+          
+          ovgivent = asadditions.col(0);
+          ovestt = asadditions.col(1);
+          ovgivenf = asadditions.col(2);
+          ovestf = asadditions.col(3);
+          
+          ovrepentry = asadditions.col(4);
+          ovsurvmult = asadditions.col(5);
+          ovfecmult = asadditions.col(6);
+          ovoffsett = asadditions.col(7);
+          ovoffsetf = asadditions.col(8);
+          
+          arma::uvec workedupindex = find(ovrepentry > 0.0);
+          int changedreps = static_cast<int>(workedupindex.n_elem);
+          
+          if (changedreps > 0) {
+            for (int i = 0; i < changedreps; i++) {
+              repentry3(workedupindex(i)) = ovrepentry(workedupindex(i));
+            }
+          }
+        } // ovreplace if statement
+      }
+    } else if (style == 0 && format == 1) { // Historical MPM Ehrlen format
+      //Rcout << "theoldpizzle_adapt3 G2 Ehrlen Historical" << endl;
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          for (int i = 0; i < ovrows; i++) { // Loop across overwrite rows
+            ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages_nodead_nounborn) + 
+              ((ovindex2(i) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn) + 
+              ((ovindex1(i) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn * 
+                nostages_nodead_nounborn);
+              
+            ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages_nodead) + 
+              ((ovnew2(i) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn) + 
+              ((ovnew1(i) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn * 
+                nostages_nodead_nounborn);
+            
+            if (ovindexold321(i) < 0) ovindexold321(i) = -1.0;
+            if (ovindexnew321(i) < 0) ovindexnew321(i) = -1.0;
+            
+            if (!NumericVector::is_na(ovgivenrate(i))) {
+              ovnewgivenrate(i) = ovgivenrate(i);
+            }
+            if (!NumericVector::is_na(ovoffset(i))) {
+              if (ovoffset(i) != 0.) ovnewoffset(i) = ovoffset(i);
+            }
+            if (NumericVector::is_na(ovmultiplier(i))) {
+              ovmultiplier(i) = 1.0;
+            }
+            ovnewmultiplier(i) = ovmultiplier(i);
+          } // i for loop
+        } // ovrows if statement
+      }
+      
+      //Rcout << "theoldpizzle_adapt3 G2a" << endl;
+      
+      for (int time1 = 0; time1 < nostages_nodead; time1++) {
+        for (int time2o = 0; time2o < nostages_nodead; time2o++) {
+          for (int time3 = 0; time3 < nostages; time3++) {
+            
+            included(currentindex) = 1.0;
+            
+            stageorder3(currentindex) = stageorder(time3);
+            stageorder2n(currentindex) = stageorder(time2o);
+            stageorder2o(currentindex) = stageorder(time2o);
+            stageorder1(currentindex) = stageorder(time1);
+                  
+            stage3(currentindex) = newstageid(time3);
+            stage2n(currentindex) = newstageid(time2o);
+            stage2o(currentindex) = newstageid(time2o);
+            stage1(currentindex) = newstageid(time1);
+            
+            size3(currentindex) = binsizectr(time3);
+            size2n(currentindex) = binsizectr(time2o);
+            size2o(currentindex) = binsizectr(time2o);
+            size1(currentindex) = binsizectr(time1);
+            
+            sizeb3(currentindex) = binsizebctr(time3);
+            sizeb2n(currentindex) = binsizebctr(time2o);
+            sizeb2o(currentindex) = binsizebctr(time2o);
+            sizeb1(currentindex) = binsizebctr(time1);
+            
+            if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+            if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+            if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+            if (NumericVector::is_na(sizeb1(currentindex))) sizeb1(currentindex) = 0.0;
+                  
+            sizec3(currentindex) = binsizecctr(time3);
+            sizec2n(currentindex) = binsizecctr(time2o);
+            sizec2o(currentindex) = binsizecctr(time2o);
+            sizec1(currentindex) = binsizecctr(time1);
+            
+            if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+            if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+            if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+            if (NumericVector::is_na(sizec1(currentindex))) sizec1(currentindex) = 0.0;
+            
+            obs3(currentindex) = obsstatus(time3);
+            obs2n(currentindex) = obsstatus(time2o);
+            obs2o(currentindex) = obsstatus(time2o);
+            obs1(currentindex) = obsstatus(time1);
+            
+            rep3(currentindex) = repstatus(time3);
+            rep2n(currentindex) = repstatus(time2o);
+            rep2o(currentindex) = repstatus(time2o);
+            rep1(currentindex) = repstatus(time1);
+            
+            mat3(currentindex) = matstatus(time3);
+            mat2n(currentindex) = matstatus(time2o);
+            mat2o(currentindex) = matstatus(time2o);
+            mat1(currentindex) = matstatus(time1);
+            
+            imm3(currentindex) = immstatus(time3);
+            imm2n(currentindex) = immstatus(time2o);
+            imm2o(currentindex) = immstatus(time2o);
+            imm1(currentindex) = immstatus(time1);
+            
+            // Determine repentry3 on basis of input repmatrix
+            if (time3 < nostages_nodead_nounborn) {
+              if (repmattype == 1) {
+                repm_elem = time3 + (time2o * nostages_nodead_nounborn);
+              } else if (repmattype == 2) {
+                repm_elem = time3 + (time2o * nostages_nodead_nounborn) + 
+                  (time2o * nostages_nodead_nounborn * nostages_nodead_nounborn) +
+                  (time1 * nostages_nodead_nounborn * nostages_nodead_nounborn * 
+                    nostages_nodead_nounborn);
+              } else {
+                repm_elem = -1;
+              }
+            }
+            
+            if(repm_elem > -1) {
+              if (repmatrix(repm_elem) > 0.0) {
+                repentry3(currentindex) = repmatrix(repm_elem);
+              }
+            }
+            
+            if (time3 < nostages_nodead_nounborn) {
+              if (repmattype == 1) { // Ahistorical repmatrix
+                repentry3(currentindex) = repmatrix((time3 + (nostages_nodead_nounborn * time2o)));
+              } else if (repmattype == 2) {  // Historical repmatrix
+                repentry3(currentindex) = repmatrix((time3 + (nostages_nodead_nounborn * time2o)) + 
+                  ((nostages_nodead_nounborn * nostages_nodead_nounborn * time2o)) +
+                  (nostages_nodead_nounborn * nostages_nodead_nounborn * 
+                    nostages_nodead_nounborn * time1));
+              }
+            } else {
+              repentry3(currentindex) = 0.0;
+            }
+            
+            indata3(currentindex) = indata(time3);
+            indata2n(currentindex) = indata(time2o);
+            indata2o(currentindex) = indata(time2o);
+            indata1(currentindex) = indata(time1);
+            
+            binwidth(currentindex) = binsizewidth(time3);
+            binbwidth(currentindex) = binsizebwidth(time3);
+            bincwidth(currentindex) = binsizecwidth(time3);
+            
+            if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+            if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+            
+            minage3(currentindex) = minage(time3);
+            minage2(currentindex) = minage(time2o);
+            maxage3(currentindex) = maxage(time3);
+            maxage2(currentindex) = maxage(time2o);
+            actualage(currentindex) = 0.0;
+            
+            grp3(currentindex) = group(time3);
+            grp2n(currentindex) = group(time2o);
+            grp2o(currentindex) = group(time2o);
+            grp1(currentindex) = group(time1);
+            
+            if (stage3(currentindex) == nostages || stage2n(currentindex) == nostages) {
+              deadandnasty = 1.0;
+            } else if (stage2o(currentindex) == nostages || stage1(currentindex) == nostages) {
+              deadandnasty = 1.0;
+            } else {
+              deadandnasty = 0.0;
+            }
+            
+            // Required for proper fecundity estimation in rlefko3
+            index321d(currentindex) = (stage3(currentindex) - 1) + 
+              ((stage2n(currentindex) - 1) * nostages_nodead_nounborn) + 
+              ((stage2n(currentindex) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn) + 
+              ((stage1(currentindex) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn * 
+                nostages_nodead_nounborn);
+            
+            if (deadandnasty == 0.0) {
+              aliveequal(currentindex) = (stageorder3(currentindex) - 1) + ((stageorder2n(currentindex) - 1) * 
+                  (nostages - 1)) + ((stageorder2o(currentindex) - 1) * (nostages - 1) * (nostages - 1)) + 
+                ((stageorder1(currentindex) - 1) * (nostages - 1) * (nostages - 1) * (nostages - 1));
+              
+              index321(currentindex) = (stage3(currentindex) - 1) + 
+                ((stage2n(currentindex) - 1) * nostages_nodead_nounborn) + 
+                ((stage2n(currentindex) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn) + 
+                ((stage1(currentindex) - 1) * nostages_nodead_nounborn * nostages_nodead_nounborn * 
+                  nostages_nodead_nounborn);
+              index21(currentindex) = (stage2n(currentindex) - 1) + ((stage1(currentindex) - 1) * nostages);
+            }
+            
+            indatalong(currentindex) = indata3(currentindex) * indata2n(currentindex) * 
+              indata2o(currentindex) * indata1(currentindex);
+            
+            currentindex += 1;
+          } // time3 loop
+        } // time2o loop
+      } // time1 loop 
+      
+      //Rcout << "theoldpizzle_adapt3 G2b" << endl;
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          asadditions = LefkoMats::ovreplace(index321, ovindexold321,
+            ovindexnew321, ovconvtype, ovnew3, ovnewgivenrate, ovnewoffset,
+            ovnewmultiplier);
+          
+          ovgivent = asadditions.col(0);
+          ovestt = asadditions.col(1);
+          ovgivenf = asadditions.col(2);
+          ovestf = asadditions.col(3);
+          ovrepentry = asadditions.col(4);
+          ovsurvmult = asadditions.col(5);
+          ovfecmult = asadditions.col(6);
+          ovoffsett = asadditions.col(7);
+          ovoffsetf = asadditions.col(8);
+          
+          arma::uvec workedupindex = find(ovrepentry > 0.0);
+          int changedreps = static_cast<int>(workedupindex.n_elem);
+          
+          if (changedreps > 0) {
+            for (int i = 0; i < changedreps; i++) {
+              repentry3(workedupindex(i)) = ovrepentry(workedupindex(i));
+            }
+          }
+        } // ovreplace if statement
+      }
+    } else if (style == 1) { // Ahistorical case
+      //Rcout << "theoldpizzle_adapt3 G3 Ahistorical" << endl;
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          for (int i = 0; i < ovrows; i++) { // Loop across overwrite rows
+            
+            ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages);
+            ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages);
+            
+            if (ovindexold321(i) < 0) ovindexold321(i) = -1.0;
+            if (ovindexnew321(i) < 0) ovindexnew321(i) = -1.0;
+            
+            if (!NumericVector::is_na(ovgivenrate(i))) {
+              ovnewgivenrate(i) = ovgivenrate(i);
+            }
+            if (!NumericVector::is_na(ovoffset(i))) {
+              if (ovoffset(i) != 0.) ovnewoffset(i) = ovoffset(i);
+            }
+            if (NumericVector::is_na(ovmultiplier(i))) {
+              ovmultiplier(i) = 1;
+            }
+            ovnewmultiplier(i) = ovmultiplier(i);
+          } // i for loop
+        } // ovrows if statement
+      }
+      
+      for (int time2n = 0; time2n < nostages_nodead; time2n++) {
+        for (int time3 = 0; time3 < nostages; time3++) {
+          stageorder3(currentindex) = stageorder(time3);
+          stageorder2n(currentindex) = stageorder(time2n);
+          stageorder2o(currentindex) = stageorder(time2n);
+          stageorder1(currentindex) = 0;
+                  
+          stage3(currentindex) = newstageid(time3);
+          stage2n(currentindex) = newstageid(time2n);
+          stage2o(currentindex) = newstageid(time2n);
+          stage1(currentindex) = 0;
+          
+          size3(currentindex) = binsizectr(time3);
+          size2n(currentindex) = binsizectr(time2n);
+          size2o(currentindex) = binsizectr(time2n);
+          size1(currentindex) = 0.0;
+          
+          sizeb3(currentindex) = binsizebctr(time3);
+          sizeb2n(currentindex) = binsizebctr(time2n);
+          sizeb2o(currentindex) = binsizebctr(time2n);
+          sizeb1(currentindex) = 0.0;
+          
+          if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+          if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+          if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+          
+          sizec3(currentindex) = binsizecctr(time3);
+          sizec2n(currentindex) = binsizecctr(time2n);
+          sizec2o(currentindex) = binsizecctr(time2n);
+          sizec1(currentindex) = 0.0;
+          
+          if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+          if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+          if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+          
+          obs3(currentindex) = obsstatus(time3);
+          obs2n(currentindex) = obsstatus(time2n);
+          obs2o(currentindex) = obsstatus(time2n);
+          obs1(currentindex) = 0.0;
+          
+          rep3(currentindex) = repstatus(time3);
+          rep2n(currentindex) = repstatus(time2n);
+          rep2o(currentindex) = repstatus(time2n);
+          rep1(currentindex) = 0.0;
+          
+          mat3(currentindex) = matstatus(time3);
+          mat2n(currentindex) = matstatus(time2n);
+          mat2o(currentindex) = matstatus(time2n);
+          mat1(currentindex) = 0.0;
+          
+          imm3(currentindex) = immstatus(time3);
+          imm2n(currentindex) = immstatus(time2n);
+          imm2o(currentindex) = immstatus(time2n);
+          imm1(currentindex) = 0.0;
+          
+          if (time3 < nostages_nodead) {
+            repentry3(currentindex) = repmatrix((time3 + (nostages_nodead * time2n)));
+          } else {
+            repentry3(currentindex) = 0.0;
+          }
+          
+          indata3(currentindex) = indata(time3);
+          indata2n(currentindex) = indata(time2n);
+          indata2o(currentindex) = indata(time2n);
+          indata1(currentindex) = 1.0;
+          
+          binwidth(currentindex) = binsizewidth(time3);
+          binbwidth(currentindex) = binsizebwidth(time3);
+          bincwidth(currentindex) = binsizecwidth(time3);
+          
+          if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+          if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+          
+          minage3(currentindex) = minage(time3);
+          minage2(currentindex) = minage(time2n);
+          maxage3(currentindex) = maxage(time3);
+          maxage2(currentindex) = maxage(time2n);
+          actualage(currentindex) = 0.0;
+          
+          grp3(currentindex) = group(time3);
+          grp2n(currentindex) = group(time2n);
+          grp2o(currentindex) = group(time2n);
+          grp1(currentindex) = 0.0;
+          
+          if (stage3(currentindex) == nostages || stage2n(currentindex) == nostages) {
+            deadandnasty = 1.0;
+          } else {
+            deadandnasty = 0.0;
+          }
+          
+          if (deadandnasty == 0.0) {
+            aliveequal(currentindex) = (stageorder3(currentindex) - 1) + 
+              ((stageorder2n(currentindex) - 1) * nostages_nodead);
+            
+            index321(currentindex) = (stage3(currentindex) - 1) + 
+              ((stage2n(currentindex) - 1) * nostages);
+            index21(currentindex) = (stage2n(currentindex) - 1);
+          }
+          
+          indatalong(currentindex) = indata3(currentindex) * indata2n(currentindex) * 
+            indata2o(currentindex);
+            
+          currentindex += 1;
+        } // time3 loop
+      } // time2n loop
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          asadditions = LefkoMats::ovreplace(index321, ovindexold321, ovindexnew321,
+            ovconvtype, ovnew3, ovnewgivenrate, ovnewoffset, ovnewmultiplier);
+          
+          ovgivent = asadditions.col(0);
+          ovestt = asadditions.col(1);
+          ovgivenf = asadditions.col(2);
+          ovestf = asadditions.col(3);
+          ovrepentry = asadditions.col(4);
+          ovsurvmult = asadditions.col(5);
+          ovfecmult = asadditions.col(6);
+          ovoffsett = asadditions.col(7);
+          ovoffsetf = asadditions.col(8);
+          
+          arma::uvec workedupindex = find(ovrepentry > 0.0);
+          int changedreps = static_cast<int>(workedupindex.n_elem);
+          
+          if (changedreps > 0) {
+            for (int i = 0; i < changedreps; i++) {
+              repentry3(workedupindex(i)) = ovrepentry(workedupindex(i));
+            }
+          }
+        } // ovreplace if statement
+      }
+    } else if (style == 2) { // Age-by-stage case
+      //Rcout << "theoldpizzle_adapt3 G4 Age-by-stage" << endl;
+      
+      int age3 {firstage};
+      
+      for (int time3 = 0; time3 < nostages; time3++) {
+        if (NumericVector::is_na(maxage(time3))) {
+          maxage(time3) = finalage + cont;
+        }
+      }
+      
+      // Sets up overwrite tables
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+          // First set of loops establishes a number of indices
+          for (int i = 0; i < ovrows; i++) { // Loop across overwrite rows
+            int age2 = ovage2(i);
+            
+            for (int j = 0; j < nostages; j++) { // Loop across stageframe rows
+              ovconvtypeage(i) = ovconvtype(i);
+                
+              if (age2 < totalages) {
+                if (ovconvtype(i) == 1.0) {
+                  age3 = age2 + 1;
+                } else {
+                  age3 = firstage;
+                }
+                
+                if (ovstage3(i) == origstageid(j)) {
+                  ovindex3(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (ovstage2(i) == origstageid(j)) {
+                  ovindex2(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (oveststage3(i) == origstageid(j)) {
+                  ovnew3(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (oveststage2(i) == origstageid(j)) {
+                  ovnew2(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (ovindex3(i) != -1.0 && ovindex2(i) != -1.0) {
+                  ovindexold321(i) = ovindex3(i) + ((age3 - firstage) * nostages) +
+                    (ovindex2(i) * nostages * totalages) + 
+                    ((age2 - firstage) * nostages * nostages * totalages);
+                }
+                
+                if (ovnew3(i) != -1.0 && ovnew2(i) != -1.0) {
+                  if (!IntegerVector::is_na(ovestage2(i)) && ovestage2(i) != -1) {
+                    int newage2 = ovestage2(i);
+                    int newage3 = newage2 + 1;
+                    
+                    ovindexnew321(i) = ovnew3(i) + ((newage3 - firstage) * nostages) +
+                      (ovnew2(i) * nostages * totalages) +
+                      ((newage2 - firstage) * nostages * nostages * totalages);
+                  } else {
+                    ovindexnew321(i) = ovnew3(i) + ((age3 - firstage) * nostages) +
+                      (ovnew2(i) * nostages * totalages) +
+                      ((age2 - firstage) * nostages * nostages * totalages);
+                  }
+                }
+                
+                if (!NumericVector::is_na(ovgivenrate(i))) {
+                  ovnewgivenrate(i) = ovgivenrate(i);
+                }
+                if (!NumericVector::is_na(ovoffset(i))) {
+                  if (ovoffset(i) != 0.) ovnewoffset(i) = ovoffset(i);
+                }
+                if (NumericVector::is_na(ovmultiplier(i))) ovmultiplier(i) = 1.0;
+                
+                ovnewmultiplier(i) = ovmultiplier(i);
+              } else {
+                if (ovconvtype(i) == 1.0) {
+                  age3 = age2;
+                } else {
+                  age3 = firstage;
+                }
+                
+                if (ovstage3(i) == origstageid(j)) {
+                  ovindex3(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (ovstage2(i) == origstageid(j)) {
+                  ovindex2(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (oveststage3(i) == origstageid(j)) {
+                  ovnew3(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (oveststage2(i) == origstageid(j)) {
+                  ovnew2(i) = j; // newstageid(j) - 1.0
+                }
+                
+                if (ovindex3(i) != -1.0 && ovindex2(i) != -1.0) {
+                  ovindexold321(i) = ovindex3(i) + ((age3 - firstage) * nostages) +
+                    (ovindex2(i) * nostages * totalages) +
+                    ((age2 - firstage) * nostages * nostages * totalages);
+                }
+                
+                if (ovnew3(i) != -1.0 && ovnew2(i) != -1.0) {
+                  if (!IntegerVector::is_na(ovestage2(i)) && ovestage2(i) != -1) {
+                    int newage2 = ovestage2(i);
+                    int newage3 = newage2 + 1;
+                    
+                    ovindexnew321(i) = ovnew3(i) + ((newage3 - firstage) * nostages) +
+                      (ovnew2(i) * nostages * totalages) +
+                      ((newage2 - firstage) * nostages * nostages * totalages);
+                  } else {
+                    ovindexnew321(i) = ovnew3(i) + ((age3 - firstage) * nostages) +
+                      (ovnew2(i) * nostages * totalages) +
+                      ((age2 - firstage) * nostages * nostages * totalages);
+                  }
+                }
+                if (!NumericVector::is_na(ovgivenrate(i))) {
+                  ovnewgivenrate(i) = ovgivenrate(i);
+                }
+                if (!NumericVector::is_na(ovoffset(i))) {
+                  if (ovoffset(i) != 0.) ovnewoffset(i) = ovoffset(i);
+                }
+                if (NumericVector::is_na(ovmultiplier(i))) ovmultiplier(i) = 1.0;
+                
+                ovnewmultiplier(i) = ovmultiplier(i);
+              }
+            } // j for loop
+            
+          if (ovindexold321(i) < 0) ovindexold321(i) = -1.0;
+          if (ovindexnew321(i) < 0) ovindexnew321(i) = -1.0;
+            
+          } // i for loop
+        } // ovrows if statement
+      }
+      for (int age2 = firstage; age2 <= finalage; age2++) {
+        if (age2 < finalage) { // First loop takes care of age transitions
+          for (int time2n = 0; time2n < nostages; time2n++) {
+            for (int time3 = 0; time3 < nostages; time3++) {
+              
+              // First survival
+              age3 = age2 + 1;
+              currentindex = time3 + ((age3 - firstage) * nostages) + 
+                (time2n * nostages * totalages) +
+                ((age2 - firstage) * nostages * nostages * totalages);
+              
+              stage3(currentindex) = newstageid(time3);
+              stage2n(currentindex) = newstageid(time2n);
+              stage2o(currentindex) = newstageid(time2n);
+              stage1(currentindex) = 0;
+              
+              size3(currentindex) = binsizectr(time3);
+              size2n(currentindex) = binsizectr(time2n);
+              size2o(currentindex) = binsizectr(time2n);
+              size1(currentindex) = 0.0;
+              
+              sizeb3(currentindex) = binsizebctr(time3);
+              sizeb2n(currentindex) = binsizebctr(time2n);
+              sizeb2o(currentindex) = binsizebctr(time2n);
+              sizeb1(currentindex) = 0.0;
+              
+              if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+              if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+              if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+              
+              sizec3(currentindex) = binsizecctr(time3);
+              sizec2n(currentindex) = binsizecctr(time2n);
+              sizec2o(currentindex) = binsizecctr(time2n);
+              sizec1(currentindex) = 0.0;
+              
+              if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+              if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+              if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+              
+              obs3(currentindex) = obsstatus(time3);
+              obs2n(currentindex) = obsstatus(time2n);
+              obs2o(currentindex) = obsstatus(time2n);
+              obs1(currentindex) = 0.0;
+              
+              rep3(currentindex) = repstatus(time3);
+              rep2n(currentindex) = repstatus(time2n);
+              rep2o(currentindex) = repstatus(time2n);
+              rep1(currentindex) = 0.0;
+              
+              mat3(currentindex) = matstatus(time3);
+              mat2n(currentindex) = matstatus(time2n);
+              mat2o(currentindex) = matstatus(time2n);
+              mat1(currentindex) = 0.0;
+              
+              imm3(currentindex) = immstatus(time3);
+              imm2n(currentindex) = immstatus(time2n);
+              imm2o(currentindex) = immstatus(time2n);
+              imm1(currentindex) = 0.0;
+              
+              repentry3(currentindex) = 0.0;
+              
+              indata3(currentindex) = indata(time3);
+              indata2n(currentindex) = indata(time2n);
+              indata2o(currentindex) = indata(time2n);
+              indata1(currentindex) = 0.0;
+              
+              binwidth(currentindex) = binsizewidth(time3);
+              binbwidth(currentindex) = binsizebwidth(time3);
+              bincwidth(currentindex) = binsizecwidth(time3);
+              
+              if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+              if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+              
+              minage3(currentindex) = minage(time3);
+              minage2(currentindex) = minage(time2n);
+              maxage3(currentindex) = maxage(time3);
+              maxage2(currentindex) = maxage(time2n);
+              actualage(currentindex) = age2;
+              
+              grp3(currentindex) = group(time3);
+              grp2n(currentindex) = group(time2n);
+              grp2o(currentindex) = group(time2n);
+              grp1(currentindex) = 0.0;
+              
+              // Indexer order: (1st # age blocks) + (1st # stage cols) +
+              // (1st # age rows) + stage in time 3
+              index321(currentindex) = currentindex;
+              index21(currentindex) = time2n + ((age2 - firstage) * nostages);
+              indatalong(currentindex) = 1.0;
+              
+              // Identify elements with non-zero entries by element number in final matrix
+              if (alive(time2n) == 1.0 && alive(time3) == 1.0) {
+                if (age2 >= minage2(currentindex) && age2 < maxage3(currentindex)) { 
+                  
+                  // Survival transitions
+                  aliveequal(currentindex) =
+                    ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                    (time2n * (nostages - 1) * totalages) +
+                    ((age3 - firstage) * (nostages - 1)) + time3;
+                }
+              }
+              
+              if (time3 < nostages_nodead && time2n < nostages_nodead) {
+                
+                if (repmatrix((time3 + (nostages_nodead * time2n))) > 0.0) {
+                  
+                  // Now fecundity
+                  age3 = firstage;
+                  currentindex = time3 + ((age3 - firstage) * nostages) + 
+                    (time2n * nostages * totalages) +
+                    ((age2 - firstage) * nostages * nostages * totalages);
+                  
+                  stage3(currentindex) = newstageid(time3);
+                  stage2n(currentindex) = newstageid(time2n);
+                  stage2o(currentindex) = newstageid(time2n);
+                  stage1(currentindex) = 0.0;
+                  
+                  size3(currentindex) = binsizectr(time3);
+                  size2n(currentindex) = binsizectr(time2n);
+                  size2o(currentindex) = binsizectr(time2n);
+                  size1(currentindex) = 0.0;
+                  
+                  sizeb3(currentindex) = binsizebctr(time3);
+                  sizeb2n(currentindex) = binsizebctr(time2n);
+                  sizeb2o(currentindex) = binsizebctr(time2n);
+                  sizeb1(currentindex) = 0.0;
+                  
+                  if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+                  
+                  sizec3(currentindex) = binsizecctr(time3);
+                  sizec2n(currentindex) = binsizecctr(time2n);
+                  sizec2o(currentindex) = binsizecctr(time2n);
+                  sizec1(currentindex) = 0.0;
+                  
+                  if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+                  
+                  obs3(currentindex) = obsstatus(time3);
+                  obs2n(currentindex) = obsstatus(time2n);
+                  obs2o(currentindex) = obsstatus(time2n);
+                  obs1(currentindex) = 0.0;
+                  
+                  rep3(currentindex) = repstatus(time3);
+                  rep2n(currentindex) = repstatus(time2n);
+                  rep2o(currentindex) = repstatus(time2n);
+                  rep1(currentindex) = 0.0;
+                  
+                  mat3(currentindex) = matstatus(time3);
+                  mat2n(currentindex) = matstatus(time2n);
+                  mat2o(currentindex) = matstatus(time2n);
+                  mat1(currentindex) = 0.0;
+                  
+                  imm3(currentindex) = immstatus(time3);
+                  imm2n(currentindex) = immstatus(time2n);
+                  imm2o(currentindex) = immstatus(time2n);
+                  imm1(currentindex) = 0.0;
+                  
+                  if (rep2n(currentindex) > 0.0 && time3 < nostages_nodead && time2n < nostages_nodead) {
+                    repentry3(currentindex) = repmatrix((time3 + (nostages_nodead * time2n)));
+                  } else repentry3(currentindex) = 0.0;
+                  
+                  indata3(currentindex) = indata(time3);
+                  indata2n(currentindex) = indata(time2n);
+                  indata2o(currentindex) = indata(time2n);
+                  indata1(currentindex) = 0.0;
+                  
+                  binwidth(currentindex) = binsizewidth(time3);
+                  binbwidth(currentindex) = binsizebwidth(time3);
+                  bincwidth(currentindex) = binsizecwidth(time3);
+                  
+                  if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+                  if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+                  
+                  minage3(currentindex) = minage(time3);
+                  minage2(currentindex) = minage(time2n);
+                  maxage3(currentindex) = maxage(time3);
+                  maxage2(currentindex) = maxage(time2n);
+                  actualage(currentindex) = age2;
+                  
+                  grp3(currentindex) = group(time3);
+                  grp2n(currentindex) = group(time2n);
+                  grp2o(currentindex) = group(time2n);
+                  grp1(currentindex) = 0.0;
+                  
+                  // The next indexer includes the following order: (1st # of age blocks) + 
+                  // (1st # of stage cols) + (1st # of age rows) + stage in time 3
+                  index321(currentindex) = currentindex;
+                  index21(currentindex) = time2n + ((age2 - firstage) * nostages);
+                  indatalong(currentindex) = 1.0;
+                  
+                  // This section identifies elements with non-zero entries by their
+                  // element number in the final matrix
+                  if (alive(time2n) == 1.0 && alive(time3) == 1.0) {
+                    if (age2 >= minage2(currentindex) && age2 <= maxage2(currentindex)) { 
+                      
+                      // Fecundity transitions
+                      aliveequal(currentindex) = 
+                        ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                        (time2n * (nostages - 1) * totalages) +
+                        ((age3 - firstage) * (nostages - 1)) + time3;
+                    }
+                  } // if statement leading to aliveequal assignment
+                } // if statement yielding fecundity estimation
+              } // if statement checking time3 and time2n
+            } // time3 loop
+          } // time2n loop
+        } else if (cont == 1) { // Self-loop on final age, if organism can live past final age
+          for (int time2n = 0; time2n < nostages; time2n++) {
+            for (int time3 = 0; time3 < nostages; time3++) {
+              
+              // First survival
+              age3 = age2;
+              currentindex = time3 + ((age3 - firstage) * nostages) + 
+                (time2n * nostages * totalages) +
+                ((age2 - firstage) * nostages * nostages * totalages);
+              
+              stage3(currentindex) = newstageid(time3);
+              stage2n(currentindex) = newstageid(time2n);
+              stage2o(currentindex) = newstageid(time2n);
+              stage1(currentindex) = 0.0;
+              
+              size3(currentindex) = binsizectr(time3);
+              size2n(currentindex) = binsizectr(time2n);
+              size2o(currentindex) = binsizectr(time2n);
+              size1(currentindex) = 0.0;
+              
+              sizeb3(currentindex) = binsizebctr(time3);
+              sizeb2n(currentindex) = binsizebctr(time2n);
+              sizeb2o(currentindex) = binsizebctr(time2n);
+              sizeb1(currentindex) = 0.0;
+              
+              if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+              if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+              if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+              
+              sizec3(currentindex) = binsizecctr(time3);
+              sizec2n(currentindex) = binsizecctr(time2n);
+              sizec2o(currentindex) = binsizecctr(time2n);
+              sizec1(currentindex) = 0.0;
+              
+              if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+              if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+              if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+                  
+              obs3(currentindex) = obsstatus(time3);
+              obs2n(currentindex) = obsstatus(time2n);
+              obs2o(currentindex) = obsstatus(time2n);
+              obs1(currentindex) = 0.0;
+              
+              rep3(currentindex) = repstatus(time3);
+              rep2n(currentindex) = repstatus(time2n);
+              rep2o(currentindex) = repstatus(time2n);
+              rep1(currentindex) = 0.0;
+              
+              mat3(currentindex) = matstatus(time3);
+              mat2n(currentindex) = matstatus(time2n);
+              mat2o(currentindex) = matstatus(time2n);
+              mat1(currentindex) = 0.0;
+              
+              imm3(currentindex) = immstatus(time3);
+              imm2n(currentindex) = immstatus(time2n);
+              imm2o(currentindex) = immstatus(time2n);
+              imm1(currentindex) = 0.0;
+              
+              repentry3(currentindex) = 0.0;
+              
+              indata3(currentindex) = indata(time3);
+              indata2n(currentindex) = indata(time2n);
+              indata2o(currentindex) = indata(time2n);
+              indata1(currentindex) = 0.0;
+              
+              binwidth(currentindex) = binsizewidth(time3);
+              binbwidth(currentindex) = binsizebwidth(time3);
+              bincwidth(currentindex) = binsizecwidth(time3);
+              
+              if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+              if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+                  
+              minage3(currentindex) = minage(time3);
+              minage2(currentindex) = minage(time2n);
+              maxage3(currentindex) = maxage(time3);
+              maxage2(currentindex) = maxage(time2n);
+              actualage(currentindex) = age2;
+              
+              grp3(currentindex) = group(time3);
+              grp2n(currentindex) = group(time2n);
+              grp2o(currentindex) = group(time2n);
+              grp1(currentindex) = 0.0;
+              
+              // Indexer order: (1st # age blocks) + (1st # stage cols) +
+              // (1st # age rows) + stage in time 3
+              index321(currentindex) = currentindex;
+              index21(currentindex) = time2n + ((age2 - firstage) * nostages);
+              indatalong(currentindex) = 1;
+              
+              // Identify elements with non-zero entries by element number in final matrix
+              if (alive(time2n) == 1.0 && alive(time3) == 1.0) {
+                if (age2 >= minage2(currentindex) && age2 < maxage3(currentindex)) { 
+  
+                  // Survival transitions
+                  aliveequal(currentindex) = 
+                    ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                    (time2n * (nostages - 1) * totalages) +
+                    ((age3 - firstage) * (nostages - 1)) + time3;
+                }
+              }
+              
+              if (time3 < nostages_nodead && time2n < nostages_nodead) {
+                if (repmatrix((time3 + (nostages_nodead * time2n))) > 0.0) {
+                  
+                  // Now fecundity
+                  age3 = firstage;
+                  currentindex = time3 + ((age3 - firstage) * nostages) + 
+                    (time2n * nostages * totalages) +
+                    ((age2 - firstage) * nostages * nostages * totalages);
+                  
+                  stage3(currentindex) = newstageid(time3);
+                  stage2n(currentindex) = newstageid(time2n);
+                  stage2o(currentindex) = newstageid(time2n);
+                  stage1(currentindex) = 0.0;
+                  
+                  size3(currentindex) = binsizectr(time3);
+                  size2n(currentindex) = binsizectr(time2n);
+                  size2o(currentindex) = binsizectr(time2n);
+                  size1(currentindex) = 0.0;
+                  
+                  sizeb3(currentindex) = binsizebctr(time3);
+                  sizeb2n(currentindex) = binsizebctr(time2n);
+                  sizeb2o(currentindex) = binsizebctr(time2n);
+                  sizeb1(currentindex) = 0.0;
+                  
+                  if (NumericVector::is_na(sizeb3(currentindex))) sizeb3(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb2n(currentindex))) sizeb2n(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizeb2o(currentindex))) sizeb2o(currentindex) = 0.0;
+                  
+                  sizec3(currentindex) = binsizecctr(time3);
+                  sizec2n(currentindex) = binsizecctr(time2n);
+                  sizec2o(currentindex) = binsizecctr(time2n);
+                  sizec1(currentindex) = 0.0;
+                  
+                  if (NumericVector::is_na(sizec3(currentindex))) sizec3(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec2n(currentindex))) sizec2n(currentindex) = 0.0;
+                  if (NumericVector::is_na(sizec2o(currentindex))) sizec2o(currentindex) = 0.0;
+                  
+                  obs3(currentindex) = obsstatus(time3);
+                  obs2n(currentindex) = obsstatus(time2n);
+                  obs2o(currentindex) = obsstatus(time2n);
+                  obs1(currentindex) = 0.0;
+                  
+                  rep3(currentindex) = repstatus(time3);
+                  rep2n(currentindex) = repstatus(time2n);
+                  rep2o(currentindex) = repstatus(time2n);
+                  rep1(currentindex) = 0.0;
+                  
+                  mat3(currentindex) = matstatus(time3);
+                  mat2n(currentindex) = matstatus(time2n);
+                  mat2o(currentindex) = matstatus(time2n);
+                  mat1(currentindex) = 0.0;
+                  
+                  imm3(currentindex) = immstatus(time3);
+                  imm2n(currentindex) = immstatus(time2n);
+                  imm2o(currentindex) = immstatus(time2n);
+                  imm1(currentindex) = 0.0;
+                  
+                  if (rep2n(currentindex) == 1) {
+                    repentry3(currentindex) = repmatrix((time3 + (nostages_nodead * time2n)));
+                  } else repentry3(currentindex) = 0.0;
+                  
+                  indata3(currentindex) = indata(time3);
+                  indata2n(currentindex) = indata(time2n);
+                  indata2o(currentindex) = indata(time2n);
+                  indata1(currentindex) = 0.0;
+                  
+                  binwidth(currentindex) = binsizewidth(time3);
+                  binbwidth(currentindex) = binsizebwidth(time3);
+                  bincwidth(currentindex) = binsizecwidth(time3);
+                  
+                  if (NumericVector::is_na(binbwidth(currentindex))) binbwidth(currentindex) = 0.0;
+                  if (NumericVector::is_na(bincwidth(currentindex))) bincwidth(currentindex) = 0.0;
+                  
+                  minage3(currentindex) = minage(time3);
+                  minage2(currentindex) = minage(time2n);
+                  maxage3(currentindex) = maxage(time3);
+                  maxage2(currentindex) = maxage(time2n);
+                  actualage(currentindex) = age2;
+                  grp3(currentindex) = group(time3);
+                  grp2n(currentindex) = group(time2n);
+                  grp2o(currentindex) = group(time2n);
+                  grp1(currentindex) = 0.0;
+                  
+                  // Indexer order: (1st # age blocks) + (1st # stage cols) + 
+                  // (1st # age rows) + stage in time 3
+                  index321(currentindex) = currentindex;
+                  index21(currentindex) = time2n + ((age2 - firstage) * nostages);
+                  indatalong(currentindex) = 1.0;
+                  
+                  // Identify elements with non-zero entries by element number in final matrix
+                  if (alive(time2n) == 1.0 && alive(time3) == 1.0) {
+                    if (age2 >= minage2(currentindex) && age2 <= maxage2(currentindex)) { 
+                      
+                      // Fecundity transitions
+                      aliveequal(currentindex) =
+                        ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                        (time2n * (nostages - 1) * totalages) +
+                        ((age3 - firstage) * (nostages - 1)) + time3;
+                    }
+                  } // if statement leading to aliveequal assignment
+                } // if statement yielding fecundity estimation
+              } // if statement checking time3 and time2n
+            } // time3 loop
+          } // time2n loop
+        }// if-else statement
+      } // age2 loop
+      
+      if (ovrows > 0) {
+        if (ovrows > 1 || ovconvtype(0) != -1.0) {
+        
+          asadditions = LefkoMats::ovreplace(index321, ovindexold321, ovindexnew321,
+            ovconvtypeage, ovnew3, ovnewgivenrate, ovnewoffset, ovnewmultiplier);
+          
+          ovgivent = asadditions.col(0);
+          ovestt = asadditions.col(1);
+          ovgivenf = asadditions.col(2);
+          ovestf = asadditions.col(3);
+          ovrepentry = asadditions.col(4);
+          ovsurvmult = asadditions.col(5);
+          ovfecmult = asadditions.col(6);
+          ovoffsett = asadditions.col(7);
+          ovoffsetf = asadditions.col(8);
+          
+          arma::uvec workedupindex = find(ovrepentry > 0.0);
+          int changedreps = static_cast<int>(workedupindex.n_elem);
+          
+          if (changedreps > 0) {
+            for (int i = 0; i < changedreps; i++) {
+              repentry3(workedupindex(i)) = ovrepentry(workedupindex(i));
+            }
+          }
+        } // ovreplace if statement
+      }
+    } // Age-by-stage loop (style = 2)
+    
+    //Rcout << "theoldpizzle_adapt3 H" << endl;
+    
+    // Output formatting
+    Rcpp::List output_longlist(62);
+    int stage3_length = 0;
+    
+    arma::uvec used_indices;
+    
+    if (filter == 1) {
+      used_indices = find(index321 != -1.0);
+    } else if (filter == 2) {
+      used_indices = find(aliveequal != -1.0);
+    }
+    
+    if (filter > 0) {
+      int new_length = static_cast<int>(used_indices.n_elem);
+      stage3_length = new_length;
+      
+      IntegerVector stage3_new(new_length);
+      IntegerVector stage2n_new(new_length);
+      IntegerVector stage2o_new(new_length);
+      IntegerVector stage1_new(new_length);
+      
+      NumericVector size3_new(new_length);
+      NumericVector size2n_new(new_length);
+      NumericVector size2o_new(new_length);
+      NumericVector size1_new(new_length);
+      
+      NumericVector sizeb3_new(new_length);
+      NumericVector sizeb2n_new(new_length);
+      NumericVector sizeb2o_new(new_length);
+      NumericVector sizeb1_new(new_length);
+      
+      NumericVector sizec3_new(new_length);
+      NumericVector sizec2n_new(new_length);
+      NumericVector sizec2o_new(new_length);
+      NumericVector sizec1_new(new_length);
+      
+      NumericVector obs3_new(new_length);
+      NumericVector obs2n_new(new_length);
+      NumericVector obs2o_new(new_length);
+      NumericVector obs1_new(new_length);
+      
+      NumericVector rep3_new(new_length);
+      NumericVector rep2n_new(new_length);
+      NumericVector rep2o_new(new_length);
+      NumericVector rep1_new(new_length);
+      
+      NumericVector mat3_new(new_length);
+      NumericVector mat2n_new(new_length);
+      NumericVector mat2o_new(new_length);
+      NumericVector mat1_new(new_length);
+      
+      NumericVector imm3_new(new_length);
+      NumericVector imm2n_new(new_length);
+      NumericVector imm2o_new(new_length);
+      NumericVector imm1_new(new_length);
+      
+      NumericVector repentry3_new(new_length);
+      NumericVector indata3_new(new_length);
+      NumericVector indata2n_new(new_length);
+      NumericVector indata2o_new(new_length);
+    
+      NumericVector indata1_new(new_length);
+      NumericVector binwidth_new(new_length);
+      NumericVector binbwidth_new(new_length);
+      NumericVector bincwidth_new(new_length);
+      
+      NumericVector minage3_new(new_length);
+      NumericVector minage2_new(new_length);
+      NumericVector maxage3_new(new_length);
+      NumericVector maxage2_new(new_length);
+      NumericVector actualage_new(new_length);
+      
+      NumericVector grp3_new(new_length);
+      NumericVector grp2n_new(new_length);
+      NumericVector grp2o_new(new_length);
+      NumericVector grp1_new(new_length);
+      
+      NumericVector indatalong_new(new_length);
+      NumericVector ovgivent_new(new_length);
+      NumericVector ovgivenf_new(new_length);
+      
+      NumericVector ovoffsett_new(new_length);
+      NumericVector ovoffsetf_new(new_length);
+      
+      NumericVector ovestt_new(new_length);
+      NumericVector ovestf_new(new_length);
+      
+      NumericVector ovsurvmult_new(new_length);
+      NumericVector ovfecmult_new(new_length);
+      
+      NumericVector aliveequal_new(new_length);
+      NumericVector index321_new(new_length);
+      NumericVector index321d_new(new_length);
+      NumericVector index21_new(new_length);
+      
+      for (int i = 0; i < new_length; i++) {
+        stage3_new(i) = stage3(used_indices(i));
+        stage2n_new(i) = stage2n(used_indices(i));
+        stage2o_new(i) = stage2o(used_indices(i));
+        stage1_new(i) = stage1(used_indices(i));
+        
+        size3_new(i) = size3(used_indices(i));
+        size2n_new(i) = size2n(used_indices(i));
+        size2o_new(i) = size2o(used_indices(i));
+        size1_new(i) = size1(used_indices(i));
+        
+        sizeb3_new(i) = sizeb3(used_indices(i));
+        sizeb2n_new(i) = sizeb2n(used_indices(i));
+        sizeb2o_new(i) = sizeb2o(used_indices(i));
+        sizeb1_new(i) = sizeb1(used_indices(i));
+        
+        sizec3_new(i) = sizec3(used_indices(i));
+        sizec2n_new(i) = sizec2n(used_indices(i));
+        sizec2o_new(i) = sizec2o(used_indices(i));
+        sizec1_new(i) = sizec1(used_indices(i));
+        
+        obs3_new(i) = obs3(used_indices(i));
+        obs2n_new(i) = obs2n(used_indices(i));
+        obs2o_new(i) = obs2o(used_indices(i));
+        obs1_new(i) = obs1(used_indices(i));
+        
+        rep3_new(i) = rep3(used_indices(i));
+        rep2n_new(i) = rep2n(used_indices(i));
+        rep2o_new(i) = rep2o(used_indices(i));
+        rep1_new(i) = rep1(used_indices(i));
+        
+        mat3_new(i) = mat3(used_indices(i));
+        mat2n_new(i) = mat2n(used_indices(i));
+        mat2o_new(i) = mat2o(used_indices(i));
+        mat1_new(i) = mat1(used_indices(i));
+        
+        imm3_new(i) = imm3(used_indices(i));
+        imm2n_new(i) = imm2n(used_indices(i));
+        imm2o_new(i) = imm2o(used_indices(i));
+        imm1_new(i) = imm1(used_indices(i));
+        
+        repentry3_new(i) = repentry3(used_indices(i));
+        indata3_new(i) = indata3(used_indices(i));
+        indata2n_new(i) = indata2n(used_indices(i));
+        indata2o_new(i) = indata2o(used_indices(i));
+      
+        indata1_new(i) = indata1(used_indices(i));
+        binwidth_new(i) = binwidth(used_indices(i));
+        binbwidth_new(i) = binbwidth(used_indices(i));
+        bincwidth_new(i) = bincwidth(used_indices(i));
+        
+        minage3_new(i) = minage3(used_indices(i));
+        minage2_new(i) = minage2(used_indices(i));
+        maxage3_new(i) = maxage3(used_indices(i));
+        maxage2_new(i) = maxage2(used_indices(i));
+        actualage_new(i) = actualage(used_indices(i));
+        
+        grp3_new(i) = grp3(used_indices(i));
+        grp2n_new(i) = grp2n(used_indices(i));
+        grp2o_new(i) = grp2o(used_indices(i));
+        grp1_new(i) = grp1(used_indices(i));
+        
+        indatalong_new(i) = indatalong(used_indices(i));
+        ovgivent_new(i) = ovgivent(used_indices(i));
+        ovestt_new(i) = ovestt(used_indices(i));
+        ovoffsett_new(i) = ovoffsett(used_indices(i));
+        
+        ovgivenf_new(i) = ovgivenf(used_indices(i));
+        ovestf_new(i) = ovestf(used_indices(i));
+        ovoffsetf_new(i) = ovoffsetf(used_indices(i));
+        
+        ovsurvmult_new(i) = ovsurvmult(used_indices(i));
+        ovfecmult_new(i) = ovfecmult(used_indices(i));
+        
+        aliveequal_new(i) = aliveequal(used_indices(i));
+        index321_new(i) = index321(used_indices(i));
+        index321d_new(i) = index321d(used_indices(i));
+        index21_new(i) = index21(used_indices(i));
+      }
+      
+      output_longlist(0) = stage3_new;
+      output_longlist(1) = stage2n_new;
+      output_longlist(2) = stage2o_new;
+      output_longlist(3) = stage1_new;
+      output_longlist(4) = size3_new;
+      output_longlist(5) = size2n_new;
+      output_longlist(6) = size2o_new;
+      output_longlist(7) = size1_new;
+      output_longlist(8) = sizeb3_new;
+      output_longlist(9) = sizeb2n_new;
+      
+      output_longlist(10) = sizeb2o_new;
+      output_longlist(11) = sizeb1_new;
+      output_longlist(12) = sizec3_new;
+      output_longlist(13) = sizec2n_new;
+      output_longlist(14) = sizec2o_new;
+      output_longlist(15) = sizec1_new;
+      output_longlist(16) = obs3_new;
+      output_longlist(17) = obs2n_new;
+      output_longlist(18) = obs2o_new;
+      output_longlist(19) = obs1_new;
+      
+      output_longlist(20) = rep3_new;
+      output_longlist(21) = rep2n_new;
+      output_longlist(22) = rep2o_new;
+      output_longlist(23) = rep1_new;
+      output_longlist(24) = mat3_new;
+      output_longlist(25) = mat2n_new;
+      output_longlist(26) = mat2o_new;
+      output_longlist(27) = mat1_new;
+      output_longlist(28) = imm3_new;
+      output_longlist(29) = imm2n_new;
+      
+      output_longlist(30) = imm2o_new;
+      output_longlist(31) = imm1_new;
+      output_longlist(32) = repentry3_new;
+      output_longlist(33) = indata3_new;
+      output_longlist(34) = indata2n_new;
+      output_longlist(35) = indata2o_new;
+      output_longlist(36) = indata1_new;
+      output_longlist(37) = binwidth_new;
+      output_longlist(38) = binbwidth_new;
+      output_longlist(39) = bincwidth_new;
+      
+      output_longlist(40) = minage3_new;
+      output_longlist(41) = minage2_new;
+      output_longlist(42) = maxage3_new;
+      output_longlist(43) = maxage2_new;
+      output_longlist(44) = actualage_new;
+      
+      output_longlist(45) = grp3_new;
+      output_longlist(46) = grp2n_new;
+      output_longlist(47) = grp2o_new;
+      output_longlist(48) = grp1_new;
+      
+      output_longlist(49) = indatalong_new;
+      output_longlist(50) = ovgivent_new;
+      output_longlist(51) = ovestt_new;
+      output_longlist(52) = ovgivenf_new;
+      output_longlist(53) = ovestf_new;
+      output_longlist(54) = ovsurvmult_new;
+      output_longlist(55) = ovfecmult_new;
+      
+      output_longlist(56) = aliveequal_new;
+      output_longlist(57) = index321_new;
+      output_longlist(58) = index321d_new;
+      output_longlist(59) = index21_new;
+      
+      output_longlist(60) = ovoffsett_new;
+      output_longlist(61) = ovoffsetf_new;
+      
+    } else {
+      stage3_length = static_cast<int>(stage3.n_elem);
+      
+      output_longlist(0) = Rcpp::IntegerVector(stage3.begin(), stage3.end());
+      output_longlist(1) = Rcpp::IntegerVector(stage2n.begin(), stage2n.end());
+      output_longlist(2) = Rcpp::IntegerVector(stage2o.begin(), stage2o.end());
+      output_longlist(3) = Rcpp::IntegerVector(stage1.begin(), stage1.end());
+      output_longlist(4) = Rcpp::NumericVector(size3.begin(), size3.end());
+      output_longlist(5) = Rcpp::NumericVector(size2n.begin(), size2n.end());
+      output_longlist(6) = Rcpp::NumericVector(size2o.begin(), size2o.end());
+      output_longlist(7) = Rcpp::NumericVector(size1.begin(), size1.end());
+      output_longlist(8) = Rcpp::NumericVector(sizeb3.begin(), sizeb3.end());
+      output_longlist(9) = Rcpp::NumericVector(sizeb2n.begin(), sizeb2n.end());
+      
+      output_longlist(10) = Rcpp::NumericVector(sizeb2o.begin(), sizeb2o.end());
+      output_longlist(11) = Rcpp::NumericVector(sizeb1.begin(), sizeb1.end());
+      output_longlist(12) = Rcpp::NumericVector(sizec3.begin(), sizec3.end());
+      output_longlist(13) = Rcpp::NumericVector(sizec2n.begin(), sizec2n.end());
+      output_longlist(14) = Rcpp::NumericVector(sizec2o.begin(), sizec2o.end());
+      output_longlist(15) = Rcpp::NumericVector(sizec1.begin(), sizec1.end());
+      output_longlist(16) = Rcpp::NumericVector(obs3.begin(), obs3.end());
+      output_longlist(17) = Rcpp::NumericVector(obs2n.begin(), obs2n.end());
+      output_longlist(18) = Rcpp::NumericVector(obs2o.begin(), obs2o.end());
+      output_longlist(19) = Rcpp::NumericVector(obs1.begin(), obs1.end());
+      
+      output_longlist(20) = Rcpp::NumericVector(rep3.begin(), rep3.end());
+      output_longlist(21) = Rcpp::NumericVector(rep2n.begin(), rep2n.end());
+      output_longlist(22) = Rcpp::NumericVector(rep2o.begin(), rep2o.end());
+      output_longlist(23) = Rcpp::NumericVector(rep1.begin(), rep1.end());
+      output_longlist(24) = Rcpp::NumericVector(mat3.begin(), mat3.end());
+      output_longlist(25) = Rcpp::NumericVector(mat2n.begin(), mat2n.end());
+      output_longlist(26) = Rcpp::NumericVector(mat2o.begin(), mat2o.end());
+      output_longlist(27) = Rcpp::NumericVector(mat1.begin(), mat1.end());
+      output_longlist(28) = Rcpp::NumericVector(imm3.begin(), imm3.end());
+      output_longlist(29) = Rcpp::NumericVector(imm2n.begin(), imm2n.end());
+      
+      output_longlist(30) = Rcpp::NumericVector(imm2o.begin(), imm2o.end());
+      output_longlist(31) = Rcpp::NumericVector(imm1.begin(), imm1.end());
+      output_longlist(32) = Rcpp::NumericVector(repentry3.begin(), repentry3.end());
+      output_longlist(33) = Rcpp::NumericVector(indata3.begin(), indata3.end());
+      output_longlist(34) = Rcpp::NumericVector(indata2n.begin(), indata2n.end());
+      output_longlist(35) = Rcpp::NumericVector(indata2o.begin(), indata2o.end());
+      output_longlist(36) = Rcpp::NumericVector(indata1.begin(), indata1.end());
+      output_longlist(37) = Rcpp::NumericVector(binwidth.begin(), binwidth.end());
+      output_longlist(38) = Rcpp::NumericVector(binbwidth.begin(), binbwidth.end());
+      output_longlist(39) = Rcpp::NumericVector(bincwidth.begin(), bincwidth.end());
+      
+      output_longlist(40) = Rcpp::NumericVector(minage3.begin(), minage3.end());
+      output_longlist(41) = Rcpp::NumericVector(minage2.begin(), minage2.end());
+      output_longlist(42) = Rcpp::NumericVector(maxage3.begin(), maxage3.end());
+      output_longlist(43) = Rcpp::NumericVector(maxage2.begin(), maxage2.end());
+      output_longlist(44) = Rcpp::NumericVector(actualage.begin(), actualage.end());
+      
+      output_longlist(45) = Rcpp::NumericVector(grp3.begin(), grp3.end());
+      output_longlist(46) = Rcpp::NumericVector(grp2n.begin(), grp2n.end());
+      output_longlist(47) = Rcpp::NumericVector(grp2o.begin(), grp2o.end());
+      output_longlist(48) = Rcpp::NumericVector(grp1.begin(), grp1.end());
+      
+      output_longlist(49) = Rcpp::NumericVector(indatalong.begin(), indatalong.end());
+      output_longlist(50) = Rcpp::NumericVector(ovgivent.begin(), ovgivent.end());
+      output_longlist(51) = Rcpp::NumericVector(ovestt.begin(), ovestt.end());
+      output_longlist(52) = Rcpp::NumericVector(ovgivenf.begin(), ovgivenf.end());
+      output_longlist(53) = Rcpp::NumericVector(ovestf.begin(), ovestf.end());
+      output_longlist(54) = Rcpp::NumericVector(ovsurvmult.begin(), ovsurvmult.end());
+      output_longlist(55) = Rcpp::NumericVector(ovfecmult.begin(), ovfecmult.end());
+      
+      output_longlist(56) = Rcpp::NumericVector(aliveequal.begin(), aliveequal.end());
+      output_longlist(57) = Rcpp::NumericVector(index321.begin(), index321.end());
+      output_longlist(58) = Rcpp::NumericVector(index321d.begin(), index321d.end());
+      output_longlist(59) = Rcpp::NumericVector(index21.begin(), index21.end());
+      
+      output_longlist(60) = Rcpp::NumericVector(ovoffsett.begin(), ovoffsett.end());
+      output_longlist(61) = Rcpp::NumericVector(ovoffsetf.begin(), ovoffsetf.end());
+    }
+    
+    CharacterVector namevec = {"stage3", "stage2n", "stage2o", "stage1", "size3",
+      "size2n", "size2o", "size1", "sizeb3", "sizeb2n", "sizeb2o", "sizeb1", 
+      "sizec3", "sizec2n", "sizec2o", "sizec1", "obs3", "obs2n", "obs2o", "obs1",
+      "rep3", "rep2n", "rep2o", "rep1", "mat3", "mat2n", "mat2o", "mat1", "imm3",
+      "imm2n", "imm2o", "imm1", "repentry3", "indata3", "indata2n", "indata2o",
+      "indata1", "binwidth", "binbwidth", "bincwidth", "minage3", "minage2",
+      "maxage3", "maxage2", "actualage", "group3", "group2n", "group2o", "group1",
+      "indata", "ovgiven_t", "ovest_t", "ovgiven_f", "ovest_f", "ovsurvmult",
+      "ovfecmult", "aliveandequal", "index321", "index321d", "index21",
+      "ovoffset_t", "ovoffset_f"};
+    output_longlist.attr("names") = namevec;
+    output_longlist.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, stage3_length);
+    output_longlist.attr("class") = "data.frame";
+    
+    return output_longlist;
+  }
+  
+  //' Alter Matrices in MPMs Using Info In Post-Processing Supplements
+  //' 
+  //' Function \code{matrix_post()} swiftly alters pre-existing MPMs with changes
+  //' dictated in supplements.
+  //' 
+  //' @name matrix_post
+  //' 
+  //' @param Amat_list A reference to the main list of A matrices in the MPM.
+  //' @param Umat_list A reference to the main list of U matrices in the MPM.
+  //' @param Fmat_list A reference to the main list of F matrices in the MPM.
+  //' @param sge3 The Allstages data frame developed for \code{rlefko3()}
+  //' covering stage triplets across times \emph{t}+1, \emph{t} and \emph{t}-1 if
+  //' historical, or stage pairs covering times \emph{t}+1 and \emph{t} in all
+  //' other cases.
+  //' @param StageFrame The full stageframe for the analysis.
+  //' @param format Indicates whether to output Ehrlen-format hMPMs (\code{1}),
+  //' deVries-format hMPMs (\code{2}), ahistorical stagebased MPMs (\code{3}),
+  //' age-by-stage MPMs (\code{4}), or Leslie MPMs (\code{5}).
+  //' @param simplicity If \code{TRUE}, then only outputs matrices \code{U} and
+  //' \code{F}, rather than also outputting matrix \code{A}. Defaults to
+  //' \code{FALSE}.
+  //' @param sparse If \code{TRUE}, then output will be in sparse matrix format.
+  //' Defaults to \code{FALSE}.
+  //' 
+  //' @return This function works by altering the first three arguments, all of
+  //' which are lists, by reference.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline void matrix_post(List& Amat_list, List& Umat_list, List& Fmat_list,
+    const DataFrame& sge93, const DataFrame& StageFrame, int format,
+    bool simplicity = false, bool sparse = false) {
+    
+    //Rcout << "matrix_post A" << endl;
+    
+    arma::ivec sge93stage3 = as<arma::ivec>(sge93["stage3"]);
+    arma::vec sge93fec32 = as<arma::vec>(sge93["repentry3"]);
+    arma::vec sge93ovgivent = as<arma::vec>(sge93["ovgiven_t"]);
+    arma::vec sge93ovgivenf = as<arma::vec>(sge93["ovgiven_f"]);
+    arma::vec sge93ovoffsett = as<arma::vec>(sge93["ovoffset_t"]);
+    arma::vec sge93ovoffsetf = as<arma::vec>(sge93["ovoffset_f"]);
+    arma::ivec sge93ovestt = as<arma::ivec>(sge93["ovest_t"]);
+    arma::ivec sge93ovestf = as<arma::ivec>(sge93["ovest_f"]);
+    arma::vec sge93ovsurvmult = as<arma::vec>(sge93["ovsurvmult"]);
+    arma::vec sge93ovfecmult = as<arma::vec>(sge93["ovfecmult"]);
+    arma::ivec sge93index321 = as<arma::ivec>(sge93["index321"]);
+    arma::ivec sge93index321d = as<arma::ivec>(sge93["index321d"]);
+    arma::ivec sge93index21 = as<arma::ivec>(sge93["index21"]);
+    arma::ivec aliveandequal = as<arma::ivec>(sge93["aliveandequal"]);
+    
+    //Rcout << "matrix_post B" << endl;
+    
+    arma::uvec sge93rep2;
+    if (format < 3) {
+      sge93rep2 = as<arma::uvec>(sge93["rep2o"]);
+    } else {
+      sge93rep2 = as<arma::uvec>(sge93["rep2n"]);
+    }
+    
+    //Rcout << "matrix_post C" << endl;
+    
+    arma::uvec ovgiventind = find(sge93ovgivent != -1.);
+    arma::uvec ovgivenfind = find(sge93ovgivenf != -1.);
+    int ovgtn = static_cast<int>(ovgiventind.n_elem);
+    int ovgfn = static_cast<int>(ovgivenfind.n_elem);
+    
+    //Rcout << "matrix_post D" << endl;
+    
+    arma::uvec ovoffsettind = find(sge93ovoffsett != 0.);
+    arma::uvec ovoffsetfind = find(sge93ovoffsetf != 0.);
+    int ovotn = static_cast<int>(ovoffsettind.n_elem);
+    int ovofn = static_cast<int>(ovoffsetfind.n_elem);
+    
+    //Rcout << "matrix_post E" << endl;
+    
+    arma::uvec ovsurvmultind = find(sge93ovsurvmult != -1);
+    arma::uvec ovfecmultind = find(sge93ovfecmult != -1);
+    int ovsurvmultn = static_cast<int>(ovsurvmultind.n_elem);
+    int ovfecmultn = static_cast<int>(ovfecmultind.n_elem);
+    
+    //Rcout << "matrix_post F" << endl;
+    
+    arma::uvec ovesttind = find(sge93ovestt != -1);
+    arma::uvec ovestfind = find(sge93ovestf != -1);
+    int ovestn = static_cast<int>(ovesttind.n_elem);
+    int ovesfn = static_cast<int>(ovestfind.n_elem);
+    
+    //Rcout << "matrix_post G" << endl;
+    
+    int mat_list_length = static_cast<int>(Amat_list.length());
+    
+    int nostages = static_cast<int>(StageFrame.nrows());
+    int no2stages = nostages - 1;
+    if (format == 2) no2stages = no2stages - 1;
+    
+    arma::uvec all_repentries = find(sge93fec32 > 0.0);
+    arma::ivec all_entry_stages = arma::unique(sge93stage3(all_repentries));
+    
+    //Rcout << "matrix_post H" << endl;
+    
+    for (int i = 0; i < mat_list_length; i++) {
+      //Rcout << "matrix_post I i:" << i << endl;
+      
+      // Initialize final matrices
+      arma::mat tmatrix;
+      arma::mat fmatrix;
+      arma::mat amatrix;
+      arma::sp_mat tmatrix_sp;
+      arma::sp_mat fmatrix_sp;
+      arma::sp_mat amatrix_sp;
+      
+      //Rcout << "matrix_post J" << endl;
+      
+      // What about cases with only Amat?
+      if (sparse) { 
+        arma::sp_mat tmatrix_chuck = as<arma::sp_mat>(Umat_list(i)); // Main output U matrix
+        arma::sp_mat fmatrix_chuck = as<arma::sp_mat>(Fmat_list(i)); // Main output F matrix
+        
+        tmatrix_sp = tmatrix_chuck;
+        fmatrix_sp = fmatrix_chuck;
+      } else {
+        arma::mat tmatrix_chuck = as<arma::mat>(Umat_list(i));
+        arma::mat fmatrix_chuck = as<arma::mat>(Fmat_list(i));
+        
+        tmatrix = tmatrix_chuck;
+        fmatrix = fmatrix_chuck;
+      }
+      
+      //Rcout << "matrix_post K" << endl;
+      
+      // Correct transitions for multipliers
+      if (ovsurvmultn > 0) {
+        for (int j = 0; j < ovsurvmultn; j++) {
+          int matrixelement2 = sge93index321(ovsurvmultind(j));
+          if (!sparse) {
+            tmatrix(matrixelement2) = tmatrix(matrixelement2) * sge93ovsurvmult(ovsurvmultind(j));
+          } else {
+            tmatrix_sp(matrixelement2) = tmatrix_sp(matrixelement2) * sge93ovsurvmult(ovsurvmultind(j));
+          }
+        }
+      }
+      
+      if (ovfecmultn > 0) {
+        for (int j = 0; j < ovfecmultn; j++) {
+          int matrixelement2 = sge93index321(ovfecmultind(j));
+          if (!sparse) {
+            fmatrix(matrixelement2) = fmatrix(matrixelement2) * sge93ovfecmult(ovfecmultind(j));
+          } else {
+            fmatrix_sp(matrixelement2) = fmatrix_sp(matrixelement2) * sge93ovfecmult(ovfecmultind(j));
+          }
+        }
+      }
+      
+      //Rcout << "matrix_post L" << endl;
+      
+      // Correct transitions for given stuff
+      if (ovgtn > 0) {
+        for (int j = 0; j < ovgtn; j++) {
+          int matrixelement2 = sge93index321(ovgiventind(j));
+          if (!sparse) {
+            tmatrix(matrixelement2) = sge93ovgivent(ovgiventind(j));
+          } else {
+            tmatrix_sp(matrixelement2) = sge93ovgivent(ovgiventind(j));
+          }
+        }
+      }
+      
+      if (ovgfn > 0) {
+        for (int j = 0; j < ovgfn; j++) {
+          int matrixelement2 = sge93index321(ovgivenfind(j));
+          if (!sparse) {
+            fmatrix(matrixelement2) = sge93ovgivenf(ovgivenfind(j));
+          } else {
+            fmatrix_sp(matrixelement2) = sge93ovgivenf(ovgivenfind(j));
+          }
+        }
+      }
+      
+      //Rcout << "matrix_post M" << endl;
+      
+      // Correct transitions for additive offsets
+      if (ovotn > 0) {
+        for (int j = 0; j < ovotn; j++) {
+          int matrixelement2 = sge93index321(ovoffsettind(j));
+          if (NumericVector::is_na(tmatrix(matrixelement2)) ||
+            Rcpp::traits::is_nan<REALSXP>(tmatrix(matrixelement2))) {tmatrix(matrixelement2) = 0.;}
+          if (!sparse) {
+            tmatrix(matrixelement2) = tmatrix(matrixelement2) + sge93ovoffsett(ovoffsettind(j));
+          } else {
+            tmatrix_sp(matrixelement2) = tmatrix_sp(matrixelement2) + sge93ovoffsett(ovoffsettind(j));
+          }
+        }
+      }
+      
+      if (ovofn > 0) {
+        for (int j = 0; j < ovofn; j++) {
+          int matrixelement2 = sge93index321(ovoffsetfind(j));
+          if (NumericVector::is_na(fmatrix(matrixelement2)) ||
+            Rcpp::traits::is_nan<REALSXP>(fmatrix(matrixelement2))) {fmatrix(matrixelement2) = 0.;}
+          if (!sparse) {
+            fmatrix(matrixelement2) = fmatrix(matrixelement2) + sge93ovoffsetf(ovoffsetfind(j));
+          } else {
+            fmatrix_sp(matrixelement2) = fmatrix_sp(matrixelement2) + sge93ovoffsetf(ovoffsetfind(j));
+          }
+        }
+      }
+      
+      //Rcout << "matrix_post N" << endl;
+      
+      // Replace transitions for proxy values as given in overwrite table  
+      if (ovestn > 0) {
+        for (int j = 0; j < ovestn; j++) {
+          arma::uvec replacement = find(sge93index321 == sge93ovestt(ovesttind(j)));
+          
+          if (replacement.n_elem > 0) {
+            double correction = sge93ovsurvmult(ovesttind(j));
+            if (correction == -1.0) correction = 1.0;
+            if (!sparse) {
+              tmatrix(aliveandequal(ovesttind(j))) = tmatrix(aliveandequal(replacement(0))) *
+                correction;
+            } else {
+              tmatrix_sp(aliveandequal(ovesttind(j))) = tmatrix_sp(aliveandequal(replacement(0))) *
+                correction;
+            }
+          }
+        }
+      }
+      
+      if (ovesfn > 0) {
+        for (int j = 0; j < ovesfn; j++) {
+          arma::uvec replacement = find(sge93index321 == sge93ovestf(ovestfind(j)));
+          
+          if (replacement.n_elem > 0) {
+            double correction = sge93ovfecmult(ovesttind(j));
+            if (correction == -1.0) correction = 1.0;
+            if (!sparse) {
+              fmatrix(aliveandequal(ovestfind(j))) = fmatrix(aliveandequal(replacement(0))) *
+                correction;
+            } else {
+              fmatrix_sp(aliveandequal(ovestfind(j))) = fmatrix_sp(aliveandequal(replacement(0))) *
+                correction;
+            }
+          }
+        }
+      }
+      
+      //Rcout << "matrix_post O" << endl;
+      
+      // Final processing
+      if (!sparse) {
+        tmatrix(find_nonfinite(tmatrix)).zeros();
+        fmatrix(find_nonfinite(fmatrix)).zeros();
+        
+        Umat_list(i) = tmatrix;
+        Fmat_list(i) = fmatrix;
+        
+        if (!simplicity) {
+          arma::mat amatrix = tmatrix + fmatrix;
+          Amat_list(i) = amatrix;
+        }
+      } else {
+        arma::uvec tm_sp_nan = find_nonfinite(tmatrix_sp);
+        arma::uvec fm_sp_nan = find_nonfinite(fmatrix_sp);
+        
+        for (int nan_count = 0; nan_count < static_cast<int>(tm_sp_nan.n_elem); nan_count++) { 
+          tmatrix_sp(tm_sp_nan(nan_count)) = 0.0;
+        }
+        for (int nan_count = 0; nan_count < static_cast<int>(fm_sp_nan.n_elem); nan_count++) { 
+          fmatrix_sp(fm_sp_nan(nan_count)) = 0.0;
+        }
+        
+        Umat_list(i) = tmatrix_sp;
+        Fmat_list(i) = fmatrix_sp;
+        
+        if (!simplicity) {
+          arma::sp_mat amatrix_sp = tmatrix_sp + fmatrix_sp; // Create the A matrix
+          Amat_list(i) = amatrix_sp;
+        }
+      }
+    }
   }
 
 }

@@ -19,6 +19,7 @@ using namespace arma;
 // 1. void character_vectorizer  Create Standardized CharacterVectors Based on Non-Standard Input
 // 2. void integer_vectorizer  Create Standardized IntegerVectors Based on Non-Standard Input
 // 3. void numeric_vectorizer  Create Standardized NumericVectors Based on Non-Standard Input
+// 
 // 4. int list_vector_length  Find Length of Longest Vector in a List
 
 

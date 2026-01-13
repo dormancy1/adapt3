@@ -19,10 +19,10 @@
 #' class \code{stageframe}.
 #' @param supplements An optional list of data frames of class \code{lefkoSD}
 #' that provide supplemental data that should be incorporated into
-#' function-based MPMs. If used, then should be the same number of data frames
-#' as the number of MPMs provided in the list for argument \code{vrms}. MPMs
-#' that do not need supplemental data should be entered as \code{NULL} in this
-#' list. See \code{\link[lefko3]{supplemental}()} for details.
+#' function-based MPMs, or for post-processing in pre-existing MPMs. If used,
+#' then should be the same number of elements as the number of MPMs provided in
+#' the list for argument \code{vrms}, with each element either a data frame or
+#' \code{NULL}. See \code{\link[lefko3]{supplemental}()} for details.
 #' @param format An optional integer vector indicating the kind of
 #' function-based MPM to create for each \code{vrm_input} object entered in
 #' argument \code{vrms}. Possible choices include: \code{1}, Ehrlen-format
@@ -34,7 +34,8 @@
 #' least one MPM is both function-based and has age structure. Typically,
 #' the starting age in such MPMs should be set to \code{0} if post-breeding and
 #' \code{1} if pre-breeding. All other MPMs should be set to \code{0}. Do not
-#' use if no MPM has age structure. 
+#' use if no MPM has age structure. Defaults to \code{1} in age-based and age-
+#' by-stage MPMs.
 #' @param finalage An optional integer vector used for function-based Leslie
 #' and age-by-stage MPMs giving the final ages in such MPMs. Use only if at
 #' least one MPM is both function-based and has age structure. Do not use if no
@@ -121,17 +122,19 @@
 #' (use of \code{NA} will produce errors.) If the number of rows is less than
 #' \code{times}, then these values will be cycled.
 #' @param dev_terms An optional list of data frames, one for each
-#' \code{vrm_input} object. Each should include 14 columns and up to
+#' \code{vrm_input} object. Each should include 14 or 17 columns and up to
 #' \code{times} rows showing the values of the deviation terms to be added to
 #' each linear vital rate. The column order should be: 1: survival,
 #' 2: observation, 3: primary size, 4: secondary size, 5: tertiary size,
 #' 6: reproduction, 7: fecundity, 8: juvenile survival,
 #' 9: juvenile observation, 10: juvenile primary size, 11: juvenile secondary
 #' size, 12: juvenile tertiary size, 13: juvenile reproduction, and
-#' 14: juvenile maturity transition. Unused terms must be set to \code{0} (use
-#' of \code{NA} will produce errors). Single or small numbers of values per
-#' vital rate model are also allowed, and if the number of rows is less than
-#' \code{times}, then the terms will be cycled.
+#' 14: juvenile maturity transition. In addition, these may be followed by 3
+#' columns designating additive deviations to: 15: individual covariate a,
+#' 16: individual covariate b, and 17: individual covariate c. Unused terms
+#' must be set to \code{0} (use of \code{NA} will produce errors). Single or
+#' small numbers of values per vital rate model are also allowed, and if the
+#' number of rows is less than \code{times}, then the terms will be cycled.
 #' @param fb_sparse A logical vector indicating whether function-based MPMs
 #' should be produced in sparse matrix format. Defaults to \code{FALSE} for
 #' each MPM.
@@ -212,7 +215,8 @@ NULL
 #' individual covariates for each MPM.
 #' @param ind_terms_cat_list List of data frames giving values of factor
 #' individual covariates for each MPM.
-#' @param dev_terms_list List of deviations for vital rate models in all MPMs.
+#' @param dev_terms_list List of deviations for vital rate models in all MPMs,
+#' plus additive deviations to inda, indb, and indc.
 #' @param density_vr_list List of \code{lefkoDensVR} objects holding density
 #' relationships for all 14 vital rate models, for all MPMs.
 #' @param sp_density_list A list of values of spatial density for all MPMs.
@@ -512,17 +516,20 @@ NULL
 #' data frame must be set to \code{0} (use of \code{NA} will produce errors).
 #' If the number of rows is less than \code{times}, then these values will be
 #' cycled.
-#' @param dev_terms An optional  data frame including 14 columns and up to
+#' @param dev_terms An optional list of data frames, one for each
+#' \code{vrm_input} object. Each should include 14 or 17 columns and up to
 #' \code{times} rows showing the values of the deviation terms to be added to
 #' each linear vital rate. The column order should be: 1: survival,
 #' 2: observation, 3: primary size, 4: secondary size, 5: tertiary size,
-#' 6: reproduction, 7: fecundity, 8: juvenile survival, 9: juvenile
-#' observation, 10: juvenile primary size, 11: juvenile secondary size,
-#' 12: juvenile tertiary size, 13: juvenile reproduction, and 14: juvenile
-#' maturity transition. Unused terms must be set to \code{0} (use of \code{NA}
-#' will produce errors). Single or small numbers of values per vital rate model
-#' are also allowed, and if the number of rows is less than \code{times}, then
-#' the terms will be cycled.
+#' 6: reproduction, 7: fecundity, 8: juvenile survival,
+#' 9: juvenile observation, 10: juvenile primary size, 11: juvenile secondary
+#' size, 12: juvenile tertiary size, 13: juvenile reproduction, and
+#' 14: juvenile maturity transition. In addition, these may be followed by 3
+#' columns designating additive deviations to: 15: individual covariate a,
+#' 16: individual covariate b, and 17: individual covariate c. Unused terms
+#' must be set to \code{0} (use of \code{NA} will produce errors). Single or
+#' small numbers of values per vital rate model are also allowed, and if the
+#' number of rows is less than \code{times}, then the terms will be cycled.
 #' @param fb_sparse A logical vector indicating whether function-based MPMs
 #' should be produced in sparse matrix format. Defaults to \code{FALSE} for
 #' each MPM.
@@ -1850,11 +1857,12 @@ NULL
 #' and order to the MPMs in argument \code{vrms}. Each stageframe must be of
 #' class \code{stageframe}.
 #' @param supplements An optional list of data frames of class \code{lefkoSD}
-#' that provide supplemental data that should be incorporated into
-#' function-based MPMs. If used, then should be the same number of data frames
-#' as the number of MPMs provided in the list for argument \code{vrms}. MPMs
-#' that do not need supplemental data should be entered as \code{NULL} in this
-#' list. See \code{\link[lefko3]{supplemental}()} for details.
+#' that provide supplemental data that should be incorporated into MPMs. If
+#' used, then should have the same number of elements as the number of MPMs
+#' provided in the list for argument \code{vrms}, with MPMs that do not need
+#' supplemental data entered as \code{NULL} elements in this list. See
+#' \code{\link[lefko3]{supplemental}()} for details of how these data frames
+#' are used in function-based MPM construction.
 #' @param equivalence An optional numeric vector, list of numeric vectors,
 #' data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
 #' data frames. If a numeric vector, then must have the same number of elements
@@ -1924,17 +1932,19 @@ NULL
 #' (use of \code{NA} will produce errors.) If the number of rows is less than
 #' \code{times}, then these values will be cycled.
 #' @param dev_terms An optional list of data frames, one for each
-#' \code{vrm_input} object. Each should include 14 columns and up to
-#' \code{times} rows showing the values of the deviation terms to be added to
-#' each linear vital rate. The column order should be: 1: survival,
+#' \code{vrm_input} object. Each should include either 14 or 17 columns, and up
+#' to \code{times} rows showing the values of the deviation terms to be added
+#' to each linear vital rate. The column order should be: 1: survival,
 #' 2: observation, 3: primary size, 4: secondary size, 5: tertiary size,
-#' 6: reproduction, 7: fecundity, 8: juvenile survival,
-#' 9: juvenile observation, 10: juvenile primary size, 11: juvenile secondary
-#' size, 12: juvenile tertiary size, 13: juvenile reproduction, and
-#' 14: juvenile maturity transition. Unused terms must be set to \code{0} (use
-#' of \code{NA} will produce errors). Single or small numbers of values per
-#' vital rate model are also allowed, and if the number of rows is less than
-#' \code{times}, then the terms will be cycled.
+#' 6: reproduction, 7: fecundity, 8: juvenile survival, 9: juvenile
+#' observation, 10: juvenile primary size, 11: juvenile secondary size,
+#' 12: juvenile tertiary size, 13: juvenile reproduction, and 14: juvenile
+#' maturity transition. In addition, users may supply 3 more columns
+#' designating additive deviations to: 15: individual covariate a,
+#' 16: individual covariate b, and 17: individual covariate c. Unused terms
+#' must be set to \code{0} (use of \code{NA} will produce errors). Single or
+#' small numbers of values per vital rate model are also allowed, and if the
+#' number of rows is less than \code{times}, then the terms will be cycled.
 #' @param fb_sparse A logical vector indicating whether function-based MPMs
 #' should be produced in sparse matrix format. Defaults to \code{FALSE} for
 #' each MPM.
@@ -1943,7 +1953,8 @@ NULL
 #' least one MPM is both function-based and has age structure. Typically,
 #' the starting age in such MPMs should be set to \code{0} if post-breeding and
 #' \code{1} if pre-breeding. All other MPMs should be set to \code{0}. Do not
-#' use if no MPM has age structure. 
+#' use if no MPM has age structure. Defaults to \code{1} in Leslie and
+#' age-by-stage MPMs.
 #' @param finalage An optional integer vector used for function-based Leslie
 #' and age-by-stage MPMs giving the final ages in such MPMs. Use only if at
 #' least one MPM is both function-based and has age structure. Do not use if no
@@ -2144,6 +2155,365 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
     .Call('_adapt3_project3', PACKAGE = 'adapt3', mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
 }
 
+#' Project Multiple MPMs In Batches With Varying Starting Conditions
+#' 
+#' Function \code{batch_project3} runs function \code{project3()} across series
+#' of differing beginning conditions. Currently used to run sensitivity
+#' analyses.
+#' 
+#' @name batch_project3
+#' 
+#' @param used_mpms An integer vector detailing the MPMs entered in argument
+#' \code{mpms} to run the batch projection on. Although all MPMs entered in
+#' argument \code{mpms} will be projected, the alterations given in
+#' \code{givenrate}, \code{offset}, or \code{multiplier} will only be performed
+#' with those specified here. Defaults to \code{"all"}, which is equivalent to
+#' an integer vector holding the sequence of 1 through the number of MPMs
+#' entered.
+#' @param givenrate A numeric vector giving values to replace targeted matrix
+#' elements with. If used, then arguments \code{offset} and \code{multiplier}
+#' cannot be used. Defaults to \code{NULL}.
+#' @param offset A numeric vector giving the values to offset matrix elements
+#' by. If used, then arguments \code{givenrate} and \code{multiplier} cannot be
+#' used. Defaults to \code{c(0.005, 0.010, 0.015, 0.020, 0.025)}.
+#' @param multiplier A numeric vector giving values to multiply targeted matrix
+#' elements by. If used, then arguments \code{givenrate} and \code{offset}
+#' cannot be used. Defaults to \code{NULL}.
+#' @param all_elems A logical value indicating whether to use the alterations
+#' specified in argument \code{givenrate}, \code{offset}, or \code{multiplier}
+#' on all matrix elements. Defaults to \code{FALSE}.
+#' @param quiet A logical value indicating whether to block messages during
+#' the batch projection informing the user of which projection is currently
+#' being performed, and how many total projections are planned. Defaults to
+#' \code{TRUE}, which silences all such messages.
+#' 
+#' @param mpms An optional list of MPMs. Each MPM must be of class
+#' \code{lefkoMat}.
+#' @param vrms An optional list of \code{vrm_input} objects, each corresponding
+#' to a distinct MPM that will be created during projection. Each
+#' \code{vrm_input} object requires its own stageframe, entered in the same
+#' order via argument \code{stageframes}.
+#' @param stageframes An optional list of stageframes, corresponding in number
+#' and order to the MPMs in argument \code{vrms}. Each stageframe must be of
+#' class \code{stageframe}.
+#' @param supplements An optional list of data frames of class \code{lefkoSD}
+#' that provide supplemental data that should be incorporated into MPMs. If
+#' used, then should have the same number of elements as the number of MPMs
+#' provided in the list for argument \code{vrms}, with MPMs that do not need
+#' supplemental data entered as \code{NULL} elements in this list. See
+#' \code{\link[lefko3]{supplemental}()} for details of how these data frames
+#' are used in function-based MPM construction.
+#' @param equivalence An optional numeric vector, list of numeric vectors,
+#' data frame of class \code{adaptEq} or class \code{lefkoEq}, or a list of such
+#' data frames. If a numeric vector, then must have the same number of elements
+#' as the number of MPMs, with each element giving the effect of an individual
+#' of each MPM relative to a reference individual. If a list of vectors, then
+#' the list should be composed of as many numeric vectors as MPMs, or as a two-
+#' layered list of such vectors for each annual matrix per MPM, with each
+#' vector giving the effect of each individual in each stage relative to a
+#' reference individual. Data frames of class \code{adaptEq}, and lists of such
+#' data frames, can be made with function \code{\link{equiv_input}()}. Numeric
+#' entries used in these vectors can be thought of as Lotka-Volterra
+#' competition terms, such as are used in multiple species competition models.
+#' @param starts An optional list of \code{lefkoSV} objects, which are data
+#' frames providing the starting numbers of individuals of each stage. If
+#' provided, then one is needed per MPM. If not provided, then all projections
+#' start with a single individual of each stage per MPM.
+#' @param years An optional term corresponding either to a single integer vector
+#' of time \code{t} values, if all MPMs will use the same time \code{t} or set
+#' of time \code{t}'s, or a list of such vectors with each vector corresponding
+#' to each MPM in order. In the latter case, a vector composed of a single
+#' \code{NA} value is interpreted to mean that all time \code{t} values in the
+#' MPM should be utilized. If a vector shorter than \code{times} is supplied,
+#' then this vector will be cycled.
+#' @param patches An optional string vector with length equal to the number of
+#' MPMs, detailing the name of each patch to project for each MPM, in order.
+#' Only a single pop-patch may be projected for each MPM given. A value of
+#' \code{NA} can be supplied to indicate that the population-level matrices
+#' should be projected (if argument \code{mpms} is used and a population-level
+#' set of matrices exist), or that the first patch noted should be used.
+#' Defaults to the population-level set or the first patch, depending on
+#' whether the former exists.
+#' @param tweights An optional list composed of numeric vectors or matrices
+#' denoting the probabilities of choosing each matrix in each MPM in a
+#' stochastic projection. If an element of the list is a matrix, then a
+#' first-order Markovian environment is assumed, in which the probability of
+#' choosing a specific annual matrix depends on which annual matrix is
+#' currently chosen. If an element of the list is a vector, then the choice of
+#' annual matrix is assumed to be independent of the current matrix. Defaults
+#' to equal weighting among matrices. If used, then one element per MPM is
+#' required, with equal weighting assumed for any element set to \code{NULL}.
+#' @param format An optional integer vector indicating the kind of
+#' function-based MPM to create for each \code{vrm_input} object entered in
+#' argument \code{vrms}. Possible choices include: \code{1}, Ehrlen-format
+#' historical MPM; \code{2}, deVries-format historical MPM; \code{3},
+#' ahistorical MPM (default); \code{4}, age-by-stage MPM; and \code{5}, Leslie
+#' (age-based) MPM.
+#' @param entry_time An optional integer vector giving the entry time for each
+#' MPM into the projection. Defaults to a zero vector with the length of the
+#' number of MPMs, as given either by argument \code{mpms} or \code{vrms}.
+#' @param sp_density An optional argument for use with \code{vrm_input} objects
+#' that specifies the spatial density to be used in each time step. If used,
+#' may either be a numeric vector giving a single spatial density for each
+#' \code{vrm_input} object entered in argument \code{vrms} (in this case, the
+#' value of spatial density given for each \code{vrm_input} object will be held
+#' constant through the projection), or a list of as many numeric vectors as
+#' \code{vrm_input} objects, with the length of each vector giving the spatial
+#' density at each time step. If vectors are shorter than specified in 
+#' \code{times}, then these values will be cycled.
+#' @param ind_terms An optional argument providing values of individual or
+#' environmental covariate values for \code{vrm_input} objects used in
+#' function-based projection. Can be set either to a single data frame with 3
+#' columns giving values for up to 3 covariates across time (rows give the time
+#' order of these values), or a list of as many such data frames as
+#' \code{vrm_input} objects. In the latter case, \code{vrm_input} objects that
+#' do not use such covariates should have the associated element set to
+#' \code{NULL}. Unused terms within each data frame must be set to \code{0}
+#' (use of \code{NA} will produce errors.) If the number of rows is less than
+#' \code{times}, then these values will be cycled.
+#' @param dev_terms An optional list of data frames, one for each
+#' \code{vrm_input} object. Each should include either 14 or 17 columns, and up
+#' to \code{times} rows showing the values of the deviation terms to be added
+#' to each linear vital rate. The column order should be: 1: survival,
+#' 2: observation, 3: primary size, 4: secondary size, 5: tertiary size,
+#' 6: reproduction, 7: fecundity, 8: juvenile survival, 9: juvenile
+#' observation, 10: juvenile primary size, 11: juvenile secondary size,
+#' 12: juvenile tertiary size, 13: juvenile reproduction, and 14: juvenile
+#' maturity transition. In addition, users may supply 3 more columns
+#' designating additive deviations to: 15: individual covariate a,
+#' 16: individual covariate b, and 17: individual covariate c. Unused terms
+#' must be set to \code{0} (use of \code{NA} will produce errors). Single or
+#' small numbers of values per vital rate model are also allowed, and if the
+#' number of rows is less than \code{times}, then the terms will be cycled.
+#' @param fb_sparse A logical vector indicating whether function-based MPMs
+#' should be produced in sparse matrix format. Defaults to \code{FALSE} for
+#' each MPM.
+#' @param firstage An optional integer vector used for function-based Leslie
+#' and age-by-stage MPMs giving the starting ages in such MPMs. Use only if at
+#' least one MPM is both function-based and has age structure. Typically,
+#' the starting age in such MPMs should be set to \code{0} if post-breeding and
+#' \code{1} if pre-breeding. All other MPMs should be set to \code{0}. Do not
+#' use if no MPM has age structure. Defaults to \code{1} in Leslie and
+#' age-by-stage MPMs.
+#' @param finalage An optional integer vector used for function-based Leslie
+#' and age-by-stage MPMs giving the final ages in such MPMs. Use only if at
+#' least one MPM is both function-based and has age structure. Do not use if no
+#' MPM has age structure.
+#' @param fecage_min An optional integer vector used for function-based Leslie
+#' MPMs giving the first age at which organisms can be reproductive in such
+#' MPMs. Use only if at least one MPM is a function-based Leslie MPM. Defaults
+#' to the values given in \code{firstage}.
+#' @param fecage_max An optional integer vector used for function-based Leslie
+#' MPMs giving the final age at which organisms can be reproductive in such
+#' MPMs. Use only if at least one MPM is a function-based Leslie MPM. Defaults
+#' to the values given in \code{finalage}.
+#' @param cont An optional vector used for function-based Leslie and
+#' age-by-stage MPMs stating whether the MPM should should include a stasis
+#' transition within the final age. This should be used only when an organism
+#' can maintain the demographic characteristics of the final described age
+#' after reaching that age. Can be entered as a logical vector or an integer
+#' vector. MPMs without age structure should be entered as \code{0} or
+#' \code{FALSE}. Do not use if no MPM has age structure.
+#' @param fecmod An optional vector used for function-based MPMs giving scalar
+#' multipliers for fecundity terms, when two fecundity variables are used for a
+#' collective fecundity per individual. Each entry refers to each 
+#' \code{vrm_input} object in argument \code{vrms}, in the same order.
+#' @param density An optional list of data frames of class \code{lefkoDens},
+#' which provide details for density dependence in MPM elements and have been
+#' created with function \code{\link[lefko3]{density_input}()}, or a two-
+#' layered list of such data frames, with a data frame per annual matrix per
+#' MPM.
+#' @param density_vr An optional list of data frames of class
+#' \code{lefkoDensVR}, which provide details for density dependence in vital
+#' rate models and have been created with function
+#' \code{link[lefko3]{density_vr}()}. If used, then one such data frame per MPM
+#' is required. MPMs to be run without vital describing density dependence
+#' relationships in vital rates should be set to \code{NULL}. Can only be used
+#' with function-based projections.
+#' @param err_check A logical value indicating whether to include an extra list
+#' of output objects for error checking with each projection. Can also be set
+#' to the text value \code{"extreme"}, in which case all \code{err_check}
+#' output plus a multiple level list with each MPM used in each time step will
+#' be output.
+#' @param stochastic A logical value indicating whether the projection will be
+#' run as a temporally stochastic projection. Defaults to \code{FALSE}.
+#' @param integeronly A logical value indicating whether to round the number of
+#' individuals projected in each stage at each occasion in each MPM to the
+#' nearest integer. Defaults to \code{FALSE}.
+#' @param substoch An integer value indicating whether to force survival-
+#' transition matrices to be substochastic in density dependent and density
+#' independent simulations. Defaults to \code{0}, which does not enforce
+#' substochasticity. Alternatively, \code{1} forces all survival-transition
+#' elements to range from 0.0 to 1.0, and forces fecundity to be non-negative;
+#' and \code{2} forces all column rows in the survival-transition matrices to
+#' total no more than 1.0, in addition to the actions outlined for option
+#' \code{1}. Both settings \code{1} and \code{2} change negative fecundity
+#' elements to \code{0.0}.
+#' @param nreps The number of replicate projections. Defaults to \code{1}.
+#' @param times Number of occasions to iterate per replicate. Defaults to
+#' \code{10000}.
+#' @param prep_mats An integer value for use when creating function-based MPM
+#' projections. If using \code{vrms} input instead of \code{mpms} input, then
+#' this argument determines how many matrices should be used as a limit to
+#' develop matrices prior to running the projection. See \code{Notes} for
+#' further details.
+#' @param force_fb A logical value indicating whether to force function-based
+#' MPMs to be developed at each time step even if fewer than \code{prep_mats}.
+#' Defaults to \code{FALSE}.
+#' @param exp_tol A numeric value used to indicate a maximum value to set
+#' exponents to in the core kernel to prevent numerical overflow. Defaults to
+#' \code{700}.
+#' @param theta_tol A numeric value used to indicate a maximum value to theta as
+#' used in the negative binomial probability density kernel. Defaults to
+#' \code{100000000}, but can be reset to other values during error checking.
+#' 
+#' @return A list of class \code{adaptProjBatch}, which is composed of three
+#' elements:
+#' \item{proj_out}{A multi-layered list, with the top number of elements equal
+#' to the number of \code{used_mpms}. Each element is a list, with the number
+#' of elements equal to the number of alterations tried. Each of these elements
+#' is, in turn, an \code{adaptProj} object.}
+#' \item{ref}{A list with the same structure as \code{proj_out}. This list is
+#' composed of supplements (\code{lefkoSD} objects) giving the exact
+#' alterations performed in the associated MCM.}
+#' \item{control}{An integer vector giving the identities of the MPM altered
+#' in each top list.}
+#' 
+#' @section Notes:
+#' 
+#' This function is currently used to run sensitivity analyses, in which the
+#' slope of the final population size is regressed against the the starting
+#' offset values for each element. Each regression is run on the offset values
+#' within each element.
+#' 
+#' The only arguments unique to this function are arguments \code{used_mpms},
+#' \code{givenrate}, \code{offset}, \code{multiplier}, \code{all_elems}, and
+#' \code{quiet}. All others are passed to function \code{project3}.
+#' 
+#' Setting \code{all_elems = TRUE} will lead to very time-intensive analysis.
+#' We encourage users to break down their analyses into smaller batches, in 
+#' order to make them more tractable.
+#' 
+#' @examples
+#' library(lefko3)
+#' data(cypdata)
+#' 
+#' sizevector <- c(0, 0, 0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)
+#' stagevector <- c("SD", "P1", "P2", "P3", "SL", "D", "XSm", "Sm", "Md", "Lg",
+#'   "XLg")
+#' repvector <- c(0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1)
+#' obsvector <- c(0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1)
+#' matvector <- c(0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1)
+#' immvector <- c(0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0)
+#' propvector <- c(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+#' indataset <- c(0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1)
+#' binvec <- c(0, 0, 0, 0, 0, 0.5, 0.5, 1, 1, 2.5, 7)
+#' 
+#' cypframe_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
+#'   repstatus = repvector, obsstatus = obsvector, matstatus = matvector,
+#'   propstatus = propvector, immstatus = immvector, indataset = indataset,
+#'   binhalfwidth = binvec)
+#' 
+#' sizevector <- c(0, 0, 3.0, 15)
+#' stagevector <- c("P1", "D", "Sm", "Lg")
+#' repvector <- c(0, 0, 1, 1)
+#' obsvector <- c(0, 0, 1, 1)
+#' matvector <- c(0, 1, 1, 1)
+#' immvector <- c(1, 0, 0, 0)
+#' indataset <- c(0, 1, 1, 1)
+#' binvec <- c(0, 0.5, 2.5, 9.5)
+#' 
+#' cypframe_small_raw <- sf_create(sizes = sizevector, stagenames = stagevector,
+#'   repstatus = repvector, obsstatus = obsvector, matstatus = matvector,
+#'   immstatus = immvector, indataset = indataset, binhalfwidth = binvec)
+#' 
+#' cypraw_v1 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
+#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
+#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
+#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+#'   stageassign = cypframe_raw, stagesize = "sizeadded", NAas0 = TRUE,
+#'   NRasRep = TRUE)
+#' 
+#' cypraw_v2 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
+#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
+#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
+#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+#'   stageassign = cypframe_small_raw, stagesize = "sizeadded", NAas0 = TRUE,
+#'   NRasRep = TRUE)
+#' 
+#' cypraw_v3 <- verticalize3(data = cypdata, noyears = 6, firstyear = 2004,
+#'   patchidcol = "patch", individcol = "plantid", blocksize = 4,
+#'   sizeacol = "Inf2.04", sizebcol = "Inf.04", sizeccol = "Veg.04",
+#'   repstracol = "Inf.04", repstrbcol = "Inf2.04", fecacol = "Pod.04",
+#'   NAas0 = TRUE, NRasRep = TRUE)
+#' 
+#' cypsupp2r <- supplemental(stage3 = c("SD", "P1", "P2", "P3", "SL", "D", 
+#'     "XSm", "Sm", "SD", "P1"),
+#'   stage2 = c("SD", "SD", "P1", "P2", "P3", "SL", "SL", "SL", "rep",
+#'     "rep"),
+#'   eststage3 = c(NA, NA, NA, NA, NA, "D", "XSm", "Sm", NA, NA),
+#'   eststage2 = c(NA, NA, NA, NA, NA, "XSm", "XSm", "XSm", NA, NA),
+#'   givenrate = c(0.10, 0.20, 0.20, 0.20, 0.25, NA, NA, NA, NA, NA),
+#'   multiplier = c(NA, NA, NA, NA, NA, NA, NA, NA, 1500, 500),
+#'   type =c(1, 1, 1, 1, 1, 1, 1, 1, 3, 3),
+#'   stageframe = cypframe_raw, historical = FALSE)
+#' cypmatrix2r <- rlefko2(data = cypraw_v1, stageframe = cypframe_raw, 
+#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
+#'   size = c("size3added", "size2added"), supplement = cypsupp2r,
+#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#' cypmean <- lmean(cypmatrix2r)
+#' 
+#' cypsupp2r_small <- supplemental(stage3 = c("D", "Sm", "Lg", "P1"),
+#'   stage2 = c("P1", "P1", "P1", "rep"), eststage3 = c(NA, "Sm", "Lg", NA),
+#'   eststage2 = c(NA, "D", "D", NA), givenrate = c(0.05, NA, NA, NA),
+#'   offset = c(NA, NA, -0.1, NA), multiplier = c(NA, NA, NA, 0.5),
+#'   type =c(1, 1, 1, 3), stageframe = cypframe_small_raw, historical = FALSE)
+#' cypmatrix2r_small <- rlefko2(data = cypraw_v2, stageframe = cypframe_small_raw, 
+#'   year = "all", patch = "all", stages = c("stage3", "stage2", "stage1"),
+#'   size = c("size3added", "size2added"), supplement = cypsupp2r_small,
+#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#' cypmean_small <- lmean(cypmatrix2r_small)
+#' 
+#' cypmatrixL_small <- rleslie(data = cypraw_v3, start_age = 1, last_age = 4,
+#'   continue = TRUE, fecage_min = 3, year = "all", pop = NA, patch = "all",
+#'   yearcol = "year2", patchcol = "patchid", indivcol = "individ")
+#' 
+#' cyp_mpms1 <- list(cypmatrix2r, cypmatrix2r_small, cypmatrixL_small)
+#' 
+#' c2d_4 <- density_input(cypmean, stage3 = c("P1", "P1"), stage2= c("SD", "rep"),
+#'   style = 1, time_delay = 1, alpha = 1, beta = 0.0005, type = c(2, 2))
+#' c2d_4a <- density_input(cypmean_small, stage3 = c("P1", "P1"), stage2= c("P1", "rep"),
+#'   style = 1, time_delay = 1, alpha = 1, beta = 0.0005, type = c(2, 2))
+#' cypL_dv <- density_input(cypmatrixL_small, stage3 = c("Age1"), stage2 = c("rep"),
+#'   style = c(1), alpha = c(0.5), beta = c(1.0), type = c(2))
+#' cyp_density <- list(c2d_4, c2d_4a, cypL_dv)
+#' 
+#' cyp_start1 <- start_input(cypmatrix2r, stage2 = c("SD", "P1", "D"),
+#'   value = c(100, 200, 4))
+#' cyp_start2 <- start_input(cypmatrix2r_small, stage2 = c("P1", "D"),
+#'   value = c(10, 2000))
+#' cypL_start_1 <- start_input(cypmatrixL_small, stage2 = c("Age1"),
+#'   value = c(200))
+#' cyp_start <- list(cyp_start1, cyp_start2, cypL_start_1)
+#' 
+#' new_supplement_cyp2_small <- sup_skeleton(2)
+#' new_supplement_cyp2_small$stage3 <- c("D", "Sm")
+#' new_supplement_cyp2_small$stage2 <- c("Lg", "Lg")
+#' used_supplements <- list(new_supplement_cyp2_small,
+#'   new_supplement_cyp2_small, NULL)
+#' 
+#' aaa1_prj_batch1 <- batch_project3(used_mpms = "all", all_elems = TRUE,
+#'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, integeronly = TRUE,
+#'   nreps = 3, density = cyp_density)
+#' aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
+#'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, nreps = 3,
+#'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
+#' 
+#' @export batch_project3
+batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, multiplier = NULL, all_elems = NULL, quiet = NULL, mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
+    .Call('_adapt3_batch_project3', PACKAGE = 'adapt3', used_mpms, givenrate, offset, multiplier, all_elems, quiet, mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
+}
+
 #' Run Pairwise and Multiple Invasibility Analysis
 #' 
 #' Function \code{invade3} runs pairwise and multiple invasisibility analyses,
@@ -2220,24 +2590,28 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' data frame must be set to \code{0} (use of \code{NA} will produce errors).
 #' If the number of rows is less than \code{times}, then these values will be
 #' cycled.
-#' @param dev_terms An optional  data frame including 14 columns and up to
+#' @param dev_terms An optional data frame including 14 or 17 columns and up to
 #' \code{times} rows showing the values of the deviation terms to be added to
 #' each linear vital rate. The column order should be: 1: survival,
 #' 2: observation, 3: primary size, 4: secondary size, 5: tertiary size,
 #' 6: reproduction, 7: fecundity, 8: juvenile survival, 9: juvenile
 #' observation, 10: juvenile primary size, 11: juvenile secondary size,
 #' 12: juvenile tertiary size, 13: juvenile reproduction, and 14: juvenile
-#' maturity transition. Unused terms must be set to \code{0} (use of \code{NA}
-#' will produce errors). Single or small numbers of values per vital rate model
-#' are also allowed, and if the number of rows is less than \code{times}, then
-#' the terms will be cycled.
+#' maturity transition. Optionally, the user may add three columns designating
+#' additive deviations to: 15: individual covariate a, 16: individual covariate
+#' b, and 17: individual covariate c. Unused terms must be set to \code{0} (use
+#' of \code{NA} will produce errors). Single or small numbers of values per
+#' vital rate model are also allowed, and if the number of rows is less than
+#' \code{times}, then the terms will be cycled.
 #' @param fb_sparse A logical value indicating whether function-based MPMs
 #' should be produced in sparse matrix format. Defaults to \code{FALSE}.
-#' @param firstage An optional integer used for function-based Leslie and
-#' age-by-stage MPMs giving the starting age in such MPMs. Use only if the MPM
-#' is both function-based and has age structure. Typically, the starting age in
-#' such MPMs should be set to \code{0} if post-breeding and \code{1} if
-#' pre-breeding. All other MPMs should be set to \code{0}.
+#' @param firstage An optional integer vector used for function-based Leslie
+#' and age-by-stage MPMs giving the starting ages in such MPMs. Use only if at
+#' least one MPM is both function-based and has age structure. Typically,
+#' the starting age in such MPMs should be set to \code{0} if post-breeding and
+#' \code{1} if pre-breeding. All other MPMs should be set to \code{0}. Do not
+#' use if no MPM has age structure. Defaults to \code{1} in Leslie and
+#' age-by-stage MPMs.
 #' @param finalage An optional integer used for function-based Leslie and
 #' age-by-stage MPMs giving the final age in such MPMs. Use only if the MPM is
 #' both function-based and has age structure.

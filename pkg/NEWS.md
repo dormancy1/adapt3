@@ -5,10 +5,17 @@
 * Trait axes now include individual covariate values that can be used to create
   variants.
   
-* Density dependence through the additive limit function has been added to
-  projection and invasion functions.
+* Density dependence through the additive limit and absolute limit functions has
+  been added to projection and invasion functions.
   
 * Equivalence frames and density frames can now be added per annual matrix.
+  
+* Community projections with projection3() can now handle post-processing of
+  pre-existing MPMs with argument `supplemental`.
+  
+* Function `batch_project3()` now runs batches of community projections using
+  vectors of alterations input as matrix element offsets, given rate changes,
+  and multipliers.
 
 ## BUGS FIXED
 

@@ -129,26 +129,30 @@ data frame must be set to \code{0} (use of \code{NA} will produce errors).
 If the number of rows is less than \code{times}, then these values will be
 cycled.}
 
-\item{dev_terms}{An optional  data frame including 14 columns and up to
+\item{dev_terms}{An optional data frame including 14 or 17 columns and up to
 \code{times} rows showing the values of the deviation terms to be added to
 each linear vital rate. The column order should be: 1: survival,
 2: observation, 3: primary size, 4: secondary size, 5: tertiary size,
 6: reproduction, 7: fecundity, 8: juvenile survival, 9: juvenile
 observation, 10: juvenile primary size, 11: juvenile secondary size,
 12: juvenile tertiary size, 13: juvenile reproduction, and 14: juvenile
-maturity transition. Unused terms must be set to \code{0} (use of \code{NA}
-will produce errors). Single or small numbers of values per vital rate model
-are also allowed, and if the number of rows is less than \code{times}, then
-the terms will be cycled.}
+maturity transition. Optionally, the user may add three columns designating
+additive deviations to: 15: individual covariate a, 16: individual covariate
+b, and 17: individual covariate c. Unused terms must be set to \code{0} (use
+of \code{NA} will produce errors). Single or small numbers of values per
+vital rate model are also allowed, and if the number of rows is less than
+\code{times}, then the terms will be cycled.}
 
 \item{fb_sparse}{A logical value indicating whether function-based MPMs
 should be produced in sparse matrix format. Defaults to \code{FALSE}.}
 
-\item{firstage}{An optional integer used for function-based Leslie and
-age-by-stage MPMs giving the starting age in such MPMs. Use only if the MPM
-is both function-based and has age structure. Typically, the starting age in
-such MPMs should be set to \code{0} if post-breeding and \code{1} if
-pre-breeding. All other MPMs should be set to \code{0}.}
+\item{firstage}{An optional integer vector used for function-based Leslie
+and age-by-stage MPMs giving the starting ages in such MPMs. Use only if at
+least one MPM is both function-based and has age structure. Typically,
+the starting age in such MPMs should be set to \code{0} if post-breeding and
+\code{1} if pre-breeding. All other MPMs should be set to \code{0}. Do not
+use if no MPM has age structure. Defaults to \code{1} in Leslie and
+age-by-stage MPMs.}
 
 \item{finalage}{An optional integer used for function-based Leslie and
 age-by-stage MPMs giving the final age in such MPMs. Use only if the MPM is

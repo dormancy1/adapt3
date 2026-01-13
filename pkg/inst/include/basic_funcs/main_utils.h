@@ -21,17 +21,22 @@ using namespace LefkoUtils;
 // 2. void UFmat_alter Alter MPM U and F Matrices with Trait Axis Inputs, Standard Matrix Format
 // 3. void sp_Amat_alter Alter MPM A Matrices with Trait Axis Inputs, Sparse Matrix Format
 // 4. void sp_UFmat_alter Alter MPM U and F Matrices with Trait Axis Inputs, Sparse Matrix Format
+// 
 // 5. arma::mat exp_grid_single  Create Expanded Matrix Giving Permutations with Replacement
 // 6. void fastLm_sl  Fast Linear Regression, Slopes Only
 // 7. void proj3dens_ad  Project Forward By One Time Step
 // 8. void proj3dens_inv  Project Forward By One Time Step in Invasion Run
+// 
 // 9. void Lyapunov_df_maker  Create Data Frame to Hold Fitness Output from Function invade3()
 // 10. DataFrame ta_reassess  Expand Trait Axis Table Given User Input
 // 11. void pop_error2  Standardized Error Messages
 // 12. List df_indices  Subset A Data Frame By Row Index
+// 
 // 13. void Lyapunov_creator  Creates Final Table of Lyapunov Estimates
 // 14. void optim_ta_setup  Create Trait Axis Reassessed for Trait Optimization
 // 15. void density_prep  Format All Density-related Variables Based on Density Inputs
+// 
+// 16. Nullable<RObject> supplements_replacer  Create New Supplements List With Old Supplements Input and New Data Frame
 
 
 namespace AdaptUtils {
@@ -519,7 +524,7 @@ namespace AdaptUtils {
     
     int sparse_switch {0};
     int time_delay {1};
-    double pop_size {0};
+    double pop_size {0.};
     bool warn_trigger_neg = false;
     bool warn_trigger_1 = false;
     
@@ -535,6 +540,7 @@ namespace AdaptUtils {
     arma::uvec dyn_style = as<arma::uvec>(dens_input["style"]);
     arma::vec dyn_alpha = as<arma::vec>(dens_input["alpha"]);
     arma::vec dyn_beta = as<arma::vec>(dens_input["beta"]);
+    arma::vec dyn_gamma = as<arma::vec>(dens_input["gamma"]);
     arma::uvec dyn_delay = as<arma::uvec>(dens_input["time_delay"]);
     arma::uvec dyn_type = as<arma::uvec>(dens_input["type"]);
     int n_dyn_elems = static_cast<int>(dyn_index321.n_elem);
@@ -555,6 +561,8 @@ namespace AdaptUtils {
     } else sparse_switch = sparse;
     
     double changing_element {0.0};
+    
+    bool additive_limit_enforced {false};
     
     if (sparse_switch == 0 && !sparse_input) {
       // Dense matrix projection
@@ -586,8 +594,13 @@ namespace AdaptUtils {
           changing_element = theprophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
         } else if (dyn_style(j) == 5) { // Additive limit function
-          changing_element = theprophecy(dyn_index321(j)) + 
-            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
+          additive_limit_enforced = true;
+          
+          changing_element = theprophecy(dyn_index321(j));
+        } else if (dyn_style(j) == 6) {
+          additive_limit_enforced = true;
+          
+          changing_element = theprophecy(dyn_index321(j));
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -636,38 +649,49 @@ namespace AdaptUtils {
           }
         }
       }
+      
       theseventhson = theprophecy * theseventhson;
       if (integeronly) {
         theseventhson = floor(theseventhson);
       }
       
       // Adjust pop size for additive limit
-      for (int j = 0; j < n_dyn_elems; j++) {
-        if (dyn_style(j) == 5) {
+      if (additive_limit_enforced) {
+        for (int j = 0; j < n_dyn_elems; j++) { // Density dependence
+          double current_alpha = dyn_alpha(j);
+          double current_beta = dyn_beta(j);
+          double current_gamma = dyn_gamma(j);
           double Nsum = sum(theseventhson);
-          double K_limit = dyn_alpha(j);
-          
+          double K_limit = current_alpha;
           unsigned int current_stage = dyn_index_s3(j);
-          double NK_diff = Nsum - K_limit;
-          
           double current_stage_inds = theseventhson(current_stage);
+          double NK_diff = Nsum - current_stage_inds;
+          double max_limit = K_limit - NK_diff;
           
-          if (NK_diff < 0.) {
-            if (current_stage_inds < (-1 * NK_diff)) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds += NK_diff;
+          if (dyn_style(j) == 5) { // Additive limit function
+            pop_size = delay_N;
+            
+            double proposed_s3_total = current_beta * (current_alpha - pop_size);
+            
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && max_limit > current_gamma) {
+              proposed_s3_total = max_limit;
             }
-          } else {
-            if (current_stage_inds < NK_diff) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds -= NK_diff;
+            theseventhson(current_stage) = proposed_s3_total;
+            
+          } else if (dyn_style(j) == 6) {
+            double proposed_s3_total = current_stage_inds;
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && current_alpha > current_beta) {
+              proposed_s3_total = max_limit;
             }
+            theseventhson(current_stage) = proposed_s3_total;
           }
-          theseventhson(current_stage) = current_stage_inds;
         }
       }
+      
       if (err_check) prophesized_mat = theprophecy;
       proj_vec = theseventhson;
       
@@ -720,8 +744,13 @@ namespace AdaptUtils {
           changing_element = sparse_prophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
         } else if (dyn_style(j) == 5) { // Additive limit function
-          changing_element = theprophecy(dyn_index321(j)) + 
-            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
+          additive_limit_enforced = true;
+          
+          changing_element = sparse_prophecy(dyn_index321(j)); 
+        } else if (dyn_style(j) == 6) {
+          additive_limit_enforced = true;
+          
+          changing_element = sparse_prophecy(dyn_index321(j));
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -777,30 +806,39 @@ namespace AdaptUtils {
       }
       
       // Adjust pop size for additive limit
-      for (int j = 0; j < n_dyn_elems; j++) {
-        if (dyn_style(j) == 5) {
-          double Nsum = sum(theseventhson);
-          double K_limit = dyn_alpha(j);
-          
+      if (additive_limit_enforced) {
+        for (int j = 0; j < n_dyn_elems; j++) { // Density dependence
+          double current_alpha = dyn_alpha(j);
+          double current_beta = dyn_beta(j);
+          double current_gamma = dyn_gamma(j);
+          double Nsum = accu(sparse_seventhson);
+          double K_limit = current_alpha;
           unsigned int current_stage = dyn_index_s3(j);
-          double NK_diff = Nsum - K_limit;
+          double current_stage_inds = sparse_seventhson(current_stage);
+          double NK_diff = Nsum - current_stage_inds;
+          double max_limit = K_limit - NK_diff;
           
-          double current_stage_inds = theseventhson(current_stage);
-          
-          if (NK_diff < 0.) {
-            if (current_stage_inds < (-1 * NK_diff)) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds += NK_diff;
+          if (dyn_style(j) == 5) { // Additive limit function
+            pop_size = delay_N;
+            
+            double proposed_s3_total = current_beta * (current_alpha - pop_size);
+            
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && max_limit > current_gamma) {
+              proposed_s3_total = max_limit;
             }
-          } else {
-            if (current_stage_inds < NK_diff) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds -= NK_diff;
+            sparse_seventhson(current_stage) = proposed_s3_total;
+            
+          } else if (dyn_style(j) == 6) {
+            double proposed_s3_total = current_stage_inds;
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && current_alpha > current_beta) {
+              proposed_s3_total = max_limit;
             }
+            sparse_seventhson(current_stage) = proposed_s3_total;
           }
-          theseventhson(current_stage) = current_stage_inds;
         }
       }
       if (err_check) prophesized_sp = sparse_prophecy;
@@ -892,6 +930,7 @@ namespace AdaptUtils {
     arma::uvec dyn_style = as<arma::uvec>(dens_input["style"]);
     arma::vec dyn_alpha = as<arma::vec>(dens_input["alpha"]);
     arma::vec dyn_beta = as<arma::vec>(dens_input["beta"]);
+    arma::vec dyn_gamma = as<arma::vec>(dens_input["gamma"]);
     arma::uvec dyn_delay = as<arma::uvec>(dens_input["time_delay"]);
     arma::uvec dyn_type = as<arma::uvec>(dens_input["type"]);
     int n_dyn_elems = static_cast<int>(dyn_index321.n_elem);
@@ -912,6 +951,8 @@ namespace AdaptUtils {
     } else sparse_switch = sparse;
     
     double changing_element {0.0};
+    
+    bool additive_limit_enforced {false};
     
     if (sparse_switch == 0 && !sparse_input) {
       // Dense matrix projection
@@ -944,8 +985,13 @@ namespace AdaptUtils {
           changing_element = theprophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
         } else if (dyn_style(j) == 5) { // Additive limit function
-          changing_element = theprophecy(dyn_index321(j)) + 
-            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
+          additive_limit_enforced = true;
+          
+          changing_element = theprophecy(dyn_index321(j));
+        } else if (dyn_style(j) == 6) {
+          additive_limit_enforced = true;
+          
+          changing_element = theprophecy(dyn_index321(j));
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -994,39 +1040,48 @@ namespace AdaptUtils {
           }
         }
       }
+      
+      // Adjust pop size for additive limit
+      if (additive_limit_enforced) {
+        for (int j = 0; j < n_dyn_elems; j++) {
+          double current_alpha = dyn_alpha(j);
+          double current_beta = dyn_beta(j);
+          double current_gamma = dyn_gamma(j);
+          double Nsum = sum(theseventhson);
+          double K_limit = current_alpha;
+          unsigned int current_stage = dyn_index_s3(j);
+          double current_stage_inds = theseventhson(current_stage);
+          double NK_diff = Nsum - current_stage_inds;
+          double max_limit = K_limit - NK_diff;
+          
+          if (dyn_style(j) == 5) { // Additive limit function
+            pop_size = delay_N;
+            
+            double proposed_s3_total = current_beta * (current_alpha - pop_size);
+            
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && max_limit > current_gamma) {
+              proposed_s3_total = max_limit;
+            }
+            theseventhson(current_stage) = proposed_s3_total;
+          } else if (dyn_style(j) == 6) {
+            double proposed_s3_total = current_stage_inds;
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && current_alpha > current_beta) {
+              proposed_s3_total = max_limit;
+            }
+            theseventhson(current_stage) = proposed_s3_total;
+          }
+        }
+      }
       theseventhson = theprophecy * theseventhson;
       if (integeronly) {
         theseventhson = floor(theseventhson);
       }
-      // Adjust pop size for additive limit
-      for (int j = 0; j < n_dyn_elems; j++) {
-        if (dyn_style(j) == 5) {
-          double Nsum = sum(theseventhson);
-          double K_limit = dyn_alpha(j);
-          
-          unsigned int current_stage = dyn_index_s3(j);
-          double NK_diff = Nsum - K_limit;
-          
-          double current_stage_inds = theseventhson(current_stage);
-          
-          if (NK_diff < 0.) {
-            if (current_stage_inds < (-1 * NK_diff)) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds += NK_diff;
-            }
-          } else {
-            if (current_stage_inds < NK_diff) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds -= NK_diff;
-            }
-          }
-          theseventhson(current_stage) = current_stage_inds;
-        }
-      }
-      if (err_check) prophesized_mat = theprophecy;
       
+      if (err_check) prophesized_mat = theprophecy;
       proj_vec = theseventhson;
       
     } else {
@@ -1079,8 +1134,13 @@ namespace AdaptUtils {
           changing_element = sparse_prophecy(dyn_index321(j)) * 
             (1 - used_popsize / dyn_alpha(j)); // Fi*(1 - ALPHA/n)
         } else if (dyn_style(j) == 5) { // Additive limit function
-          changing_element = theprophecy(dyn_index321(j)) + 
-            (pop_size * dyn_beta(j)); // K + (beta * N) // but note that if the result is N > K, then stage3 will be reduced
+          additive_limit_enforced = true;
+          
+          changing_element = sparse_prophecy(dyn_index321(j));
+        } else if (dyn_style(j) == 6) {
+          additive_limit_enforced = true;
+          
+          changing_element = sparse_prophecy(dyn_index321(j));
         }
         
         if (substoch == 1 && dyn_type(j) == 1) {
@@ -1130,40 +1190,48 @@ namespace AdaptUtils {
         }
       }
       
+      // Adjust pop size for additive limit
+      if (additive_limit_enforced) {
+        for (int j = 0; j < n_dyn_elems; j++) { // Density dependence
+          double current_alpha = dyn_alpha(j);
+          double current_beta = dyn_beta(j);
+          double current_gamma = dyn_gamma(j);
+          double Nsum = accu(sparse_seventhson);
+          double K_limit = current_alpha;
+          unsigned int current_stage = dyn_index_s3(j);
+          double current_stage_inds = sparse_seventhson(current_stage);
+          double NK_diff = Nsum - current_stage_inds;
+          double max_limit = K_limit - NK_diff;
+          
+          if (dyn_style(j) == 5) { // Additive limit function
+            pop_size = delay_N;
+            
+            double proposed_s3_total = current_beta * (current_alpha - pop_size);
+            
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && max_limit > current_gamma) {
+              proposed_s3_total = max_limit;
+            }
+            sparse_seventhson(current_stage) = proposed_s3_total;
+            
+          } else if (dyn_style(j) == 6) {
+            double proposed_s3_total = current_stage_inds;
+            if (proposed_s3_total < current_gamma) {
+              proposed_s3_total = current_gamma;
+            } else if (proposed_s3_total > max_limit && current_alpha > current_beta) {
+              proposed_s3_total = max_limit;
+            }
+            sparse_seventhson(current_stage) = proposed_s3_total;
+          }
+        }
+      }
       sparse_seventhson = sparse_prophecy * sparse_seventhson;
       if (integeronly) {
         sparse_seventhson = floor(sparse_seventhson);
       }
       
-      // Adjust pop size for additive limit
-      for (int j = 0; j < n_dyn_elems; j++) {
-        if (dyn_style(j) == 5) {
-          double Nsum = sum(theseventhson);
-          double K_limit = dyn_alpha(j);
-          
-          unsigned int current_stage = dyn_index_s3(j);
-          double NK_diff = Nsum - K_limit;
-          
-          double current_stage_inds = theseventhson(current_stage);
-          
-          if (NK_diff < 0.) {
-            if (current_stage_inds < (-1 * NK_diff)) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds += NK_diff;
-            }
-          } else {
-            if (current_stage_inds < NK_diff) {
-              current_stage_inds = 0.;
-            } else {
-              current_stage_inds -= NK_diff;
-            }
-          }
-          theseventhson(current_stage) = current_stage_inds;
-        }
-      }
       if (err_check) prophesized_sp = sparse_prophecy;
-      
       popproj = arma::vec(arma::mat(sparse_seventhson));
       proj_vec = popproj;
     }
@@ -3910,6 +3978,9 @@ namespace AdaptUtils {
   //' @param dyn_beta An empty Armadillo double floating point vector, given as
   //' a reference to be modified. Will provide the values of beta to be used in
   //' density adjustment.
+  //' @param dyn_gamma An empty Armadillo double floating point vector, given as
+  //' a reference to be modified. Will provide the values of gamma to be used in
+  //' density adjustment.
   //' @param dens_yn_int An integer giving whether density dependence
   //' information has been provided. Altered by reference.
   //' @param dens_input The data frame input via the \code{density} argument, or
@@ -3933,21 +4004,21 @@ namespace AdaptUtils {
   //' @keywords internal
   //' @noRd
   inline void density_prep (List& dens_index, arma::uvec& dyn_style,
-    arma::vec& dyn_alpha, arma::vec& dyn_beta, int& dens_yn_int,
-    const DataFrame dens_input, const DataFrame hstages,
+    arma::vec& dyn_alpha, arma::vec& dyn_beta, arma::vec& dyn_gamma,
+    int& dens_yn_int, const DataFrame dens_input, const DataFrame hstages,
     const DataFrame agestages, const DataFrame stageframe, const double exp_tol,
     const int format, const int finalage, const bool preexisting,
     const bool funcbased) {
     
-    //Rcout << "density_prep A" << endl;
+    ////Rcout << "density_prep A" << endl;
     
     if (dens_input.hasAttribute("class")) {
-      //Rcout << "density_prep B" << endl;
+      ////Rcout << "density_prep B" << endl;
       
       CharacterVector chosen_density_class = dens_input.attr("class");
       bool found_lefkoDens {false};
       
-      //Rcout << "density_prep C" << endl;
+      ////Rcout << "density_prep C" << endl;
       
       for (int j = 0; j < static_cast<int>(chosen_density_class.length()); j++) {
         if (chosen_density_class(j) == "lefkoDens") found_lefkoDens = true;
@@ -3956,12 +4027,12 @@ namespace AdaptUtils {
         AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
       }
       
-      //Rcout << "density_prep D" << endl;
+      ////Rcout << "density_prep D" << endl;
       
       CharacterVector dl_stage1 = as<CharacterVector>(dens_input["stage1"]);
       IntegerVector dl_age2 = as<IntegerVector>(dens_input["age2"]);
       
-      //Rcout << "density_prep E" << endl;
+      ////Rcout << "density_prep E" << endl;
       
       if (format < 3) {
         if (is<LogicalVector>(dens_input["stage1"])) {
@@ -3974,11 +4045,27 @@ namespace AdaptUtils {
         }
       } else if (format > 3) {
         if (is<LogicalVector>(dens_input["age2"])) {
-          throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
-        }
-        for (int j = 0; j < static_cast<int>(dl_age2.length()); j++) {
-          if (IntegerVector::is_na(dl_age2(j)) || LogicalVector::is_na(dl_age2(j))) {
-            throw Rcpp::exception("Argument density requires real age2 entries other than NA if MPMs are age-by-stage.", false);
+          bool found_all_ageclasses {false};
+          
+          CharacterVector dens_input_stage2 = as<CharacterVector>(dens_input["stage2"]);
+          CharacterVector dens_input_stage3 = as<CharacterVector>(dens_input["stage3"]);
+          int dens_input_no_stages = static_cast<int>(dens_input_stage2.length());
+          
+          for (int j = 0; j < dens_input_no_stages; j++) {
+            bool found_age_bool1 {false};
+            bool found_age_bool2 {false};
+            
+            found_age_bool1 = LefkoInputs::stringcompare_input(String(dens_input_stage2(j)), "age", true);
+            found_age_bool2 = LefkoInputs::stringcompare_input(String(dens_input_stage3(j)), "age", true);
+            if (!IntegerVector::is_na(dl_age2(j)) && !LogicalVector::is_na(dl_age2(j)) && dl_age2(j) > 0) {
+              found_age_bool1 = true;
+              found_age_bool2 = true;
+            }
+            if (found_age_bool1 && found_age_bool2) found_all_ageclasses = true;
+          }
+          
+          if (!found_all_ageclasses) {
+            throw Rcpp::exception("Argument density requires real stage1 entries other than NA if MPMs are historical.", false);
           }
         }
       }
@@ -3988,17 +4075,17 @@ namespace AdaptUtils {
       AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
     }
     
-    //Rcout << "density_prep F" << endl;
+    ////Rcout << "density_prep F" << endl;
     
     Rcpp::StringVector di_stage3 = as<StringVector>(dens_input["stage3"]);
     Rcpp::StringVector di_stage2 = as<StringVector>(dens_input["stage2"]);
     Rcpp::StringVector di_stage1 = as<StringVector>(dens_input["stage1"]);
     int di_size = di_stage3.length();
     
-    //Rcout << "density_prep G" << endl;
+    ////Rcout << "density_prep G" << endl;
     
     if (format < 3) {
-      //Rcout << "density_prep H" << endl;
+      ////Rcout << "density_prep H" << endl;
       
       StringVector stage3 = as<StringVector>(hstages["stage_2"]);
       StringVector stage2r = as<StringVector>(hstages["stage_1"]);
@@ -4023,6 +4110,9 @@ namespace AdaptUtils {
             hst_3(k) = 0;
           }
         }
+        if (sum(hst_3) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
+        }
         
         for (int k = 0; k < hst_size; k++) {
           if (di_stage2(j) == stage2r(k)) {
@@ -4030,6 +4120,9 @@ namespace AdaptUtils {
           } else {
             hst_2r(k) = 0;
           }
+        }
+        if (sum(hst_2r) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
         }
         
         for (int k = 0; k < hst_size; k++) {
@@ -4039,6 +4132,9 @@ namespace AdaptUtils {
             hst_2c(k) = 0;
           }
         }
+        if (sum(hst_2c) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
+        }
         
         for (int k = 0; k < hst_size; k++) {
           if (di_stage1(j) == stage1(k)) {
@@ -4046,6 +4142,9 @@ namespace AdaptUtils {
           } else {
             hst_1(k) = 0;
           }
+        }
+        if (sum(hst_1) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
         }
         
         arma::uvec find_hst3 = find(hst_3);
@@ -4074,7 +4173,7 @@ namespace AdaptUtils {
         _["index21"] = di_stage21_id, _["index321"] = di_index);
       
     } else if (format == 4 ) {
-      //Rcout << "density_prep I" << endl;
+      ////Rcout << "density_prep I" << endl;
       
       IntegerVector di_age2 = as<IntegerVector>(dens_input["age2"]);
       StringVector stage3 = as<StringVector>(agestages["stage"]);
@@ -4099,6 +4198,9 @@ namespace AdaptUtils {
             agst_s3(k) = 0;
           }
         }
+        if (sum(agst_s3) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
+        }
         
         for (int k = 0; k < agst_size; k++) {
           if (di_stage2(j) == stage2(k)) {
@@ -4106,6 +4208,9 @@ namespace AdaptUtils {
           } else {
             agst_s2(k) = 0;
           }
+        }
+        if (sum(agst_s2) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
         }
         
         for (int k = 0; k < agst_size; k++) {
@@ -4132,6 +4237,12 @@ namespace AdaptUtils {
               agst_a3(k) = 0;
             }
           }
+        }
+        if (sum(agst_a3) == 0) {
+          throw Rcpp::exception("Ages in density frame do not match stageframe.", false);
+        }
+        if (sum(agst_a2) == 0) {
+          throw Rcpp::exception("Ages in density frame do not match stageframe.", false);
         }
         
         arma::uvec find_agst_s3 = find(agst_s3);
@@ -4160,7 +4271,7 @@ namespace AdaptUtils {
         _["index21"] = di_s2a2_id, _["index321"] = di_index);
       
     } else {
-      //Rcout << "density_prep J" << endl;
+      ////Rcout << "density_prep J" << endl;
       
       StringVector stage3 = as<StringVector>(stageframe["stage"]);
       StringVector stage2 = as<StringVector>(stageframe["stage"]);
@@ -4182,6 +4293,9 @@ namespace AdaptUtils {
             ahst_3(k) = 0;
           }
         }
+        if (sum(ahst_3) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
+        }
         
         for (int k = 0; k < ahst_size; k++) {
           if (di_stage2(j) == stage2(k)) {
@@ -4189,6 +4303,9 @@ namespace AdaptUtils {
           } else {
             ahst_2(k) = 0;
           }
+        }
+        if (sum(ahst_2) == 0) {
+          throw Rcpp::exception("Stages in density frame do not match stageframe.", false);
         }
         
         arma::uvec find_ahst3 = find(ahst_3);
@@ -4205,16 +4322,17 @@ namespace AdaptUtils {
         _["index2"] = di_stage21_id, _["index321"] = di_index);
     }
     
-    //Rcout << "density_prep K" << endl;
+    ////Rcout << "density_prep K" << endl;
     
     dyn_style = as<arma::uvec>(dens_input["style"]);
     dyn_alpha = as<arma::vec>(dens_input["alpha"]);
     dyn_beta = as<arma::vec>(dens_input["beta"]);
+    dyn_gamma = as<arma::vec>(dens_input["gamma"]);
     
-    //Rcout << "density_prep L" << endl;
+    ////Rcout << "density_prep L" << endl;
     
     for (int i = 0; i < static_cast<int>(dyn_style.n_elem); i++) {
-      if (dyn_style(i) < 1 || dyn_style(i) > 5) pop_error("density inputs", "", "", 21);
+      if (dyn_style(i) < 1 || dyn_style(i) > 6) pop_error("density inputs", "", "", 21);
       
       if (dyn_style(i) == 1) {
         if (dyn_beta(i) > exp_tol) {
@@ -4241,6 +4359,61 @@ namespace AdaptUtils {
       }
     }
   }
+  
+  //' Create New Supplements List With Old Supplements Input and New Data Frame
+  //' 
+  //' Function \code{supplements_replacer()} is used in function
+  //' \code{batch_project3()} to replace the supplement associated with the MPM
+  //' being modified with a new, updated supplemental data frame.
+  //' 
+  //' @name supplements_replacer
+  //' 
+  //' @param old_supplements The Nullable RObject supplement list as input by the
+  //' user.
+  //' @param new_supplement A single new supplement of class data frame.
+  //' @param current_mpm The C++ index of the current MPM with argument
+  //' \code{mpms}.
+  //' @param total_mpms The total number of mpms input in argument \code{mpms}.
+  //' 
+  //' @return A Nullable RObject holding a list of supplements, with some possibly
+  //' being \code{NULL} elements.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline Nullable<RObject> supplements_replacer (Nullable<RObject> old_supplements,
+    DataFrame new_supplement, int current_mpm, int total_mpms) {
+    
+    Nullable<RObject> cloned_supplements;
+    
+    CharacterVector new_supplement_class = as<CharacterVector>(new_supplement.attr("class"));
+    bool found_lefkoSD {false};
+    
+    for (int i = 0; i < static_cast<int>(new_supplement_class.length()); i++) {
+      if (new_supplement_class(i) == "lefkoSD") found_lefkoSD = true;
+    }
+    
+    if (!found_lefkoSD) {
+      CharacterVector new_classes = {"data.frame", "lefkoSD"};
+      new_supplement.attr("class") = new_classes;
+    }
+    
+    if (old_supplements.isNotNull()) {
+      cloned_supplements = clone(old_supplements);
+      RObject cloned_supplements_RO = RObject(cloned_supplements);
+      List cloned_supplements_list = as<List>(cloned_supplements_RO);
+      
+      cloned_supplements_list(current_mpm) = new_supplement;
+      cloned_supplements = as<Nullable<RObject>>(cloned_supplements_list);
+    } else {
+      List new_supplement_list (total_mpms);
+      new_supplement_list(current_mpm) = new_supplement;
+      
+      cloned_supplements = as<Nullable<RObject>>(new_supplement_list);
+    }
+    
+    return cloned_supplements;
+  }
+  
 }
 
 #endif
