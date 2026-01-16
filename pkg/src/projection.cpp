@@ -486,8 +486,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     }
     
     if ((vrm_count - found_fleslie) != stageframe_notNull_count && !pure_fleslie) {
-      throw Rcpp::exception("Each vrm_input object must have its own stageframe, except for Leslie MPMs.",
-        false);
+      Rf_warningcall(R_NilValue,
+        "Each vrm_input object must have its own stageframe, except for Leslie MPMs.");
     }
     
     funcbased = true;
@@ -913,6 +913,13 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         }
         
       } else {
+        DataFrame imported_stageframe = as<DataFrame>(stageframe_list_fb(i));
+        
+        if (static_cast<int>(imported_stageframe.length()) > 1) {
+          AdaptUtils::leslie_stageframe_updater(firstage_vec, finalage_vec,
+            fecage_min_vec, fecage_max_vec, cont_vec, imported_stageframe, i);
+        }
+        
         bool cont_used {false};
         if (cont_vec(i) > 0) cont_used = true;
         
@@ -3936,6 +3943,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   // Post-processing for preexisting MPMs with new supplements
   
   if (preexisting && supplements.isNotNull()) {
+    List fortified_A_list (mpm_count);
+    
     for (int i = 0; i < mpm_count; i++) {
       //Rcout << "cleanup3 U1    " << endl;
       int ehrlen_format {1}; // This will need to be dealt with differently later
@@ -6308,9 +6317,6 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 //' used_supplements <- list(new_supplement_cyp2_small,
 //'   new_supplement_cyp2_small, NULL)
 //' 
-//' aaa1_prj_batch1 <- batch_project3(used_mpms = "all", all_elems = TRUE,
-//'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, integeronly = TRUE,
-//'   nreps = 3, density = cyp_density)
 //' aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
 //'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, nreps = 3,
 //'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
@@ -6715,10 +6721,12 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                 CharacterVector new_stage3 = {current_stageframe_stage(stage3)};
                 CharacterVector new_stage2 = {current_stageframe_stage(stage2)};
                 CharacterVector new_stage1 = {current_stageframe_stage(stage1)};
+                IntegerVector new_convtype = {1};
                 
                 current_skeleton["stage3"] = new_stage3;
                 current_skeleton["stage2"] = new_stage2;
                 current_skeleton["stage1"] = new_stage1;
+                current_skeleton["convtype"] = new_convtype;
                 
                 if (givenrate_used) {
                   NumericVector new_altered = {givenrate_vec(try1)};
@@ -6957,9 +6965,11 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
               DataFrame current_skeleton = LefkoInputs::sp_skeleton(1);
               CharacterVector new_stage3 = {current_stageframe_stage(stage3)};
               CharacterVector new_stage2 = {current_stageframe_stage(stage2)};
+              IntegerVector new_convtype = {1};
               
               current_skeleton["stage3"] = new_stage3;
               current_skeleton["stage2"] = new_stage2;
+              current_skeleton["convtype"] = new_convtype;
               
               if (givenrate_used) {
                 NumericVector new_altered = {givenrate_vec(try1)};
@@ -7114,7 +7124,6 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
               AdaptUtils::pop_error2("cont", "an integer vector", "", 1);
             }
           }
-          
           fecage_max_int = finalage_int;
           
         } else {
@@ -7849,6 +7858,15 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
           } else if (multiplier_used) {
             NumericVector multiplier_new = rep(multiplier_vec(try1), current_supplement_rows);
             used_supplement["multiplier"] = multiplier_new;
+          }
+          
+          arma::ivec used_convtype = as<arma::ivec>(used_supplement["convtype"]);
+          arma::uvec used_convtype_toosmall = find(used_convtype < 1);
+          arma::uvec used_convtype_toolarge = find(used_convtype > 3);
+          int ucts = used_convtype_toosmall.n_elem;
+          int uctl = used_convtype_toolarge.n_elem;
+          if ((ucts + uctl) > 0) {
+            throw Rcpp::exception("Argument convtype in each supplement must be set to either 1, 2, or 3.", false);
           }
           
           if (err_check_bool && current_supplement.isNotNull()) {

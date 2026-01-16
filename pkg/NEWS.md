@@ -16,6 +16,9 @@
 * Function `batch_project3()` now runs batches of community projections using
   vectors of alterations input as matrix element offsets, given rate changes,
   and multipliers.
+  
+* Function `summary.adaptProjBatch()` now summarizes batch community
+  projections.
 
 ## BUGS FIXED
 

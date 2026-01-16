@@ -2502,9 +2502,6 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' used_supplements <- list(new_supplement_cyp2_small,
 #'   new_supplement_cyp2_small, NULL)
 #' 
-#' aaa1_prj_batch1 <- batch_project3(used_mpms = "all", all_elems = TRUE,
-#'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, integeronly = TRUE,
-#'   nreps = 3, density = cyp_density)
 #' aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
 #'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, nreps = 3,
 #'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)

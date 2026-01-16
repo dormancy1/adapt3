@@ -2835,7 +2835,11 @@ namespace AdaptMats {
       if (target_col >= (noages - 1) && cont) {
         target_col = noages - 1;
       } else if (target_col >= (noages - 1)) {
-        throw Rcpp::exception("Some age2 values are too high.", false);
+        String eat_my_shorts = "Some age2 values are too high.";
+        if (!cont) {
+          eat_my_shorts += " This may be remedied by setting argument cont to TRUE for this MPM.";
+        }
+        throw Rcpp::exception(eat_my_shorts.get_cstring(), false);
       }
       
       if (ov_convtype(l) == 1) {

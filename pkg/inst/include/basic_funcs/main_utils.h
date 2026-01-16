@@ -37,6 +37,7 @@ using namespace LefkoUtils;
 // 15. void density_prep  Format All Density-related Variables Based on Density Inputs
 // 
 // 16. Nullable<RObject> supplements_replacer  Create New Supplements List With Old Supplements Input and New Data Frame
+// 17. void leslie_stageframe_updater  Update Leslie MPM Info for VRM Input with Stageframe
 
 
 namespace AdaptUtils {
@@ -4010,15 +4011,15 @@ namespace AdaptUtils {
     const int format, const int finalage, const bool preexisting,
     const bool funcbased) {
     
-    ////Rcout << "density_prep A" << endl;
+    // Rcout << "density_prep A" << endl;
     
     if (dens_input.hasAttribute("class")) {
-      ////Rcout << "density_prep B" << endl;
+      // Rcout << "density_prep B" << endl;
       
       CharacterVector chosen_density_class = dens_input.attr("class");
       bool found_lefkoDens {false};
       
-      ////Rcout << "density_prep C" << endl;
+      // Rcout << "density_prep C" << endl;
       
       for (int j = 0; j < static_cast<int>(chosen_density_class.length()); j++) {
         if (chosen_density_class(j) == "lefkoDens") found_lefkoDens = true;
@@ -4027,12 +4028,12 @@ namespace AdaptUtils {
         AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
       }
       
-      ////Rcout << "density_prep D" << endl;
+      // Rcout << "density_prep D" << endl;
       
       CharacterVector dl_stage1 = as<CharacterVector>(dens_input["stage1"]);
       IntegerVector dl_age2 = as<IntegerVector>(dens_input["age2"]);
       
-      ////Rcout << "density_prep E" << endl;
+      // Rcout << "density_prep E" << endl;
       
       if (format < 3) {
         if (is<LogicalVector>(dens_input["stage1"])) {
@@ -4075,17 +4076,18 @@ namespace AdaptUtils {
       AdaptUtils::pop_error2("density", "a list of lefkoDens objects and NULL values", "", 1);
     }
     
-    ////Rcout << "density_prep F" << endl;
+    // Rcout << "density_prep F" << endl;
     
     Rcpp::StringVector di_stage3 = as<StringVector>(dens_input["stage3"]);
     Rcpp::StringVector di_stage2 = as<StringVector>(dens_input["stage2"]);
     Rcpp::StringVector di_stage1 = as<StringVector>(dens_input["stage1"]);
+    Rcpp::IntegerVector di_age2 = as<IntegerVector>(dens_input["age2"]);
     int di_size = di_stage3.length();
     
-    ////Rcout << "density_prep G" << endl;
+    // Rcout << "density_prep G" << endl;
     
     if (format < 3) {
-      ////Rcout << "density_prep H" << endl;
+      // Rcout << "density_prep H" << endl;
       
       StringVector stage3 = as<StringVector>(hstages["stage_2"]);
       StringVector stage2r = as<StringVector>(hstages["stage_1"]);
@@ -4173,9 +4175,8 @@ namespace AdaptUtils {
         _["index21"] = di_stage21_id, _["index321"] = di_index);
       
     } else if (format == 4 ) {
-      ////Rcout << "density_prep I" << endl;
+      // Rcout << "density_prep I" << endl;
       
-      IntegerVector di_age2 = as<IntegerVector>(dens_input["age2"]);
       StringVector stage3 = as<StringVector>(agestages["stage"]);
       StringVector stage2 = as<StringVector>(agestages["stage"]);
       IntegerVector age2 = as<IntegerVector>(agestages["age"]);
@@ -4271,12 +4272,18 @@ namespace AdaptUtils {
         _["index21"] = di_s2a2_id, _["index321"] = di_index);
       
     } else {
-      ////Rcout << "density_prep J" << endl;
+      // Rcout << "density_prep J" << endl;
       
       StringVector stage3 = as<StringVector>(stageframe["stage"]);
       StringVector stage2 = as<StringVector>(stageframe["stage"]);
-      int ahst_size = stage3.length();
-      if (funcbased) ahst_size--;
+      int ahst_size = static_cast<int>(stage3.length());
+      if (funcbased) {
+        bool found_Dead {false};
+        for (int m = 0; m < ahst_size; m++) {
+          if (stage3(m) == "Dead") found_Dead = true;
+        }
+        if (found_Dead) ahst_size--;
+      }
       
       arma::uvec ahst_3(ahst_size, fill::zeros);
       arma::uvec ahst_2(ahst_size, fill::zeros);
@@ -4322,14 +4329,14 @@ namespace AdaptUtils {
         _["index2"] = di_stage21_id, _["index321"] = di_index);
     }
     
-    ////Rcout << "density_prep K" << endl;
+    // Rcout << "density_prep K" << endl;
     
     dyn_style = as<arma::uvec>(dens_input["style"]);
     dyn_alpha = as<arma::vec>(dens_input["alpha"]);
     dyn_beta = as<arma::vec>(dens_input["beta"]);
     dyn_gamma = as<arma::vec>(dens_input["gamma"]);
     
-    ////Rcout << "density_prep L" << endl;
+    // Rcout << "density_prep L" << endl;
     
     for (int i = 0; i < static_cast<int>(dyn_style.n_elem); i++) {
       if (dyn_style(i) < 1 || dyn_style(i) > 6) pop_error("density inputs", "", "", 21);
@@ -4414,6 +4421,91 @@ namespace AdaptUtils {
     return cloned_supplements;
   }
   
+  //' Update Leslie MPM Info for VRM Input with Stageframe
+  //' 
+  //' This function takes stageframe information supplied by the user in cases in
+  //' which a function-based Leslie MPM is called for, and makes all related
+  //' age-based information consistent.
+  //' 
+  //' @name leslie_stageframe_updater
+  //' 
+  //' @param firstage_vec An integer vector giving the first age to be used in
+  //' the Leslie MPM. Also includes values for other MPMs that are not
+  //' necessarily Leslie.
+  //' @param finalage_vec An integer vector giving the final age to be used in
+  //' the Leslie MPM. Also includes values for other MPMs that are not
+  //' necessarily Leslie.
+  //' @param fecage_min_vec An integer vector giving the first age of
+  //' reproduction to be used in the Leslie MPM. Also includes values for other
+  //' MPMs that are not necessarily Leslie.
+  //' @param fecage_max_vec An integer vector giving the final age of
+  //' reproduction to be used in the Leslie MPM. Also includes values for other
+  //' MPMs that are not necessarily Leslie.
+  //' @param cont_vec An integer vector describing whether each Leslie MPM
+  //' includes a transition back to the final age.
+  //' @param imported_stageframe The user-input stageframe, if given.
+  //' @param index An integer value giving the index of the element in each
+  //' vector to be used and adjusted by this function.
+  //' 
+  //' @return This function updates the first five parameters by reference.
+  //' 
+  //' @keywords internal
+  //' @noRd
+  inline void leslie_stageframe_updater (IntegerVector& firstage_vec,
+    IntegerVector& finalage_vec, IntegerVector& fecage_min_vec,
+    IntegerVector& fecage_max_vec, IntegerVector& cont_vec,
+    DataFrame imported_stageframe, int index) {
+    
+    // Rcout << "Entered leslie_stageframe_updater" << endl;
+    
+    CharacterVector sf_stage = as<CharacterVector>(imported_stageframe["stage"]);
+    IntegerVector sf_min_age = as<IntegerVector>(imported_stageframe["min_age"]);
+    IntegerVector sf_max_age = as<IntegerVector>(imported_stageframe["max_age"]);
+    
+    // Rcout << "sf_stage: " << sf_stage << endl;
+    // Rcout << "sf_min_age: " << sf_min_age << endl;
+    // Rcout << "sf_max_age: " << sf_max_age << endl;
+    
+    int stageframe_length = static_cast<int>(sf_stage.length());
+    
+    int tracked_min_age {0};
+    int tracked_max_age {0};
+    int good_min_age_values {0};
+    int good_max_age_values {0};
+    
+    for (int i = 0; i < stageframe_length; i++) {
+      if (!IntegerVector::is_na(sf_min_age(i))) {
+        if (i == 0) {
+          tracked_min_age = sf_min_age(i);
+          tracked_max_age = tracked_min_age;
+          good_min_age_values++;
+        } else {
+          if (sf_min_age(i) == (tracked_min_age + 1)) {
+            tracked_min_age++;
+            tracked_max_age = tracked_min_age;
+            good_min_age_values++;
+          }
+        }
+      }
+      
+      if (!IntegerVector::is_na(sf_max_age(i))) {
+        if (i == 0) {
+          tracked_max_age = sf_max_age(i);
+          good_max_age_values++;
+        } else {
+          if (sf_max_age(i) == (tracked_max_age + 1)) {
+            tracked_max_age++;
+            good_max_age_values++;
+          }
+        }
+      }
+    }
+    
+    if (good_min_age_values == stageframe_length) {
+      firstage_vec(index) = min(sf_min_age);
+      finalage_vec(index) = tracked_max_age;
+    }
+  }
 }
 
 #endif
