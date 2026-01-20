@@ -133,7 +133,7 @@ namespace AdaptMats {
     int matrixformat, double fecmod, double repentry_i, bool negfec,
     double stage2n_i, int nostages, int modeltrunc) {
     
-    //Rcout << "preouterator_adapt3 A" << endl;
+    // Rcout << "preouterator_adapt3 A" << endl;
     
     double preout {0.0};
     double all_out {0.0};
@@ -152,12 +152,12 @@ namespace AdaptMats {
       placeholder_zi = placeholder + 11;
     }
     
-    //Rcout << "preouterator_adapt3 dev_terms: " << dev_terms << endl;
+    // Rcout << "preouterator_adapt3 dev_terms: " << dev_terms << endl;
     
-    //Rcout << "status_terms: " << status_terms << endl;
-    //Rcout << " length of status_terms: " << static_cast<int>(status_terms.length()) << endl;
-    //Rcout << "maincoefs: " << maincoefs << endl;
-    //Rcout << " length of maincoefs: " << static_cast<int>(maincoefs.length()) << endl;
+    // Rcout << "status_terms: " << status_terms << endl;
+    // Rcout << " length of status_terms: " << static_cast<int>(status_terms.length()) << endl;
+    // Rcout << "maincoefs: " << maincoefs << endl;
+    // Rcout << " length of maincoefs: " << static_cast<int>(maincoefs.length()) << endl;
     
     // For all / conditional models
     double mainsum = rimeotam(maincoefs, status_terms(0), status_terms(1),
@@ -171,7 +171,7 @@ namespace AdaptMats {
     
     bool zi_processing = false;
     
-    //Rcout << "preouterator_adapt3 B" << endl;
+    // Rcout << "preouterator_adapt3 B" << endl;
     
     if (vitaltype == 1) {
       if (vitalrate == 3 || vitalrate == 10) {
@@ -185,7 +185,7 @@ namespace AdaptMats {
       if (zi && vitaldist < 2) zi_processing = true;  
     }
     
-    //Rcout << "preouterator_adapt3 C" << endl;
+    // Rcout << "preouterator_adapt3 C" << endl;
     
     // Creates covariate numerics for all models
     // Random covariate processing
@@ -315,7 +315,7 @@ namespace AdaptMats {
     if (preout > exp_tol && vitaldist < 2) preout = exp_tol;
     
     
-    //Rcout << "preouterator_adapt3 D" << endl;
+    // Rcout << "preouterator_adapt3 D" << endl;
     
     double preout_zi {0.0};
     
@@ -452,10 +452,10 @@ namespace AdaptMats {
         dev_terms(placeholder));
     }
     
-    //Rcout << "preouterator_adapt3 E" << endl;
+    // Rcout << "preouterator_adapt3 E" << endl;
     
     if (vitaltype == 0) {
-      //Rcout << "preouterator_adapt3 E1" << endl;
+      // Rcout << "preouterator_adapt3 E1" << endl;
       
       // Binomial vital rates only
       if (preout > exp_tol) preout = exp_tol;
@@ -463,11 +463,11 @@ namespace AdaptMats {
       double pre_exp = exp(preout);
       all_out = pre_exp / (1.0 + pre_exp);
       
-      // //Rcout << "Binomial: preout: " << preout << " pre_exp: " << pre_exp <<
+      // // Rcout << "Binomial: preout: " << preout << " pre_exp: " << pre_exp <<
       //   " all_out: " << all_out << "\n";
       
     } else if (vitaltype == 1) {
-      //Rcout << "preouterator_adapt3 E2" << endl;
+      // Rcout << "preouterator_adapt3 E2" << endl;
       
       // Size vital rates
       double Used_size3 = status_terms(16);
@@ -497,7 +497,7 @@ namespace AdaptMats {
         double pre_exp_zi = exp(preout_zi);
         all_out_zi = pre_exp_zi / (1.0 + pre_exp_zi);
         
-        // //Rcout << "ZI Binomial: preout_zi: " << preout_zi << " pre_exp_zi: " << pre_exp_zi <<
+        // // Rcout << "ZI Binomial: preout_zi: " << preout_zi << " pre_exp_zi: " << pre_exp_zi <<
         //   " all_out_zi: " << all_out_zi << "\n";
       }
       
@@ -542,7 +542,7 @@ namespace AdaptMats {
             }
             all_out = all_out / den_corr;
           }
-          // //Rcout << "Poisson cdf: upper_boundary_int: " << upper_boundary_int << 
+          // // Rcout << "Poisson cdf: upper_boundary_int: " << upper_boundary_int << 
           //   " lower_boundary_int: " << lower_boundary_int << " lambda: " << lambda << 
           //   " all_out: " << all_out << "\n";
           
@@ -570,7 +570,7 @@ namespace AdaptMats {
           }
           all_out = current_prob;
           
-          // //Rcout << "Poisson mid: upper_boundary_int: " << upper_boundary_int <<
+          // // Rcout << "Poisson mid: upper_boundary_int: " << upper_boundary_int <<
           //   " lower_boundary_int: " << lower_boundary_int << " lambda: " << lambda << 
           //   " current_prob: " << current_prob << "\n";
         }
@@ -643,7 +643,7 @@ namespace AdaptMats {
         
         if (all_out < 0.0) all_out = 0.0; // Eliminates issues in some versions of Linux
         
-        // //Rcout << "Negbin: y: " << y << " y0: " << y0 << " alpha: " << alpha <<
+        // // Rcout << "Negbin: y: " << y << " y0: " << y0 << " alpha: " << alpha <<
         //   " mu: " << mu << " current_prob: " << current_prob << "\n";
         
       } else if (vitaldist == 2) {
@@ -658,7 +658,7 @@ namespace AdaptMats {
           
           all_out = upper_prob - lower_prob;
           
-          // //Rcout << "Gaussian cdf: upper_size: " << upper_size << " lower_size: " <<
+          // // Rcout << "Gaussian cdf: upper_size: " << upper_size << " lower_size: " <<
           //   lower_size << " Used_size3: " << Used_size3 << " Used_binwidth3: " <<
           //   Used_binwidth3 << " preout: " << preout << " sigma: " <<
           //   sigma << " upper_prob: " << upper_prob << " lower_prob: " <<
@@ -670,7 +670,7 @@ namespace AdaptMats {
             ((pow((2 * M_PI), 0.5)) * sigma));
           all_out = all_out * Used_binwidth3; // Midpoint integration
           
-          // //Rcout << "Gaussian mid: Used_size3: " << Used_size3 << " Used_binwidth3: " <<
+          // // Rcout << "Gaussian mid: Used_size3: " << Used_size3 << " Used_binwidth3: " <<
           //   Used_binwidth3 << " sigma: " << sigma << " preout: " <<
           //   preout << " all_out: " << all_out << "\n";
         }
@@ -691,7 +691,7 @@ namespace AdaptMats {
           
           all_out = upper_prob - lower_prob;
           
-          // //Rcout << "Gamma cdf: upper_size: " << upper_size << " lower_size: " <<
+          // // Rcout << "Gamma cdf: upper_size: " << upper_size << " lower_size: " <<
           //   lower_size << " alpha: " << alpha << " beta: " << beta << " upper_prob: " <<
           //   upper_prob << " lower_prob: " << lower_prob << " all_out: " << all_out << "\n";
         } else {
@@ -700,14 +700,14 @@ namespace AdaptMats {
             pow(Used_size3, (alpha - 1.0)) * exp(-1.0 * beta * Used_size3);
           all_out = all_out * Used_binwidth3; // Midpoint integration
           
-          // //Rcout << "Gamma mid: Used_size3: " << Used_size3 << " Used_binwidth3: " <<
+          // // Rcout << "Gamma mid: Used_size3: " << Used_size3 << " Used_binwidth3: " <<
           //   Used_binwidth3 << " alpha: " << alpha << " beta: " << beta <<
           //   " all_out: " << all_out << "\n";
         }
       }
       
     } else if (vitaltype == 2) {
-      //Rcout << "preouterator_adapt3 E3" << endl;
+      // Rcout << "preouterator_adapt3 E3" << endl;
       
       // Fecundity
       if (matrixformat != 2 || stage2n_i != static_cast<double>(nostages+1)) {
@@ -941,7 +941,7 @@ namespace AdaptMats {
     int nostages = stagenames.length();
     unsigned long matrixdim {0};
     
-    //Rcout << "mazurekd a ";
+    // Rcout << "mazurekd a ";
     
     int nostages_counter = nostages;
     for (int i = 0; i < nostages_counter; i++) {
@@ -949,7 +949,7 @@ namespace AdaptMats {
       if (LefkoUtils::stringcompare_hard(as<std::string>(stagenames(i)), "Dead")) nostages -= 1;
     }
     
-    //Rcout << "mazurekd - matrixformat: " << matrixformat << endl;
+    // Rcout << "mazurekd - matrixformat: " << matrixformat << endl;
     
     if (matrixformat == 1) { // Ehrlen-format hMPM
       matrixdim = nostages * nostages;
@@ -961,9 +961,9 @@ namespace AdaptMats {
       matrixdim = nostages * (finalage - firstage + 1);
     }
     
-    //Rcout << "matrixformat: " << matrixformat << endl;
-    //Rcout << "matrixdim: " << matrixdim << endl;
-    //Rcout << "mazurekd b ";
+    // Rcout << "matrixformat: " << matrixformat << endl;
+    // Rcout << "matrixdim: " << matrixdim << endl;
+    // Rcout << "mazurekd b ";
     
     // Proxy model imports and settings
     bool sizezero = as<bool>(sizeproxy["zero_inflated"]);
@@ -1027,7 +1027,7 @@ namespace AdaptMats {
     int jrepstdist = as<int>(jrepstproxy["dist"]);
     int jmatstdist = as<int>(jmatstproxy["dist"]);
     
-    //Rcout << "mazurekd c ";
+    // Rcout << "mazurekd c ";
     
     if (NumericVector::is_na(sizesigma)) {
       if (sizedist == 1) {
@@ -1079,7 +1079,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mazurekd d ";
+    // Rcout << "mazurekd d ";
     
     NumericMatrix vital_year = LefkoUtils::revelations(survproxy, obsproxy, sizeproxy,
       sizebproxy, sizecproxy, repstproxy, fecproxy, jsurvproxy, jobsproxy,
@@ -1093,7 +1093,7 @@ namespace AdaptMats {
       sizebproxy, sizecproxy, repstproxy, fecproxy, jsurvproxy, jobsproxy,
       jsizeproxy, jsizebproxy, jsizecproxy, jrepstproxy, jmatstproxy);
     
-    //Rcout << "mazurekd e ";
+    // Rcout << "mazurekd e ";
     
     // NumericVector imports from model_proxy objects
     NumericVector sizeyearzi = as<NumericVector>(sizeproxy["zeroyear"]);
@@ -1174,7 +1174,7 @@ namespace AdaptMats {
     
     NumericVector dud_groups1zi(jsizecyearzi.length());
     
-    //Rcout << "mazurekd f ";
+    // Rcout << "mazurekd f ";
     
     NumericVector survind = LefkoUtils::flightoficarus(survproxy);
     NumericVector obsind = LefkoUtils::flightoficarus(obsproxy);
@@ -1191,7 +1191,7 @@ namespace AdaptMats {
     NumericVector jrepstind = LefkoUtils::flightoficarus(jrepstproxy);
     NumericVector jmatstind = LefkoUtils::flightoficarus(jmatstproxy);
     
-    //Rcout << "mazurekd g ";
+    // Rcout << "mazurekd g ";
     
     NumericVector sizeindzi = zero_flightoficarus(sizeproxy);
     NumericVector sizebindzi = zero_flightoficarus(sizebproxy);
@@ -1201,7 +1201,7 @@ namespace AdaptMats {
     NumericVector jsizebindzi = zero_flightoficarus(jsizebproxy);
     NumericVector jsizecindzi = zero_flightoficarus(jsizecproxy);
     
-    //Rcout << "mazurekd h ";
+    // Rcout << "mazurekd h ";
     
     StringVector survind_rownames = bootson(survproxy);
     StringVector obsind_rownames = bootson(obsproxy);
@@ -1218,7 +1218,7 @@ namespace AdaptMats {
     StringVector jrepstind_rownames = bootson(jrepstproxy);
     StringVector jmatstind_rownames = bootson(jmatstproxy);
     
-    //Rcout << "mazurekd i ";
+    // Rcout << "mazurekd i ";
     
     StringVector sizeind_rownames_zi = zero_bootson(sizeproxy);
     StringVector sizebind_rownames_zi = zero_bootson(sizebproxy);
@@ -1228,7 +1228,7 @@ namespace AdaptMats {
     StringVector jsizebind_rownames_zi = zero_bootson(jsizebproxy);
     StringVector jsizecind_rownames_zi = zero_bootson(jsizecproxy);
     
-    //Rcout << "mazurekd j ";
+    // Rcout << "mazurekd j ";
     
     // AllStages import and settings
     Rcpp::NumericVector stage3_num = as<NumericVector>(AllStages["stage3"]);
@@ -1298,8 +1298,8 @@ namespace AdaptMats {
     
     int n = static_cast<int>(stage3.n_elem);
     
-    //Rcout << "n (stage3.n_elem): " << n << endl;
-    //Rcout << "mazurekd l ";
+    // Rcout << "n (stage3.n_elem): " << n << endl;
+    // Rcout << "mazurekd l ";
     
     arma::uvec replacetvec = find(ovestt != -1.0);
     arma::uvec replacefvec = find(ovestf != -1.0);
@@ -1319,7 +1319,7 @@ namespace AdaptMats {
     int properindex {0};
     int proxyindex {0};
     
-    //Rcout << "mazurekd m ";
+    // Rcout << "mazurekd m ";
     
     // Determination of choices of fixed and random individual covariates
     double inda1 = f1_inda(0);
@@ -1359,11 +1359,11 @@ namespace AdaptMats {
     double vr13_dcorr {1.0};
     double vr14_dcorr {1.0};
     
-    //Rcout << "mazurekd n ";
+    // Rcout << "mazurekd n ";
     
     if (dens_vr) {
       
-      //Rcout << "mazurekd o ";
+      // Rcout << "mazurekd o ";
       
       // Adult survival
       if (dvr_yn(0)) {
@@ -1560,11 +1560,11 @@ namespace AdaptMats {
           if (dvr_beta(13) != 0 && vr14_dcorr < -1.0) vr14_dcorr = 0.0; 
         }
       }
-      //Rcout << "mazurekd p ";
+      // Rcout << "mazurekd p ";
       
     }
     
-    //Rcout << "mazurekd q ";
+    // Rcout << "mazurekd q ";
     
     // Matrix out collects conditional probabilities
     // It is a zero matrix with n rows and 7 columns: 0 surv, 1 obs, 2 repst,
@@ -1602,7 +1602,7 @@ namespace AdaptMats {
     double mat_predicted {0.0};
     unsigned int k {0};
     
-    //Rcout << "mazurekd r ";
+    // Rcout << "mazurekd r ";
     
     // Loop through each line of AllStages, calculating estimable elements
     for(int i = 0; i < n; i++) {
@@ -1612,7 +1612,7 @@ namespace AdaptMats {
       
       if (err_check) out(i, 6) = 1.0; // Initialize maturity status prob for typical case
       
-      //Rcout << "mazurekd s i: " << i << " k: " << k << " ";
+      // Rcout << "mazurekd s i: " << i << " k: " << k << " ";
       
       double anna1 {0.}; /////
       double anna2 {0.};
@@ -1631,7 +1631,7 @@ namespace AdaptMats {
           
           // Adult survival transitions
           if (survdist < 5) {
-            //Rcout << "mazurekd s1 ";
+            // Rcout << "mazurekd s1 ";
             out_vec(0) = preouterator_adapt3(survproxy, survcoefs, rand_index, dev_terms,
               vital_year, vital_patch, chosen_r2inda, chosen_r1inda, chosen_r2indb,
               chosen_r1indb, chosen_r2indc, chosen_r1indc, chosen_f2inda_cat,
@@ -1642,7 +1642,7 @@ namespace AdaptMats {
               survsigma, grp2o(i), grp1(i), patchnumber, yearnumber, 4, 1, exp_tol,
               theta_tol, ipm_cdf, matrixformat, fecmod, repentry(i), negfec,
               stage2n(i), nostages, 0);
-            //Rcout << "mazurekd s2 ";
+            // Rcout << "mazurekd s2 ";
             out_vec(0) = out_vec(0) * vr1_dcorr;
           } else {
             out_vec(0) = survcoefs(0);
@@ -1651,7 +1651,7 @@ namespace AdaptMats {
           if (err_check) out(i, 0) = out_vec(0);
           
           if (obsdist < 5) {
-            //Rcout << "mazurekd s3 ";
+            // Rcout << "mazurekd s3 ";
             out_vec(1) = preouterator_adapt3(obsproxy, obscoefs, rand_index, dev_terms,
               vital_year, vital_patch, chosen_r2inda, chosen_r1inda, chosen_r2indb,
               chosen_r1indb, chosen_r2indc, chosen_r1indc, chosen_f2inda_cat,
@@ -1662,7 +1662,7 @@ namespace AdaptMats {
               obssigma, grp2o(i), grp1(i), patchnumber, yearnumber, 4, 2, exp_tol,
               theta_tol, ipm_cdf, matrixformat, fecmod, repentry(i), negfec,
               stage2n(i), nostages, 0);
-            //Rcout << "mazurekd s4 ";
+            // Rcout << "mazurekd s4 ";
             out_vec(1) = out_vec(1) * vr2_dcorr;
             
           } else {
@@ -1676,7 +1676,7 @@ namespace AdaptMats {
             if (sizedist < 5) {
               bool used_sizezero = false;
               if (sizezero && sz3(i) == 0) used_sizezero = sizezero;
-              //Rcout << "mazurekd s5 ";
+              // Rcout << "mazurekd s5 ";
               out_vec(3) = preouterator_adapt3(sizeproxy, sizecoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
@@ -1688,7 +1688,7 @@ namespace AdaptMats {
                 patchnumber, yearnumber, sizedist, 3, exp_tol, theta_tol, ipm_cdf,
                 matrixformat, fecmod, repentry(i), negfec, stage2n(i), nostages,
                 sizetrunc);
-              //Rcout << "mazurekd s6 ";
+              // Rcout << "mazurekd s6 ";
               out_vec(3) = out_vec(3) * vr3_dcorr;
               
             } else {
@@ -1700,7 +1700,7 @@ namespace AdaptMats {
             if (sizebdist < 5) {
               bool used_sizebzero = false;
               if (sizebzero && szb3(i) == 0) used_sizebzero = sizebzero;
-              //Rcout << "mazurekd s7 ";
+              // Rcout << "mazurekd s7 ";
               out_vec(4) = preouterator_adapt3(sizebproxy, sizebcoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
@@ -1712,7 +1712,7 @@ namespace AdaptMats {
                 sizebsigma, grp2o(i), grp1(i), patchnumber, yearnumber, sizebdist,
                 4, exp_tol, theta_tol, ipm_cdf, matrixformat, fecmod, repentry(i),
                 negfec, stage2n(i), nostages, sizebtrunc);
-              //Rcout << "mazurekd s8 ";
+              // Rcout << "mazurekd s8 ";
               out_vec(4) = out_vec(4) * vr4_dcorr;
             } else {
               out_vec(4) = 1.0;
@@ -1723,7 +1723,7 @@ namespace AdaptMats {
             if (sizecdist < 5) {
               bool used_sizeczero = false;
               if (sizeczero && szc3(i) == 0) used_sizeczero = sizeczero;
-              //Rcout << "mazurekd s9 ";
+              // Rcout << "mazurekd s9 ";
               out_vec(5) = preouterator_adapt3(sizecproxy, sizeccoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
@@ -1735,7 +1735,7 @@ namespace AdaptMats {
                 sizecsigma, grp2o(i), grp1(i), patchnumber, yearnumber, sizecdist,
                 5, exp_tol, theta_tol, ipm_cdf, matrixformat, fecmod, repentry(i),
                 negfec, stage2n(i), nostages, sizectrunc);
-              //Rcout << "mazurekd s10 ";
+              // Rcout << "mazurekd s10 ";
               out_vec(5) = out_vec(5) * vr5_dcorr;
             } else {
               out_vec(5) = 1.0;
@@ -1744,7 +1744,7 @@ namespace AdaptMats {
             if (err_check) out(i, 5) = out_vec(5);
             
             if (repstdist < 5) {
-              //Rcout << "mazurekd s11 ";
+              // Rcout << "mazurekd s11 ";
               out_vec(2) = preouterator_adapt3(repstproxy, repstcoefs, rand_index,
                 dev_terms, vital_year, vital_patch, chosen_r2inda, chosen_r1inda,
                 chosen_r2indb, chosen_r1indb, chosen_r2indc, chosen_r1indc,
@@ -1755,7 +1755,7 @@ namespace AdaptMats {
                 sizeind_rownames_zi, false, repstsigma, grp2o(i), grp1(i),
                 patchnumber, yearnumber, 4, 6, exp_tol, theta_tol, ipm_cdf,
                 matrixformat, fecmod, repentry(i), negfec, stage2n(i), nostages, 0);
-              //Rcout << "mazurekd s12 ";
+              // Rcout << "mazurekd s12 ";
               out_vec(2) = out_vec(2) * vr6_dcorr;
                 
               if (fl3(i) == 0) {
@@ -1801,7 +1801,7 @@ namespace AdaptMats {
           }
           
         } else if (immat2n(i) == 1 && immat1(i) == 1 && jsurv_coefsadded != 0.0) {
-          //Rcout << "mazurekd s13 ";
+          // Rcout << "mazurekd s13 ";
           // Juvenile to adult transitions
           if (jmatstdist < 5) {
             mat_predicted = preouterator_adapt3(jmatstproxy, jmatstcoefs, rand_index,
@@ -1985,7 +1985,7 @@ namespace AdaptMats {
             survtransmat_sp(k) = out_vec(0) * out_vec(1) * out_vec(2) * out_vec(3) *
               out_vec(4) * out_vec(5) * out_vec(6);
           }
-          //Rcout << "mazurekd s14 ";
+          // Rcout << "mazurekd s14 ";
         }
       } else if (ovgivent(i) != -1.0) {
         // All other transitions
@@ -2048,7 +2048,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mazurekd t ";
+    // Rcout << "mazurekd t ";
     
     double ov_mult {0.0};
     if (replacementst > 0) {
@@ -2073,7 +2073,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mazurekd u ";
+    // Rcout << "mazurekd u ";
     
     if (replacementsf > 0) {
       for (int i = 0; i < replacementsf; i++) {
@@ -2096,7 +2096,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mazurekd v ";
+    // Rcout << "mazurekd v ";
     
     if (tmults_only_st > 0) {
       for (int i = 0; i < tmults_only_st; i++) {
@@ -2113,7 +2113,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mazurekd w ";
+    // Rcout << "mazurekd w ";
     
     if (fmults_only_st > 0) {
       for (int i = 0; i < fmults_only_st; i++) {
@@ -2130,7 +2130,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mazurekd x ";
+    // Rcout << "mazurekd x ";
     
     // Final output
     List output;
@@ -2195,7 +2195,7 @@ namespace AdaptMats {
       output = output_pre;
     }
     
-    //Rcout << "mazurekd y";
+    // Rcout << "mazurekd y";
     return output;
   }
   
@@ -2305,7 +2305,7 @@ namespace AdaptMats {
     double exp_tol = 700.0, double theta_tol = 100000000.0,
     bool sparse = false, Nullable<DataFrame> supplement = R_NilValue) {
     
-    //Rcout << "mdabrowskiego a        ";
+    // Rcout << "mdabrowskiego a        ";
     
     // Determines the size of the matrix
     StringVector sf_agenames = as<StringVector>(ageframe["stage"]);
@@ -2320,7 +2320,7 @@ namespace AdaptMats {
       cont = true;
     }
     
-    //Rcout << "mdabrowskiego b        ";
+    // Rcout << "mdabrowskiego b        ";
     
     // Supplement processing
     IntegerVector ov_age2;
@@ -2353,7 +2353,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mdabrowskiego c        ";
+    // Rcout << "mdabrowskiego c        ";
     
     // Proxy model imports and settings
     NumericVector survcoefs = as<NumericVector>(survproxy["coefficients"]);
@@ -2394,7 +2394,7 @@ namespace AdaptMats {
     StringVector fecind_rownames = bootson(fecproxy);
     StringVector fecind_rownames_zi = zero_bootson(fecproxy);
     
-    //Rcout << "mdabrowskiego d        ";
+    // Rcout << "mdabrowskiego d        ";
     
     // Determination of choices of fixed and random individual covariates
     double inda1 = f1_inda(0);
@@ -2418,7 +2418,7 @@ namespace AdaptMats {
     String chosen_r2indc = r2_indc(0);
     String chosen_r1indc = r1_indc(0);
     
-    //Rcout << "mdabrowskiego e        ";
+    // Rcout << "mdabrowskiego e        ";
     
     // The output matrices
     arma::mat survtransmat;
@@ -2440,7 +2440,7 @@ namespace AdaptMats {
       fectransmat_sp = fectransmat_chuck;
     }
     
-    //Rcout << "mdabrowskiego f        ";
+    // Rcout << "mdabrowskiego f        ";
     
     // Following loop runs through each age, and so runs through
     // each estimable element in the matrix
@@ -2451,7 +2451,7 @@ namespace AdaptMats {
       double preout {0.0};
       
       if (survdist < 5) {
-        //Rcout << "mdabrowskiego f2        ";
+        // Rcout << "mdabrowskiego f2        ";
         
         // Random covariate processing
         double chosen_randcova2 {0.0};
@@ -2510,7 +2510,7 @@ namespace AdaptMats {
           }
         }
         
-        //Rcout << "mdabrowskiego f3        ";
+        // Rcout << "mdabrowskiego f3        ";
         
         // Fixed factor covariate processing
         double chosen_fixcova2 {0.0};
@@ -2526,7 +2526,7 @@ namespace AdaptMats {
           (indb2 + dev_terms3(1)), (indc1 + dev_terms3(2)),
           (indc2 + dev_terms3(2)), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, dens, false); // Final 6 zeroes are anncov
         
-        //Rcout << "mdabrowskiego f4        ";
+        // Rcout << "mdabrowskiego f4        ";
         
         preout = (mainsum + chosen_randcova2 + chosen_randcova1 +
           chosen_randcovb2 + chosen_randcovb1 + chosen_randcovc2 +
@@ -2535,7 +2535,7 @@ namespace AdaptMats {
           chosen_fixcovc1 + survgroups2(0) + survgroups1(0) + 
           vital_patch(patchnumber, 0) + vital_year(yearnumber, 0) + surv_dev);
         
-        //Rcout << "mdabrowskiego f5        ";
+        // Rcout << "mdabrowskiego f5        ";
         
         if (preout > exp_tol) preout = exp_tol; // Catches numbers too high
         if (i < (noages - 1)) {
@@ -2553,10 +2553,10 @@ namespace AdaptMats {
             }
           }
         }
-        //Rcout << "mdabrowskiego f6        ";
+        // Rcout << "mdabrowskiego f6        ";
         
       } else {
-        //Rcout << "mdabrowskiego f7        ";
+        // Rcout << "mdabrowskiego f7        ";
         
         if (i < (noages - 1)) {
           if (!sparse) {
@@ -2573,13 +2573,13 @@ namespace AdaptMats {
         }
       }
       
-        //Rcout << "mdabrowskiego f8        ";
+        // Rcout << "mdabrowskiego f8        ";
         
       // This next block calculates fecundity
       if (fec_addedcoefs != 0.0) {
         if (sf_repstatus(i) == 1) {
           
-        //Rcout << "mdabrowskiego f9        ";
+        // Rcout << "mdabrowskiego f9        ";
         
           // Random covariate processing
           double chosen_randcova2 {0.0};
@@ -2692,7 +2692,7 @@ namespace AdaptMats {
               }
             }
           }
-          //Rcout << "mdabrowskiego f10        ";
+          // Rcout << "mdabrowskiego f10        ";
           
           
           // Fixed factor covariate processing
@@ -2712,7 +2712,7 @@ namespace AdaptMats {
           
           double preoutx {0.0};
           
-          //Rcout << "mdabrowskiego f11        ";
+          // Rcout << "mdabrowskiego f11        ";
           
           if (fecdist < 4) {
             if (feczero) {
@@ -2731,11 +2731,11 @@ namespace AdaptMats {
                 chosen_fixcovc1zi + fecgroups2zi(0) + fecgroups1zi(0) + 
                 fecpatchzi(patchnumber) + fecyearzi(yearnumber) + fec_dev);
               
-          //Rcout << "mdabrowskiego f11c        ";
+          // Rcout << "mdabrowskiego f11c        ";
           
             } else {
               
-          //Rcout << "mdabrowskiego f11d        ";
+          // Rcout << "mdabrowskiego f11d        ";
           
               double mainsum = rimeotam(feccoefs, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                 0.0, 0.0, static_cast<double>(actualages(i)), (inda1 + dev_terms3(0)),
@@ -2751,11 +2751,11 @@ namespace AdaptMats {
                 chosen_fixcovc1 + fecgroups2(0) + fecgroups1(0) + 
                 vital_patch(patchnumber, 1) + vital_year(yearnumber, 1) +
                 fec_dev);
-              //Rcout << "mdabrowskiego f11e        ";
+              // Rcout << "mdabrowskiego f11e        ";
               
             }
             
-            //Rcout << "mdabrowskiego f11f        ";
+            // Rcout << "mdabrowskiego f11f        ";
             
             if (fecdist == 0 || fecdist == 1) {
               // Poisson and negative binomial fecundity
@@ -2776,10 +2776,10 @@ namespace AdaptMats {
                   fectransmat_sp(0, i) = exp(preoutx) * fecmod;
                 }
               }
-              //Rcout << "mdabrowskiego f11g        ";
+              // Rcout << "mdabrowskiego f11g        ";
             
             } else if (fecdist == 2) {
-              //Rcout << "mdabrowskiego f11h        ";
+              // Rcout << "mdabrowskiego f11h        ";
               
               // Gaussian fecundity
               
@@ -2796,10 +2796,10 @@ namespace AdaptMats {
                   fectransmat_sp(0, i) = 0.0;
                 }
               }
-              //Rcout << "mdabrowskiego f11i        ";
+              // Rcout << "mdabrowskiego f11i        ";
               
             } else if (fecdist == 3) {
-              //Rcout << "mdabrowskiego f11j        ";
+              // Rcout << "mdabrowskiego f11j        ";
               
               // Gamma fecundity
               if (!sparse) {
@@ -2809,7 +2809,7 @@ namespace AdaptMats {
               }
             }
             
-            //Rcout << "mdabrowskiego f11k        ";
+            // Rcout << "mdabrowskiego f11k        ";
             
           } else {
             if (!sparse) {
@@ -2822,7 +2822,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mdabrowskiego g        ";
+    // Rcout << "mdabrowskiego g        ";
     
     // Supplement replacement portion
     int target_col {0};
@@ -2931,7 +2931,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "mdabrowskiego h        ";
+    // Rcout << "mdabrowskiego h        ";
     
     List output;
     if (!sparse) {
@@ -3050,7 +3050,7 @@ namespace AdaptMats {
     
     int sf_length = static_cast<int>(origstageid.length());
     
-    //Rcout << "thenewpizzle a        ";
+    // Rcout << "thenewpizzle a        ";
     
     // Create stage order vectors
     IntegerVector tastageorder3 (tarows); // Replace calls to stageorder below
@@ -3097,7 +3097,7 @@ namespace AdaptMats {
       }
     }
     
-    //Rcout << "thenewpizzle b        ";
+    // Rcout << "thenewpizzle b        ";
     
     // Determine length of matrix map data frame
     int nostages = static_cast<int>(newstageid.n_elem);
@@ -3108,8 +3108,8 @@ namespace AdaptMats {
     arma::vec tarepentry_prior(nostages, fill::zeros);
     int totallength {0};
     
-    //Rcout << "thenewpizzle c        ";
-    //Rcout << "nostages: " << nostages << "         ";
+    // Rcout << "thenewpizzle c        ";
+    // Rcout << "nostages: " << nostages << "         ";
     
     stageexpansion_size = tarows; // Might need to alter for age-by-stage or deVries historical
     
@@ -3130,7 +3130,7 @@ namespace AdaptMats {
     
     totallength = stageexpansion_size; // Need to check this - might not need former totallength calculations
     
-    //Rcout << "thenewpizzle d        ";
+    // Rcout << "thenewpizzle d        ";
     
     // Set up vectors that will be put together into matrix map data frame
     IntegerVector tanewage3 (totallength);
@@ -3168,14 +3168,14 @@ namespace AdaptMats {
     tasurvmult.fill(-1.0);
     tafecmult.fill(-1.0);
     
-    //Rcout << "thenewpizzle e        ";
+    // Rcout << "thenewpizzle e        ";
     
     // Change stage names to stage numbers per input stageframe for styles 0 and 1
     if (style < 3) {
       if (tarows > 0) {
         if (tarows > 1 || taconvtype(0) != -1.0) {
           for (int i = 0; i < tarows; i++) { // Loop across trait_axis rows
-            //Rcout << "Entered thenewpizzle interior loop a (prep)        ";
+            // Rcout << "Entered thenewpizzle interior loop a (prep)        ";
             for (int j = 0; j < nostages; j++) { // Loop across stageframe rows
               
               if (tastage3(i) == origstageid(j)) {
@@ -3204,7 +3204,7 @@ namespace AdaptMats {
             } // j for loop
             
             if (style == 0 && format == 2) {
-              //Rcout << "Entered thenewpizzle interior loop a1 (historical deVries)        ";
+              // Rcout << "Entered thenewpizzle interior loop a1 (historical deVries)        ";
               
               if (taconvtype(i) > 1.0) { // Catches all changes to fecundity and reproductive multipliers
                 tanewconvtype(i) = 2;
@@ -3288,7 +3288,7 @@ namespace AdaptMats {
               index21(i) = (tanewstageid2(i) - 1) + 
                 ((tanewstageid1(i) - 1) * nostages);
             } else if (style == 0 && format == 1) {
-              //Rcout << "Entered thenewpizzle interior loop a2 (historical Ehrlen)        ";
+              // Rcout << "Entered thenewpizzle interior loop a2 (historical Ehrlen)        ";
               
               if (taconvtype(i) > 1.0) tanewconvtype(i) = 2;
               
@@ -3331,7 +3331,7 @@ namespace AdaptMats {
               
               tanewmpmaltered(i) = tampmaltered(i);
               
-              //Rcout << "Entered thenewpizzle interior loop a3        ";
+              // Rcout << "Entered thenewpizzle interior loop a3        ";
               
               // The below is from the next loop cycle, so may cause problems
               index321d(i) = (tanewstageid3(i) - 1) + 
@@ -3359,7 +3359,7 @@ namespace AdaptMats {
                   nostages_nounborn);
               index21(i) = (tanewstageid2(i) - 1) + ((tanewstageid1(i) - 1) * nostages);
             } else if (style == 1) { // Ahistorical
-              //Rcout << "Entered thenewpizzle interior loop a4 (ahistorical)        ";
+              // Rcout << "Entered thenewpizzle interior loop a4 (ahistorical)        ";
               
               if (taconvtype(i) > 1.0) tanewconvtype(i) = 2;
               
@@ -3395,7 +3395,7 @@ namespace AdaptMats {
               
               tanewmpmaltered(i) = tampmaltered(i);
               
-              //Rcout << "Entered thenewpizzle interior loop a5        ";
+              // Rcout << "Entered thenewpizzle interior loop a5        ";
               // The following is from the next loop cycle, and may cause problems
               aliveequal(i) = (tastageorder3(i) - 1) + 
                 ((tastageorder2(i) - 1) * nostages);
@@ -3407,7 +3407,7 @@ namespace AdaptMats {
                 ((tanewstageid2(i) - 1) * nostages);
               index21(i) = (tanewstageid2(i) - 1);
             } else if (style == 2) { // age-by-stage
-              //Rcout << "Entered thenewpizzle interior loop a6 (age-by-stage)        ";
+              // Rcout << "Entered thenewpizzle interior loop a6 (age-by-stage)        ";
               
               bool found_mpm_altered {false};
               
@@ -3482,7 +3482,7 @@ namespace AdaptMats {
               
               tanewmpmaltered(i) = tampmaltered(i);
               
-              //Rcout << "Entered thenewpizzle interior loop a7        ";
+              // Rcout << "Entered thenewpizzle interior loop a7        ";
               // The following is from the next loop cycle, and may cause problems
               int time3 = tastageorder3(i) - 1;
               int time2n = tastageorder2(i) - 1;
@@ -3511,7 +3511,7 @@ namespace AdaptMats {
       }
     } // style if statement
     
-    //Rcout << "thenewpizzle f         ";
+    // Rcout << "thenewpizzle f         ";
     
     // Output formatting
     Rcpp::List output_longlist(23);
@@ -3523,7 +3523,7 @@ namespace AdaptMats {
       used_indices = find(aliveequal != -1.0);
     }
     
-    //Rcout << "thenewpizzle g         ";
+    // Rcout << "thenewpizzle g         ";
     
     int aliveequal_length = static_cast<int>(aliveequal.n_elem);
     
@@ -3556,7 +3556,7 @@ namespace AdaptMats {
     output_longlist(21) = Rcpp::NumericVector(tanewconvtype.begin(), tanewconvtype.end());
     output_longlist(22) = Rcpp::NumericVector(tanewmpmaltered.begin(), tanewmpmaltered.end());
     
-    //Rcout << "thenewpizzle h         ";
+    // Rcout << "thenewpizzle h         ";
     
     CharacterVector namevec = {"stage3", "stage2", "stage1", "eststage3",
       "eststage2", "eststage1", "age3", "age2", "tagiven_t", "taest_t",
@@ -3611,7 +3611,7 @@ namespace AdaptMats {
     int finalage, int format, int style, int cont, int filter,
     bool nodead = false) {
     
-    //Rcout << "Entered theoldpizzle_adapt3" << endl;
+    // Rcout << "Entered theoldpizzle_adapt3" << endl;
     
     StringVector ovstage3 = as<StringVector>(OverWrite["stage3"]);
     StringVector ovstage2 = as<StringVector>(OverWrite["stage2"]);
@@ -3635,7 +3635,7 @@ namespace AdaptMats {
     
     int totalages = (finalage - firstage) + 1;
     
-    //Rcout << "theoldpizzle_adapt3 A" << endl;
+    // Rcout << "theoldpizzle_adapt3 A" << endl;
     
     arma::vec ovindex3 (ovrows); 
     arma::vec ovindex2 (ovrows);
@@ -3660,7 +3660,7 @@ namespace AdaptMats {
     ovnewgivenrate.fill(-1.0);
     ovconvtypeage.fill(-1.0);
     
-    //Rcout << "theoldpizzle_adapt3 B" << endl;
+    // Rcout << "theoldpizzle_adapt3 B" << endl;
     
     arma::ivec newstageid = as<arma::ivec>(StageFrame["stage_id"]);
     StringVector origstageid = as<StringVector>(StageFrame["stage"]);
@@ -3682,15 +3682,22 @@ namespace AdaptMats {
     arma::vec binsizebwidth = as<arma::vec>(StageFrame["sizebinb_width"]);
     arma::vec binsizecwidth = as<arma::vec>(StageFrame["sizebinc_width"]);
     
-    //Rcout << "theoldpizzle_adapt3 C" << endl;
+    // Rcout << "theoldpizzle_adapt3 C" << endl;
     
     // Determine length of matrix map data frame
     int nostages = static_cast<int>(newstageid.n_elem);
-    int nostages_nodead = nostages - 1;
-    if (nodead) nostages_nodead = nostages;
     
-    int nostages_nounborn = nostages;
-    int nostages_nodead_nounborn = nostages_nodead;
+    int deadstages {0};
+    int almostbornstages {0};
+    for (int stage_i = 0; stage_i < static_cast<int>(origstageid.length()); stage_i++) {
+      if (origstageid(stage_i) == "Dead") deadstages++;
+      if (origstageid(stage_i) == "AlmostBorn") almostbornstages++;
+    }
+    
+    int nostages_nodead = nostages - deadstages;
+    
+    int nostages_nounborn = nostages - almostbornstages;
+    int nostages_nodead_nounborn = nostages_nodead - almostbornstages;
     int prior_stage = -1;
     arma::vec ovrepentry_prior(nostages, fill::zeros);
     IntegerVector stageorder = seq(1, nostages);
@@ -3702,16 +3709,14 @@ namespace AdaptMats {
       totallength = (nostages * nostages_nodead);
     } else {
       if (format == 2) {
-        nostages_nodead_nounborn = nostages - 2;
-        prior_stage = nostages_nodead_nounborn;
-        nostages_nounborn = nostages - 1;
-        totallength = (2 * nostages_nodead_nounborn * nostages_nounborn * nostages_nounborn);
+        totallength = ((nostages_nodead_nounborn * nostages_nodead_nounborn) * nostages_nounborn) +
+          (nostages_nodead_nounborn * nostages_nodead_nounborn * nostages_nodead_nounborn);
       } else {
-        totallength = (nostages * (nostages_nodead * nostages_nodead));
+        totallength = (nostages_nodead_nounborn * (nostages_nodead_nounborn * nostages_nodead_nounborn));
       }
     }
     
-    //Rcout << "theoldpizzle_adapt3 D" << endl;
+    // Rcout << "theoldpizzle_adapt3 D" << endl;
     
     // Set up repmatrix
     int reprows = repmatrix.n_rows;
@@ -3833,7 +3838,7 @@ namespace AdaptMats {
     double deadandnasty {0};
     long long int currentindex {0};
     
-    //Rcout << "theoldpizzle_adapt3 F" << endl;
+    // Rcout << "theoldpizzle_adapt3 F" << endl;
     
     // Change stage names to stage numbers per input stageframe for styles 0 and 1
     if (style < 2) {
@@ -3870,11 +3875,11 @@ namespace AdaptMats {
       }
     } // style if statement
     
-    //Rcout << "theoldpizzle_adapt3 G" << endl;
+    // Rcout << "theoldpizzle_adapt3 G" << endl;
     
     // Main data frame creation loops
     if (style == 0 && format == 2) { // Historical MPM deVries format
-      //Rcout << "theoldpizzle_adapt3 G1 deVries Historical" << endl;
+      // Rcout << "theoldpizzle_adapt3 G1 deVries Historical" << endl;
       
       if (ovrows > 0) {
         if (ovrows > 1 || ovconvtype(0) != -1.0) {
@@ -4062,9 +4067,9 @@ namespace AdaptMats {
                     
                     // Next two index variables used by ovreplace
                     index321(currentindex) = (stage3(currentindex) - 1) + 
-                      ((stage2n(currentindex) - 1) * nostages) + 
-                      ((stage2o(currentindex) - 1) * nostages * nostages) + 
-                      ((stage1(currentindex) - 1) * nostages * nostages * nostages);
+                      ((stage2n(currentindex) - 1) * nostages_nodead_nounborn) + 
+                      ((stage2o(currentindex) - 1) * nostages_nodead_nounborn * nostages_nodead) + 
+                      ((stage1(currentindex) - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
                       
                     index21(currentindex) = (stage2o(currentindex) - 1) + 
                       ((stage1(currentindex) - 1) * nostages);
@@ -4133,7 +4138,7 @@ namespace AdaptMats {
         } // ovreplace if statement
       }
     } else if (style == 0 && format == 1) { // Historical MPM Ehrlen format
-      //Rcout << "theoldpizzle_adapt3 G2 Ehrlen Historical" << endl;
+      // Rcout << "theoldpizzle_adapt3 G2 Ehrlen Historical" << endl;
       
       if (ovrows > 0) {
         if (ovrows > 1 || ovconvtype(0) != -1.0) {
@@ -4165,7 +4170,7 @@ namespace AdaptMats {
         } // ovrows if statement
       }
       
-      //Rcout << "theoldpizzle_adapt3 G2a" << endl;
+      // Rcout << "theoldpizzle_adapt3 G2a" << endl;
       
       for (int time1 = 0; time1 < nostages_nodead; time1++) {
         for (int time2o = 0; time2o < nostages_nodead; time2o++) {
@@ -4320,7 +4325,7 @@ namespace AdaptMats {
         } // time2o loop
       } // time1 loop 
       
-      //Rcout << "theoldpizzle_adapt3 G2b" << endl;
+      // Rcout << "theoldpizzle_adapt3 G2b" << endl;
       
       if (ovrows > 0) {
         if (ovrows > 1 || ovconvtype(0) != -1.0) {
@@ -4349,7 +4354,7 @@ namespace AdaptMats {
         } // ovreplace if statement
       }
     } else if (style == 1) { // Ahistorical case
-      //Rcout << "theoldpizzle_adapt3 G3 Ahistorical" << endl;
+      // Rcout << "theoldpizzle_adapt3 G3 Ahistorical" << endl;
       
       if (ovrows > 0) {
         if (ovrows > 1 || ovconvtype(0) != -1.0) {
@@ -4507,7 +4512,7 @@ namespace AdaptMats {
         } // ovreplace if statement
       }
     } else if (style == 2) { // Age-by-stage case
-      //Rcout << "theoldpizzle_adapt3 G4 Age-by-stage" << endl;
+      // Rcout << "theoldpizzle_adapt3 G4 Age-by-stage" << endl;
       
       int age3 {firstage};
       
@@ -5086,7 +5091,7 @@ namespace AdaptMats {
       }
     } // Age-by-stage loop (style = 2)
     
-    //Rcout << "theoldpizzle_adapt3 H" << endl;
+    // Rcout << "theoldpizzle_adapt3 H" << endl;
     
     // Output formatting
     Rcpp::List output_longlist(62);
@@ -5459,7 +5464,7 @@ namespace AdaptMats {
     const DataFrame& sge93, const DataFrame& StageFrame, int format,
     bool simplicity = false, bool sparse = false) {
     
-    //Rcout << "matrix_post A" << endl;
+    // Rcout << "matrix_post A" << endl;
     
     arma::ivec sge93stage3 = as<arma::ivec>(sge93["stage3"]);
     arma::vec sge93fec32 = as<arma::vec>(sge93["repentry3"]);
@@ -5476,7 +5481,7 @@ namespace AdaptMats {
     arma::ivec sge93index21 = as<arma::ivec>(sge93["index21"]);
     arma::ivec aliveandequal = as<arma::ivec>(sge93["aliveandequal"]);
     
-    //Rcout << "matrix_post B" << endl;
+    // Rcout << "matrix_post B" << endl;
     
     arma::uvec sge93rep2;
     if (format < 3) {
@@ -5485,35 +5490,35 @@ namespace AdaptMats {
       sge93rep2 = as<arma::uvec>(sge93["rep2n"]);
     }
     
-    //Rcout << "matrix_post C" << endl;
+    // Rcout << "matrix_post C" << endl;
     
-    arma::uvec ovgiventind = find(sge93ovgivent != -1.);
-    arma::uvec ovgivenfind = find(sge93ovgivenf != -1.);
+    arma::uvec ovgiventind = find(sge93ovgivent >= 0.);
+    arma::uvec ovgivenfind = find(sge93ovgivenf >= 0.);
     int ovgtn = static_cast<int>(ovgiventind.n_elem);
     int ovgfn = static_cast<int>(ovgivenfind.n_elem);
     
-    //Rcout << "matrix_post D" << endl;
+    // Rcout << "matrix_post D" << endl;
     
     arma::uvec ovoffsettind = find(sge93ovoffsett != 0.);
     arma::uvec ovoffsetfind = find(sge93ovoffsetf != 0.);
     int ovotn = static_cast<int>(ovoffsettind.n_elem);
     int ovofn = static_cast<int>(ovoffsetfind.n_elem);
     
-    //Rcout << "matrix_post E" << endl;
+    // Rcout << "matrix_post E" << endl;
     
-    arma::uvec ovsurvmultind = find(sge93ovsurvmult != -1);
-    arma::uvec ovfecmultind = find(sge93ovfecmult != -1);
+    arma::uvec ovsurvmultind = find(sge93ovsurvmult != -1 && sge93ovsurvmult != 1);
+    arma::uvec ovfecmultind = find(sge93ovfecmult != -1 && sge93ovfecmult != 1);
     int ovsurvmultn = static_cast<int>(ovsurvmultind.n_elem);
     int ovfecmultn = static_cast<int>(ovfecmultind.n_elem);
     
-    //Rcout << "matrix_post F" << endl;
+    // Rcout << "matrix_post F" << endl;
     
     arma::uvec ovesttind = find(sge93ovestt != -1);
     arma::uvec ovestfind = find(sge93ovestf != -1);
     int ovestn = static_cast<int>(ovesttind.n_elem);
     int ovesfn = static_cast<int>(ovestfind.n_elem);
     
-    //Rcout << "matrix_post G" << endl;
+    // Rcout << "matrix_post G" << endl;
     
     int mat_list_length = static_cast<int>(Amat_list.length());
     
@@ -5524,10 +5529,10 @@ namespace AdaptMats {
     arma::uvec all_repentries = find(sge93fec32 > 0.0);
     arma::ivec all_entry_stages = arma::unique(sge93stage3(all_repentries));
     
-    //Rcout << "matrix_post H" << endl;
+    // Rcout << "matrix_post H" << endl;
     
     for (int i = 0; i < mat_list_length; i++) {
-      //Rcout << "matrix_post I i:" << i << endl;
+      // Rcout << "matrix_post I i:" << i << endl;
       
       // Initialize final matrices
       arma::mat tmatrix;
@@ -5537,7 +5542,7 @@ namespace AdaptMats {
       arma::sp_mat fmatrix_sp;
       arma::sp_mat amatrix_sp;
       
-      //Rcout << "matrix_post J" << endl;
+      // Rcout << "matrix_post J" << endl;
       
       // What about cases with only Amat?
       if (sparse) { 
@@ -5554,7 +5559,7 @@ namespace AdaptMats {
         fmatrix = fmatrix_chuck;
       }
       
-      //Rcout << "matrix_post K" << endl;
+      // Rcout << "matrix_post K" << endl;
       
       // Correct transitions for multipliers
       if (ovsurvmultn > 0) {
@@ -5579,7 +5584,7 @@ namespace AdaptMats {
         }
       }
       
-      //Rcout << "matrix_post L" << endl;
+      // Rcout << "matrix_post L" << endl;
       
       // Correct transitions for given stuff
       if (ovgtn > 0) {
@@ -5604,7 +5609,7 @@ namespace AdaptMats {
         }
       }
       
-      //Rcout << "matrix_post M" << endl;
+      // Rcout << "matrix_post M" << endl;
       
       // Correct transitions for additive offsets
       if (ovotn > 0) {
@@ -5633,7 +5638,7 @@ namespace AdaptMats {
         }
       }
       
-      //Rcout << "matrix_post N" << endl;
+      // Rcout << "matrix_post N" << endl;
       
       // Replace transitions for proxy values as given in overwrite table  
       if (ovestn > 0) {
@@ -5672,7 +5677,7 @@ namespace AdaptMats {
         }
       }
       
-      //Rcout << "matrix_post O" << endl;
+      // Rcout << "matrix_post O" << endl;
       
       // Final processing
       if (!sparse) {
