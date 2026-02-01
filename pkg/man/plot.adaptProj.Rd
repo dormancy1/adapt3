@@ -7,9 +7,11 @@
 \method{plot}{adaptProj}(
   x,
   repl = 1,
+  agg_only = FALSE,
   auto_ylim = TRUE,
   auto_col = TRUE,
   auto_lty = TRUE,
+  auto_lwd = TRUE,
   auto_title = FALSE,
   ...
 )
@@ -20,6 +22,10 @@
 \item{repl}{The replicate to plot. Defaults to \code{1}, in which case the
 first replicate is plotted.}
 
+\item{agg_only}{A logical value indicating whether to plot only the aggregate
+community density. Defaults to \code{FALSE}, in which case population sizes
+of all constituent populations are also plotted.}
+
 \item{auto_ylim}{A logical value indicating whether the maximum of the y axis
 should be determined automatically. Defaults to \code{TRUE}, but reverts to
 \code{FALSE} if any setting for \code{ylim} is given.}
@@ -28,9 +34,9 @@ should be determined automatically. Defaults to \code{TRUE}, but reverts to
 lines associated with each patch automatically. Defaults to \code{TRUE}, but
 reverts to \code{FALSE} if any setting for \code{col} is given.}
 
-\item{auto_lty}{A logical value indicating whether to shift the line type
-associated with each replicate automatically. Defaults to \code{TRUE}, but
-reverts to \code{FALSE} if any setting for \code{lty} is given.}
+\item{auto_lty}{A logical value indicating whether to shift the line width
+associated with each density trend automatically. Defaults to \code{TRUE},
+but reverts to \code{FALSE} if any setting for \code{lwd} is given.}
 
 \item{auto_title}{A logical value indicating whether to add a title to each
 plot. The plot is composed of the concatenated population and patch names.
