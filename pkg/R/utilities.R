@@ -470,6 +470,7 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
 #' new_supplement_cyp2_small <- sup_skeleton(2)
 #' new_supplement_cyp2_small$stage3 <- c("D", "Sm")
 #' new_supplement_cyp2_small$stage2 <- c("Lg", "Lg")
+#' new_supplement_cyp2_small$convtype <- c(1, 1)
 #' used_supplements <- list(new_supplement_cyp2_small,
 #'   new_supplement_cyp2_small, NULL)
 #' 
