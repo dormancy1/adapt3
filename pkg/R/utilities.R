@@ -19,6 +19,13 @@
 #' \code{c(0, 0.25, 0.50, 0.75, 1.00)}.
 #' @param ext_time A logical value indicating whether to output extinction times
 #' per population-patch. Defaults to \code{FALSE}.
+#' @param finalN_mean A logical value indicating whether to take the arithmetic
+#' mean of the final population sizes for each MPM across all replicates.
+#' Defaults to \code{FALSE}.
+#' @param finalN_used An integer value indicating the number of final population
+#' sizes in the arithmetic mean noted in argument \code{finalN_mean}. Defaults
+#' to \code{100}, unless the projections are for fewer time steps, in which case
+#' defaults to \code{10}.
 #' @param ... Other parameters currently not utilized.
 #' 
 #' @return Apart from a statement of the results, this function outputs a list
@@ -28,6 +35,8 @@
 #' \item{extinction_times}{A dataframe showing the numbers of replicates going
 #' extinct (\code{ext_reps}) and mean extinction time (\code{ext_time}) per
 #' population-patch. If \code{ext_time = FALSE}, then only outputs \code{NA}.}
+#' \item{final_N}{The final population size of each MPM across all replicates.
+#' Only given if \code{finalN_mean = TRUE}.}
 #' 
 #' @section Notes:
 #' The \code{inf_alive} and \code{ext_time} options both assess whether
@@ -125,7 +134,8 @@
 #' 
 #' @export
 summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
-  milepost = c(0, 0.25, 0.50, 0.75, 1.00), ext_time = FALSE, ...) {
+  milepost = c(0, 0.25, 0.50, 0.75, 1.00), ext_time = FALSE, finalN_mean = FALSE,
+  finalN_used = 100, ...) {
   
   num_reps <- num_times <- 0
   appended <- FALSE
@@ -139,7 +149,9 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
   num_pops <- dim(object$N_out[[1]])[1]
   num_times <- dim(object$N_out[[1]])[2]
   
-  #used_milepost <- milepost * num_times
+  mean_throw_error <- FALSE
+  
+  mean_N_vec <- rep(NA, num_pops)
   
   if (any(milepost < 0)) {
     stop("Option milepost may not take negative values.", call. = FALSE)
@@ -182,12 +194,6 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
     the_numbers <- as.data.frame(the_numbers)
     colnames(the_numbers) <- c("ext_reps", "ext_time")
     
-    #if (dim(object$labels)[1] > 1) {
-    #  row_labels <- apply(object$labels, 1, function(X) {
-    #    paste(X[1], X[2])
-    #  })
-    #  rownames(the_numbers) <- row_labels
-    #}
   } else {
     the_numbers <- NA
   }
@@ -197,6 +203,29 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
       stop("Entered milepost values are outside the allowable range.", call. = FALSE)
     }
   }
+  
+  if (finalN_mean) {
+    if (finalN_used > num_times) {
+      if (num_times > 10) {
+        finalN_used <- 10
+        warning("Mean N will be calculated over the final 10 time steps.", call. = FALSE)
+      } else {
+        warning("Unable to generate mean given the length of projection and the set value of finalN_used.", call. = FALSE)
+        mean_throw_error <- TRUE
+      }
+    }
+    
+    if (!mean_throw_error) {
+      useable_N_mat <- Reduce("+", object$N_out)
+      useable_N_mat <- useable_N_mat / num_reps
+      
+      mean_N_vec <- apply(useable_N_mat[, c((num_times - finalN_used + 1):num_times)], 1, mean)
+      names(mean_N_vec) <- c(1:num_pops)
+    }
+  }
+  
+  
+  
   
   if (num_pops == 1) pop_text <- "population"
   if (num_reps == 1) rep_text <- "replicate"
@@ -235,7 +264,12 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
   }
   colnames(milepost_sums) <- used_milepost
   
-  output <- list(milepost_sums = milepost_sums, extinction_times = the_numbers)
+  if (finalN_mean) {
+    output <- list(milepost_sums = milepost_sums, extinction_times = the_numbers,
+      final_N = mean_N_vec)
+  } else {
+    output <- list(milepost_sums = milepost_sums, extinction_times = the_numbers)
+  }
   
   return (output)
 }

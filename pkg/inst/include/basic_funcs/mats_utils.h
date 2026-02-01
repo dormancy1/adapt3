@@ -3672,8 +3672,8 @@ namespace AdaptMats {
     arma::vec indata = as<arma::vec>(StageFrame["indataset"]);
     arma::vec binsizewidth = as<arma::vec>(StageFrame["sizebin_width"]);
     arma::vec alive = as<arma::vec>(StageFrame["alive"]);
-    arma::vec minage = as<arma::vec>(StageFrame["min_age"]);
-    arma::vec maxage = as<arma::vec>(StageFrame["max_age"]);
+    arma::ivec minage = as<arma::ivec>(StageFrame["min_age"]);
+    arma::ivec maxage = as<arma::ivec>(StageFrame["max_age"]);
     arma::vec group = as<arma::vec>(StageFrame["group"]);
     arma::vec almostborn = as<arma::vec>(StageFrame["almostborn"]);
     
@@ -3698,7 +3698,7 @@ namespace AdaptMats {
     
     int nostages_nounborn = nostages - almostbornstages;
     int nostages_nodead_nounborn = nostages_nodead - almostbornstages;
-    int prior_stage = -1;
+    int prior_stage = nostages_nodead;
     arma::vec ovrepentry_prior(nostages, fill::zeros);
     IntegerVector stageorder = seq(1, nostages);
     int totallength {0};
@@ -3709,8 +3709,7 @@ namespace AdaptMats {
       totallength = (nostages * nostages_nodead);
     } else {
       if (format == 2) {
-        totallength = ((nostages_nodead_nounborn * nostages_nodead_nounborn) * nostages_nounborn) +
-          (nostages_nodead_nounborn * nostages_nodead_nounborn * nostages_nodead_nounborn);
+        totallength = 2 * (nostages_nodead * (nostages_nodead_nounborn * nostages_nodead_nounborn));
       } else {
         totallength = (nostages_nodead_nounborn * (nostages_nodead_nounborn * nostages_nodead_nounborn));
       }
@@ -3811,12 +3810,12 @@ namespace AdaptMats {
     arma::vec index321d (totallength); // Death transitions included
     arma::vec index21 (totallength);
     arma::vec indatalong (totallength, fill::zeros);
-    arma::vec aliveequal (totallength);
+    //arma::vec aliveequal (totallength);
     arma::vec included (totallength, fill::zeros);
     index321.fill(-1.0);
     index321d.fill(-1.0);
     index21.fill(-1.0);
-    aliveequal.fill(-1.0);
+    //aliveequal.fill(-1.0);
     
     arma::mat asadditions (totallength, 5, fill::zeros);
     
@@ -3852,6 +3851,28 @@ namespace AdaptMats {
               
               if (ovstage2(i) == origstageid(j)) {
                 ovindex2(i) = newstageid(j);
+              } else if (ovage2(i) == minage(j)) {
+                bool check_age {true};
+                
+                arma::ivec minage_sorted = sort(minage);
+                arma::uvec minage_sorted_index = sort_index(minage);
+                
+                for (int k = 0; k < (nostages-1); k++) {
+                  if (minage_sorted(k+1) != (minage_sorted(k) + 1)) check_age = false;
+                }
+                
+                if (check_age) {
+                  int found_max_age = max(minage);
+                  
+                  ovindex2(i) = newstageid(minage_sorted_index(j)); 
+                  if (minage(j) != found_max_age) {
+                    arma::uvec current_next_age = find(minage == (minage(j) + 1));
+                    
+                    ovindex3(i) = newstageid(current_next_age(0));
+                  } else {
+                    ovindex3(i) = newstageid(minage_sorted_index(j));
+                  }
+                }
               }
               
               if (ovstage1(i) == origstageid(j)) {
@@ -3864,6 +3885,28 @@ namespace AdaptMats {
               
               if (oveststage2(i) == origstageid(j)) {
                 ovnew2(i) = newstageid(j);
+              } else if (ovestage2(i) == minage(j)) {
+                bool check_age {true};
+                
+                arma::ivec minage_sorted = sort(minage);
+                arma::uvec minage_sorted_index = sort_index(minage);
+                
+                for (int k = 0; k < (nostages-1); k++) {
+                  if (minage_sorted(k+1) != (minage_sorted(k) + 1)) check_age = false;
+                }
+                
+                if (check_age) {
+                  int found_max_age = max(minage);
+                  
+                  ovnew2(i) = newstageid(minage_sorted_index(j));
+                  if (minage(j) != found_max_age) {
+                    arma::uvec current_next_age = find(minage == (minage(j) + 1));
+                    
+                    ovnew3(i) = newstageid(current_next_age(0));
+                  } else {
+                    ovnew3(i) = newstageid(minage_sorted_index(j));
+                  }
+                }
               }
               
               if (oveststage1(i) == origstageid(j)) {
@@ -3875,8 +3918,8 @@ namespace AdaptMats {
       }
     } // style if statement
     
-    // Rcout << "theoldpizzle_adapt3 G" << endl;
     
+    // Rcout << "theoldpizzle_adapt3 G" << endl;
     // Main data frame creation loops
     if (style == 0 && format == 2) { // Historical MPM deVries format
       // Rcout << "theoldpizzle_adapt3 G1 deVries Historical" << endl;
@@ -3885,29 +3928,29 @@ namespace AdaptMats {
         if (ovrows > 1 || ovconvtype(0) != -1.0) {
           for (int i = 0; i < ovrows; i++) {  // Loop across overwrite rows
             if (ovconvtype(i) > 1.0) { // Catches all changes to fecundity and reproductive multipliers
-              ovindexold321(i) = (ovindex3(i) - 1) + (prior_stage * nostages) + 
-                ((ovindex2(i) - 1) * nostages * nostages) + 
-                ((ovindex1(i) - 1) * nostages * nostages * nostages);
+              ovindexold321(i) = (ovindex3(i) - 1) + ((nostages_nodead - 1) * nostages_nodead_nounborn) + 
+                ((ovindex2(i) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                ((ovindex1(i) - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
                 
-              ovindexnew321(i) = (ovnew3(i) - 1) + (prior_stage * nostages) + 
-                ((ovnew2(i) - 1) * nostages * nostages) + 
-                ((ovnew1(i) - 1) * nostages * nostages * nostages);
+              ovindexnew321(i) = (ovnew3(i) - 1) + ((nostages_nodead - 1) * nostages_nodead_nounborn) + 
+                ((ovnew2(i) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                ((ovnew1(i) - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
             } else if (ovconvt12(i) == 2.0) { // Catches all survival terms with historical reproduction events
-              ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages) + 
-                ((ovindex2(i) - 1) * nostages * nostages) + 
-                (prior_stage * nostages * nostages * nostages);
+              ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages_nodead_nounborn) + 
+                ((ovindex2(i) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                ((nostages_nodead - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
                 
-              ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages) + 
-                ((ovnew2(i) - 1) * nostages * nostages) + 
-                (prior_stage * nostages * nostages * nostages);
+              ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages_nodead_nounborn) + 
+                ((ovnew2(i) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                ((nostages_nodead - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
             } else { // Full survival transitions
-              ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages) + 
-                ((ovindex2(i) - 1) * nostages * nostages) + 
-                ((ovindex1(i) - 1) * nostages * nostages * nostages);
+              ovindexold321(i) = (ovindex3(i) - 1) + ((ovindex2(i) - 1) * nostages_nodead_nounborn) + 
+                ((ovindex2(i) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                ((ovindex1(i) - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
                 
-              ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages) + 
-                ((ovnew2(i) - 1) * nostages * nostages) + 
-                ((ovnew1(i) - 1) * nostages * nostages * nostages);
+              ovindexnew321(i) = (ovnew3(i) - 1) + ((ovnew2(i) - 1) * nostages_nodead_nounborn) + 
+                ((ovnew2(i) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                ((ovnew1(i) - 1) * nostages_nodead_nounborn * nostages_nodead * nostages_nodead_nounborn);
             }
             if (ovindexold321(i) < 0.0) ovindexold321(i) = -1.0;
             if (ovindexnew321(i) < 0.0) ovindexnew321(i) = -1.0;
@@ -3936,11 +3979,11 @@ namespace AdaptMats {
       
       for (int time1 = 0; time1 < nostages_nodead; time1++) {
         for (int time2o = 0; time2o < nostages_nodead_nounborn; time2o++) {
-          for (int time2n = 0; time2n < nostages; time2n++) {
-            for (int time3 = 0; time3 < nostages; time3++) {
+          for (int time2n = 0; time2n < nostages_nodead; time2n++) {
+            for (int time3 = 0; time3 < nostages_nodead_nounborn; time3++) {
               
-              if (time3 != prior_stage) {
-                if (time2n == time2o || time2n == prior_stage){
+              if (time3 < (prior_stage - 1)) {
+                if (time2n == time2o || time2n == (prior_stage - 1)) {
                   
                   included(currentindex) = 1.0;
                   
@@ -4000,8 +4043,8 @@ namespace AdaptMats {
                   imm1(currentindex) = immstatus(time1);
                   
                   // Fill in repentry info from repmatrix
-                  if (time2n == prior_stage && time3 < prior_stage && time2o < prior_stage) {
-                    if (repmattype == 1) { 
+                  if (time2n == (prior_stage - 1) && time3 < (prior_stage - 1) && time2o < prior_stage) {
+                    if (repmattype == 1) {
                       repm_elem = (time3 + (time2o * nostages_nodead_nounborn));
                     } else if (repmattype == 2) {
                       repm_elem = time3 + (time2o * nostages_nodead_nounborn) + 
@@ -4043,9 +4086,9 @@ namespace AdaptMats {
                   grp2o(currentindex) = group(time2o);
                   grp1(currentindex) = group(time1);
                   
-                  if (stage3(currentindex) == nostages || stage2n(currentindex) == nostages) {
+                  if (deadstages > 0 && (stage3(currentindex) == nostages || stage2n(currentindex) == nostages)) {
                     deadandnasty = 1.0;
-                  } else if (stage2o(currentindex) == nostages || stage1(currentindex) == nostages) {
+                  } else if (deadstages > 0 && (stage2o(currentindex) == nostages || stage1(currentindex) == nostages)) {
                     deadandnasty = 1.0;
                   } else {
                     deadandnasty = 0.0;
@@ -4059,11 +4102,11 @@ namespace AdaptMats {
                   
                   if (deadandnasty == 0.0) {
                     // Next index variable gives element in the final matrix
-                    aliveequal(currentindex) = (stageorder3(currentindex) - 1) + 
-                      ((stageorder2n(currentindex) - 1) * nostages_nodead_nounborn) + 
-                      ((stageorder2o(currentindex) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
-                      ((stageorder1(currentindex) - 1) * nostages_nodead_nounborn * 
-                        nostages_nodead * nostages_nodead_nounborn);
+                    //aliveequal(currentindex) = (stageorder3(currentindex) - 1) + 
+                    //  ((stageorder2n(currentindex) - 1) * nostages_nodead_nounborn) + 
+                    //  ((stageorder2o(currentindex) - 1) * nostages_nodead * nostages_nodead_nounborn) + 
+                    //  ((stageorder1(currentindex) - 1) * nostages_nodead_nounborn * 
+                    //    nostages_nodead * nostages_nodead_nounborn);
                     
                     // Next two index variables used by ovreplace
                     index321(currentindex) = (stage3(currentindex) - 1) + 
@@ -4289,9 +4332,9 @@ namespace AdaptMats {
             grp2o(currentindex) = group(time2o);
             grp1(currentindex) = group(time1);
             
-            if (stage3(currentindex) == nostages || stage2n(currentindex) == nostages) {
+            if (deadstages > 0 && (stage3(currentindex) == nostages || stage2n(currentindex) == nostages)) {
               deadandnasty = 1.0;
-            } else if (stage2o(currentindex) == nostages || stage1(currentindex) == nostages) {
+            } else if (deadstages > 0 && (stage2o(currentindex) == nostages || stage1(currentindex) == nostages)) {
               deadandnasty = 1.0;
             } else {
               deadandnasty = 0.0;
@@ -4305,9 +4348,9 @@ namespace AdaptMats {
                 nostages_nodead_nounborn);
             
             if (deadandnasty == 0.0) {
-              aliveequal(currentindex) = (stageorder3(currentindex) - 1) + ((stageorder2n(currentindex) - 1) * 
-                  (nostages - 1)) + ((stageorder2o(currentindex) - 1) * (nostages - 1) * (nostages - 1)) + 
-                ((stageorder1(currentindex) - 1) * (nostages - 1) * (nostages - 1) * (nostages - 1));
+              //aliveequal(currentindex) = (stageorder3(currentindex) - 1) + ((stageorder2n(currentindex) - 1) * 
+              //    (nostages - 1)) + ((stageorder2o(currentindex) - 1) * (nostages - 1) * (nostages - 1)) + 
+              //  ((stageorder1(currentindex) - 1) * (nostages - 1) * (nostages - 1) * (nostages - 1));
               
               index321(currentindex) = (stage3(currentindex) - 1) + 
                 ((stage2n(currentindex) - 1) * nostages_nodead_nounborn) + 
@@ -4464,15 +4507,15 @@ namespace AdaptMats {
           grp2o(currentindex) = group(time2n);
           grp1(currentindex) = 0.0;
           
-          if (stage3(currentindex) == nostages || stage2n(currentindex) == nostages) {
+          if (deadstages > 0 && (stage3(currentindex) == nostages || stage2n(currentindex) == nostages)) {
             deadandnasty = 1.0;
           } else {
             deadandnasty = 0.0;
           }
           
           if (deadandnasty == 0.0) {
-            aliveequal(currentindex) = (stageorder3(currentindex) - 1) + 
-              ((stageorder2n(currentindex) - 1) * nostages_nodead);
+            //aliveequal(currentindex) = (stageorder3(currentindex) - 1) + 
+            //  ((stageorder2n(currentindex) - 1) * nostages_nodead);
             
             index321(currentindex) = (stage3(currentindex) - 1) + 
               ((stage2n(currentindex) - 1) * nostages);
@@ -4646,6 +4689,7 @@ namespace AdaptMats {
           } // i for loop
         } // ovrows if statement
       }
+      
       for (int age2 = firstage; age2 <= finalage; age2++) {
         if (age2 < finalage) { // First loop takes care of age transitions
           for (int time2n = 0; time2n < nostages; time2n++) {
@@ -4741,10 +4785,10 @@ namespace AdaptMats {
                 if (age2 >= minage2(currentindex) && age2 < maxage3(currentindex)) { 
                   
                   // Survival transitions
-                  aliveequal(currentindex) =
-                    ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
-                    (time2n * (nostages - 1) * totalages) +
-                    ((age3 - firstage) * (nostages - 1)) + time3;
+                  //aliveequal(currentindex) =
+                  //  ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                  //  (time2n * (nostages - 1) * totalages) +
+                  //  ((age3 - firstage) * (nostages - 1)) + time3;
                 }
               }
               
@@ -4845,10 +4889,10 @@ namespace AdaptMats {
                     if (age2 >= minage2(currentindex) && age2 <= maxage2(currentindex)) { 
                       
                       // Fecundity transitions
-                      aliveequal(currentindex) = 
-                        ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
-                        (time2n * (nostages - 1) * totalages) +
-                        ((age3 - firstage) * (nostages - 1)) + time3;
+                      //aliveequal(currentindex) = 
+                      //  ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                      //  (time2n * (nostages - 1) * totalages) +
+                      //  ((age3 - firstage) * (nostages - 1)) + time3;
                     }
                   } // if statement leading to aliveequal assignment
                 } // if statement yielding fecundity estimation
@@ -4949,10 +4993,10 @@ namespace AdaptMats {
                 if (age2 >= minage2(currentindex) && age2 < maxage3(currentindex)) { 
   
                   // Survival transitions
-                  aliveequal(currentindex) = 
-                    ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
-                    (time2n * (nostages - 1) * totalages) +
-                    ((age3 - firstage) * (nostages - 1)) + time3;
+                  //aliveequal(currentindex) = 
+                  //  ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                  //  (time2n * (nostages - 1) * totalages) +
+                  //  ((age3 - firstage) * (nostages - 1)) + time3;
                 }
               }
               
@@ -5050,10 +5094,10 @@ namespace AdaptMats {
                     if (age2 >= minage2(currentindex) && age2 <= maxage2(currentindex)) { 
                       
                       // Fecundity transitions
-                      aliveequal(currentindex) =
-                        ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
-                        (time2n * (nostages - 1) * totalages) +
-                        ((age3 - firstage) * (nostages - 1)) + time3;
+                      //aliveequal(currentindex) =
+                      //  ((age2 - firstage) * (nostages - 1) * (nostages - 1) * totalages) + 
+                      //  (time2n * (nostages - 1) * totalages) +
+                      //  ((age3 - firstage) * (nostages - 1)) + time3;
                     }
                   } // if statement leading to aliveequal assignment
                 } // if statement yielding fecundity estimation
@@ -5094,16 +5138,16 @@ namespace AdaptMats {
     // Rcout << "theoldpizzle_adapt3 H" << endl;
     
     // Output formatting
-    Rcpp::List output_longlist(62);
+    Rcpp::List output_longlist(61);
     int stage3_length = 0;
     
     arma::uvec used_indices;
     
     if (filter == 1) {
       used_indices = find(index321 != -1.0);
-    } else if (filter == 2) {
-      used_indices = find(aliveequal != -1.0);
-    }
+    }// else if (filter == 2) {
+      //used_indices = find(aliveequal != -1.0);
+    //}
     
     if (filter > 0) {
       int new_length = static_cast<int>(used_indices.n_elem);
@@ -5183,7 +5227,7 @@ namespace AdaptMats {
       NumericVector ovsurvmult_new(new_length);
       NumericVector ovfecmult_new(new_length);
       
-      NumericVector aliveequal_new(new_length);
+      //NumericVector aliveequal_new(new_length);
       NumericVector index321_new(new_length);
       NumericVector index321d_new(new_length);
       NumericVector index21_new(new_length);
@@ -5262,7 +5306,7 @@ namespace AdaptMats {
         ovsurvmult_new(i) = ovsurvmult(used_indices(i));
         ovfecmult_new(i) = ovfecmult(used_indices(i));
         
-        aliveequal_new(i) = aliveequal(used_indices(i));
+        //aliveequal_new(i) = aliveequal(used_indices(i));
         index321_new(i) = index321(used_indices(i));
         index321d_new(i) = index321d(used_indices(i));
         index21_new(i) = index21(used_indices(i));
@@ -5331,13 +5375,13 @@ namespace AdaptMats {
       output_longlist(54) = ovsurvmult_new;
       output_longlist(55) = ovfecmult_new;
       
-      output_longlist(56) = aliveequal_new;
-      output_longlist(57) = index321_new;
-      output_longlist(58) = index321d_new;
-      output_longlist(59) = index21_new;
+      //output_longlist(56) = aliveequal_new;
+      output_longlist(56) = index321_new;
+      output_longlist(57) = index321d_new;
+      output_longlist(58) = index21_new;
       
-      output_longlist(60) = ovoffsett_new;
-      output_longlist(61) = ovoffsetf_new;
+      output_longlist(59) = ovoffsett_new;
+      output_longlist(60) = ovoffsetf_new;
       
     } else {
       stage3_length = static_cast<int>(stage3.n_elem);
@@ -5405,13 +5449,13 @@ namespace AdaptMats {
       output_longlist(54) = Rcpp::NumericVector(ovsurvmult.begin(), ovsurvmult.end());
       output_longlist(55) = Rcpp::NumericVector(ovfecmult.begin(), ovfecmult.end());
       
-      output_longlist(56) = Rcpp::NumericVector(aliveequal.begin(), aliveequal.end());
-      output_longlist(57) = Rcpp::NumericVector(index321.begin(), index321.end());
-      output_longlist(58) = Rcpp::NumericVector(index321d.begin(), index321d.end());
-      output_longlist(59) = Rcpp::NumericVector(index21.begin(), index21.end());
+      //output_longlist(56) = Rcpp::NumericVector(aliveequal.begin(), aliveequal.end());
+      output_longlist(56) = Rcpp::NumericVector(index321.begin(), index321.end());
+      output_longlist(57) = Rcpp::NumericVector(index321d.begin(), index321d.end());
+      output_longlist(58) = Rcpp::NumericVector(index21.begin(), index21.end());
       
-      output_longlist(60) = Rcpp::NumericVector(ovoffsett.begin(), ovoffsett.end());
-      output_longlist(61) = Rcpp::NumericVector(ovoffsetf.begin(), ovoffsetf.end());
+      output_longlist(59) = Rcpp::NumericVector(ovoffsett.begin(), ovoffsett.end());
+      output_longlist(60) = Rcpp::NumericVector(ovoffsetf.begin(), ovoffsetf.end());
     }
     
     CharacterVector namevec = {"stage3", "stage2n", "stage2o", "stage1", "size3",
@@ -5422,8 +5466,7 @@ namespace AdaptMats {
       "indata1", "binwidth", "binbwidth", "bincwidth", "minage3", "minage2",
       "maxage3", "maxage2", "actualage", "group3", "group2n", "group2o", "group1",
       "indata", "ovgiven_t", "ovest_t", "ovgiven_f", "ovest_f", "ovsurvmult",
-      "ovfecmult", "aliveandequal", "index321", "index321d", "index21",
-      "ovoffset_t", "ovoffset_f"};
+      "ovfecmult", "index321", "index321d", "index21", "ovoffset_t", "ovoffset_f"}; // "aliveandequal", 
     output_longlist.attr("names") = namevec;
     output_longlist.attr("row.names") = Rcpp::IntegerVector::create(NA_INTEGER, stage3_length);
     output_longlist.attr("class") = "data.frame";
@@ -5441,6 +5484,8 @@ namespace AdaptMats {
   //' @param Amat_list A reference to the main list of A matrices in the MPM.
   //' @param Umat_list A reference to the main list of U matrices in the MPM.
   //' @param Fmat_list A reference to the main list of F matrices in the MPM.
+  //' @param err_check_list A reference to a list that will hold the matrix
+  //' element indices of altered elements.
   //' @param sge3 The Allstages data frame developed for \code{rlefko3()}
   //' covering stage triplets across times \emph{t}+1, \emph{t} and \emph{t}-1 if
   //' historical, or stage pairs covering times \emph{t}+1 and \emph{t} in all
@@ -5454,6 +5499,8 @@ namespace AdaptMats {
   //' \code{FALSE}.
   //' @param sparse If \code{TRUE}, then output will be in sparse matrix format.
   //' Defaults to \code{FALSE}.
+  //' @param err_check A Boolean value indicating whether to retain the indices
+  //' of altered matrix elements in list format.
   //' 
   //' @return This function works by altering the first three arguments, all of
   //' which are lists, by reference.
@@ -5461,8 +5508,9 @@ namespace AdaptMats {
   //' @keywords internal
   //' @noRd
   inline void matrix_post(List& Amat_list, List& Umat_list, List& Fmat_list,
-    const DataFrame& sge93, const DataFrame& StageFrame, int format,
-    bool simplicity = false, bool sparse = false) {
+    List& err_check_list, const DataFrame& sge93, const DataFrame& StageFrame,
+    int format, bool simplicity = false, bool sparse = false,
+    bool err_check = false) {
     
     // Rcout << "matrix_post A" << endl;
     
@@ -5479,7 +5527,7 @@ namespace AdaptMats {
     arma::ivec sge93index321 = as<arma::ivec>(sge93["index321"]);
     arma::ivec sge93index321d = as<arma::ivec>(sge93["index321d"]);
     arma::ivec sge93index21 = as<arma::ivec>(sge93["index21"]);
-    arma::ivec aliveandequal = as<arma::ivec>(sge93["aliveandequal"]);
+    //arma::ivec aliveandequal = as<arma::ivec>(sge93["aliveandequal"]);
     
     // Rcout << "matrix_post B" << endl;
     
@@ -5531,6 +5579,8 @@ namespace AdaptMats {
     
     // Rcout << "matrix_post H" << endl;
     
+    List err_check_stuff (mat_list_length);
+    
     for (int i = 0; i < mat_list_length; i++) {
       // Rcout << "matrix_post I i:" << i << endl;
       
@@ -5562,9 +5612,12 @@ namespace AdaptMats {
       // Rcout << "matrix_post K" << endl;
       
       // Correct transitions for multipliers
+      IntegerVector ovsurvmultn_vec (ovsurvmultn);
       if (ovsurvmultn > 0) {
         for (int j = 0; j < ovsurvmultn; j++) {
           int matrixelement2 = sge93index321(ovsurvmultind(j));
+          ovsurvmultn_vec(j) = matrixelement2;
+          
           if (!sparse) {
             tmatrix(matrixelement2) = tmatrix(matrixelement2) * sge93ovsurvmult(ovsurvmultind(j));
           } else {
@@ -5573,9 +5626,12 @@ namespace AdaptMats {
         }
       }
       
+      IntegerVector ovfecmultn_vec (ovfecmultn);
       if (ovfecmultn > 0) {
         for (int j = 0; j < ovfecmultn; j++) {
           int matrixelement2 = sge93index321(ovfecmultind(j));
+          ovfecmultn_vec(j) = matrixelement2;
+          
           if (!sparse) {
             fmatrix(matrixelement2) = fmatrix(matrixelement2) * sge93ovfecmult(ovfecmultind(j));
           } else {
@@ -5587,9 +5643,12 @@ namespace AdaptMats {
       // Rcout << "matrix_post L" << endl;
       
       // Correct transitions for given stuff
+      IntegerVector ovgtn_vec (ovgtn);
       if (ovgtn > 0) {
         for (int j = 0; j < ovgtn; j++) {
           int matrixelement2 = sge93index321(ovgiventind(j));
+          ovgtn_vec(j) = matrixelement2;
+          
           if (!sparse) {
             tmatrix(matrixelement2) = sge93ovgivent(ovgiventind(j));
           } else {
@@ -5598,9 +5657,12 @@ namespace AdaptMats {
         }
       }
       
+      IntegerVector ovgfn_vec (ovgfn);
       if (ovgfn > 0) {
         for (int j = 0; j < ovgfn; j++) {
           int matrixelement2 = sge93index321(ovgivenfind(j));
+          ovgfn_vec(j) = matrixelement2;
+          
           if (!sparse) {
             fmatrix(matrixelement2) = sge93ovgivenf(ovgivenfind(j));
           } else {
@@ -5612,9 +5674,12 @@ namespace AdaptMats {
       // Rcout << "matrix_post M" << endl;
       
       // Correct transitions for additive offsets
+      IntegerVector ovotn_vec (ovotn);
       if (ovotn > 0) {
         for (int j = 0; j < ovotn; j++) {
           int matrixelement2 = sge93index321(ovoffsettind(j));
+          ovotn_vec(j) = matrixelement2;
+          
           if (NumericVector::is_na(tmatrix(matrixelement2)) ||
             Rcpp::traits::is_nan<REALSXP>(tmatrix(matrixelement2))) {tmatrix(matrixelement2) = 0.;}
           if (!sparse) {
@@ -5625,9 +5690,12 @@ namespace AdaptMats {
         }
       }
       
+      IntegerVector ovofn_vec (ovofn);
       if (ovofn > 0) {
         for (int j = 0; j < ovofn; j++) {
           int matrixelement2 = sge93index321(ovoffsetfind(j));
+          ovofn_vec(j) = matrixelement2;
+          
           if (NumericVector::is_na(fmatrix(matrixelement2)) ||
             Rcpp::traits::is_nan<REALSXP>(fmatrix(matrixelement2))) {fmatrix(matrixelement2) = 0.;}
           if (!sparse) {
@@ -5641,36 +5709,44 @@ namespace AdaptMats {
       // Rcout << "matrix_post N" << endl;
       
       // Replace transitions for proxy values as given in overwrite table  
+      IntegerVector ovestn_vec (ovestn);
       if (ovestn > 0) {
         for (int j = 0; j < ovestn; j++) {
           arma::uvec replacement = find(sge93index321 == sge93ovestt(ovesttind(j)));
           
           if (replacement.n_elem > 0) {
+            int matrixelement2 = sge93index321(ovesttind(j));
+            ovestn_vec(j) = matrixelement2;
+            
             double correction = sge93ovsurvmult(ovesttind(j));
             if (correction == -1.0) correction = 1.0;
             if (!sparse) {
-              tmatrix(aliveandequal(ovesttind(j))) = tmatrix(aliveandequal(replacement(0))) *
+              tmatrix(sge93index321(ovesttind(j))) = tmatrix(sge93index321(replacement(0))) *
                 correction;
             } else {
-              tmatrix_sp(aliveandequal(ovesttind(j))) = tmatrix_sp(aliveandequal(replacement(0))) *
+              tmatrix_sp(sge93index321(ovesttind(j))) = tmatrix_sp(sge93index321(replacement(0))) *
                 correction;
             }
           }
         }
       }
       
+      IntegerVector ovesfn_vec (ovesfn);
       if (ovesfn > 0) {
         for (int j = 0; j < ovesfn; j++) {
           arma::uvec replacement = find(sge93index321 == sge93ovestf(ovestfind(j)));
           
           if (replacement.n_elem > 0) {
+            int matrixelement2 = sge93index321(ovestfind(j));
+            ovesfn_vec(j) = matrixelement2;
+          
             double correction = sge93ovfecmult(ovesttind(j));
             if (correction == -1.0) correction = 1.0;
             if (!sparse) {
-              fmatrix(aliveandequal(ovestfind(j))) = fmatrix(aliveandequal(replacement(0))) *
+              fmatrix(sge93index321(ovestfind(j))) = fmatrix(sge93index321(replacement(0))) *
                 correction;
             } else {
-              fmatrix_sp(aliveandequal(ovestfind(j))) = fmatrix_sp(aliveandequal(replacement(0))) *
+              fmatrix_sp(sge93index321(ovestfind(j))) = fmatrix_sp(sge93index321(replacement(0))) *
                 correction;
             }
           }
@@ -5678,6 +5754,20 @@ namespace AdaptMats {
       }
       
       // Rcout << "matrix_post O" << endl;
+      List err_check_stuff_current_As (8);
+      err_check_stuff_current_As(0) = ovsurvmultn_vec;
+      err_check_stuff_current_As(1) = ovfecmultn_vec;
+      err_check_stuff_current_As(2) = ovgtn_vec;
+      err_check_stuff_current_As(3) = ovgfn_vec;
+      err_check_stuff_current_As(4) = ovotn_vec;
+      err_check_stuff_current_As(5) = ovofn_vec;
+      err_check_stuff_current_As(6) = ovestn_vec;
+      err_check_stuff_current_As(7) = ovesfn_vec;
+      
+      CharacterVector err_vec_names = {"surv_mult", "fec_mult", "surv_given",
+        "fec_given", "surv_offset", "fec_offset", "surv_proxy", "fec_proxy"};
+      err_check_stuff_current_As.attr("names") = err_vec_names;
+      err_check_stuff(i) = err_check_stuff_current_As;
       
       // Final processing
       if (!sparse) {
@@ -5711,6 +5801,7 @@ namespace AdaptMats {
         }
       }
     }
+    err_check_list = err_check_stuff;
   }
 
 }

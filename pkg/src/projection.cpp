@@ -264,6 +264,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   List equivalence_list;
   List allstages_all;
   List allmodels_all;
+  List err_check_mat_indices;
+  List err_check_topa3;
   
   IntegerVector stagecounts;
   LogicalVector sparse_vec;
@@ -414,8 +416,65 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           }
           if (found_fleslie == vrm_count) pure_fleslie = true;
         } else AdaptUtils::pop_error2("format", "an integer vector", "", 1);
-      } else if (funcbased) {
+      } else {
         IntegerVector format_vec_pre (vrm_count, 3);
+        
+        ///// Insert check for Leslie matrix here
+        IntegerVector potential_minage_vec (vrm_count);
+        IntegerVector potential_maxage_vec (vrm_count);
+        
+        for (int i = 0; i < vrm_count; i++) {
+          
+          int minage_found {0};
+          int maxage_found {0};
+          bool found_leslie {true};
+          
+          if (stageframes.isNotNull()) {
+            List all_stageframes = as<List>(stageframes);
+            Nullable<DataFrame> current_stageframe_test = as<Nullable<DataFrame>>(all_stageframes(i));
+            
+            if (current_stageframe_test.isNotNull()) {
+              DataFrame cst = as<DataFrame>(current_stageframe_test);
+              
+              IntegerVector cst_minage = as<IntegerVector>(cst["min_age"]);
+              int cst_minage_length = static_cast<int>(cst_minage.length());
+              
+              IntegerVector cst_minage_sorted = cst_minage.sort();
+              
+              for (int j = 0; j < (cst_minage_length - 1); j++) {
+                if (cst_minage_sorted(j+1) != (cst_minage_sorted(j) + 1)) found_leslie = false;
+                if (IntegerVector::is_na(cst_minage(j)) || IntegerVector::is_na(cst_minage(j + 1))) found_leslie = false;
+                
+              }
+              
+              if (found_leslie) {
+                minage_found = min(cst_minage_sorted);
+                maxage_found = max(cst_minage_sorted);
+                
+                if (!firstage.isNotNull()) {
+                  potential_minage_vec(i) = minage_found;
+                  firstage = as<Nullable<RObject>>(potential_minage_vec);
+                }
+                
+                if (!finalage.isNotNull()) {
+                  potential_maxage_vec(i) = maxage_found + 1;
+                  finalage = as<Nullable<RObject>>(potential_maxage_vec);
+                }
+              }
+            }
+          } else {
+            if (firstage.isNotNull() && finalage.isNotNull()) {
+              IntegerVector firstage_vec_current = as<IntegerVector>(firstage);
+              IntegerVector finalage_vec_current = as<IntegerVector>(finalage);
+              
+              if (IntegerVector::is_na(firstage_vec_current(i)) || IntegerVector::is_na(finalage_vec_current(i))) {
+                found_leslie = false;
+              }
+            } else found_leslie = false;
+          }
+          if (found_leslie) format_vec_pre(i) = 5;
+        }
+        
         format_vec = format_vec_pre;
         
         if (!stageframes.isNotNull()) {
@@ -567,7 +626,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     }
     format_vec = format_vec_pre;
     
-  } else if (funcbased) {
+  } else if (funcbased && sum(format_vec) == 0) {
     IntegerVector format_vec_pre (vrm_count, 3);
     format_vec = format_vec_pre;
   }
@@ -708,20 +767,23 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   // Rcout << "cleanup3 G    ";
   
   if (cont.isNotNull()) {
+    int useable_count = vrm_count;
+    if (mpm_count > vrm_count) useable_count = mpm_count;
+    
     if (is<IntegerVector>(cont) || is<NumericVector>(cont)) { 
       IntegerVector cont_vec_temp = as<IntegerVector>(cont);
       
       if (static_cast<int>(cont_vec_temp.length() == 1)) {
-        IntegerVector cont_maxed_out (vrm_count);
+        IntegerVector cont_maxed_out (useable_count);
         
-        for (int i = 0; i < vrm_count; i++) {
+        for (int i = 0; i < useable_count; i++) {
           cont_maxed_out(i) = cont_vec_temp(0);
         }
         cont_vec = cont_maxed_out;
       } else cont_vec = cont_vec_temp;
       
       int cont_vec_length = static_cast<int>(cont_vec.length());
-      if (cont_vec_length != vrm_count) {
+      if (cont_vec_length != useable_count) {
         AdaptUtils::pop_error2("cont", "number of MPMs to project", "", 29);
       }
       
@@ -746,16 +808,16 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       LogicalVector cont_vec_log;
       
       if (static_cast<int>(cont_vec_temp.length() == 1)) {
-        LogicalVector cont_maxed_out (vrm_count);
+        LogicalVector cont_maxed_out (useable_count);
         
-        for (int i = 0; i < vrm_count; i++) {
+        for (int i = 0; i < useable_count; i++) {
           cont_maxed_out(i) = cont_vec_temp(0);
         }
         cont_vec_log = cont_maxed_out;
       } else cont_vec_log = cont_vec_temp;
       
       int cont_vec_log_length = static_cast<int>(cont_vec_log.length());
-      if (cont_vec_log_length != vrm_count) {
+      if (cont_vec_log_length != useable_count) {
         AdaptUtils::pop_error2("cont", "number of MPMs to project", "", 29);
       }
       
@@ -788,6 +850,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   
   // Altered stageframe processing
   if (funcbased) {
+    // Rcout << "Entered funcbased stageframe processing." << endl;
+    
     List stageframe_list_pre (vrm_count);
     List supplement_list_pre (vrm_count);
     List repmatrix_list_pre (vrm_count);
@@ -932,6 +996,9 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
           new_ovtable = LefkoMats::age_expanded(chosen_supplement,
             firstage_vec(i), finalage_vec(i));
         }
+        int found_numrows = static_cast<int>(new_stageframe.nrows());
+        matrows_pre(i) = found_numrows;
+        
         stageframe_list_pre(i) = new_stageframe;
         supplement_list_pre(i) = new_ovtable;
       }
@@ -2210,7 +2277,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
             }
           } else if (format_vec(i) > 3) {
             if (IntegerVector::is_na(eq_a2(0))) {
-              throw Rcpp::exception("Enter ages in adaptEq objects used for age-by-stage MPMs.",
+              throw Rcpp::exception("Enter ages in adaptEq objects used for Leslie and age-by-stage MPMs.",
                 false);
             }
             if (format_vec(i) == 4) {
@@ -2280,7 +2347,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
               }
             } else if (format_vec(i) > 3) {
               if (IntegerVector::is_na(eq_a2(0))) {
-                throw Rcpp::exception("Enter ages in adaptEq objects used for age-by-stage MPMs.",
+                throw Rcpp::exception("Enter ages in adaptEq objects used for Leslie and age-by-stage MPMs.",
                   false);
               }
               if (format_vec(i) == 4) {
@@ -3944,9 +4011,13 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   
   if (preexisting && supplements.isNotNull()) {
     List fortified_A_list (mpm_count);
+    List err_check_indices_list (mpm_count);
+    List err_check_theoldpizzle_adapt3 (mpm_count);
     
     for (int i = 0; i < mpm_count; i++) {
       // Rcout << "cleanup3 U1    " << endl;
+      List err_check_indices_list_current_mpm;
+      
       int ehrlen_format {1}; // This will need to be dealt with differently later
       bool historical {false};
       
@@ -3956,7 +4027,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         mpm_style = 0;
       } else if (format_vec(i) == 4) {
         mpm_style = 2;
-        filter_style = 2;
+        //filter_style = 2;
       }
       if (format_vec(i) < 3) historical = true;
       if (format_vec(i) == 2) ehrlen_format = 2;
@@ -3984,6 +4055,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         DataFrame alterations = AdaptMats::theoldpizzle_adapt3(current_stageframe,
           current_supplement, new_repmatrix, firstage_vec(i), finalage_vec(i),
           ehrlen_format, mpm_style, cont_vec(i), filter_style, true);
+        if (err_check) err_check_theoldpizzle_adapt3(i) = alterations;
         
         // Rcout << "cleanup3 U5    " << endl;
         
@@ -3992,9 +4064,10 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         List used_U_list = as<List>(used_mpm["U"]);
         List used_F_list = as<List>(used_mpm["F"]);
         
-        AdaptMats::matrix_post(used_A_list, used_U_list, used_F_list, alterations,
-          current_stageframe, static_cast<int>(format_vec(i)), false,
-          static_cast<bool>(sparse_vec(i)));
+        AdaptMats::matrix_post(used_A_list, used_U_list, used_F_list,
+          err_check_indices_list_current_mpm, alterations, current_stageframe,
+          static_cast<int>(format_vec(i)), false, static_cast<bool>(sparse_vec(i)),
+          err_check);
         
         // Rcout << "cleanup3 U10    " << endl;
         
@@ -4004,12 +4077,18 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         
         mpm_list(i) = used_mpm;
       }
+      if (err_check) err_check_indices_list(i) = err_check_indices_list_current_mpm;
+    }
+    
+    if (err_check) {
+      err_check_mat_indices = err_check_indices_list;
+      err_check_topa3 = err_check_theoldpizzle_adapt3;
     }
   }
   
   // Rcout << "cleanup3 V    ";
   // Output processing
-  List out_list (74);
+  List out_list (76);
   out_list(0) = mpm_list;
   out_list(1) = mpm_count;
   out_list(2) = vrm_list;
@@ -4084,6 +4163,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
   out_list(71) = errcheck_mpmout_vrm;
   out_list(72) = dens_list_length_vec;
   out_list(73) = eq_list_length_vec;
+  out_list(74) = err_check_mat_indices;
+  out_list(75) = err_check_topa3;
   
   CharacterVector out_list_names = {"mpm_list", "mpm_count", "vrm_list",
     "vrm_count", "A_list", "stageframe_list", "stageframe_list_fb",
@@ -4105,7 +4186,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     "sp_density_list", "equivalence_list", "equivalence_vec",
     "equivalence_count", "stages_not_equal", "allstages_all", "allmodels_all",
     "fb_override", "errcheck_mpmout_vrm", "dens_list_length_vec",
-    "eq_list_length_vec"};
+    "eq_list_length_vec", "err_check_mat_indices", "err_check_theoldpizzle_adapt3"};
   out_list.attr("names") = out_list_names;
   
   return(out_list);
@@ -4118,6 +4199,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
 //' 
 //' @name project3_pre_core
 //' 
+//' @param agg_density A numeric matrix giving the aggregate community density
+//' by time (column) and replicate (row).
 //' @param N_out The main list of final population sizes, supplied as a
 //' reference and altered by this function.
 //' @param comm_out The main list of full projection results for the community,
@@ -4229,11 +4312,11 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
 //' 
 //' @keywords internal
 //' @noRd
-void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
-  const List mpm_list, const List A_list, const List tweights_list,
-  const List start_list, const List vrm_list, const List stageframe_list,
-  const List allmodels_all, const List allstages_all, const List supplement_list,
-  const List year_list, const List ind_terms_num_list,
+void project3_pre_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
+  List& extreme_mpm_out, const List mpm_list, const List A_list,
+  const List tweights_list, const List start_list, const List vrm_list,
+  const List stageframe_list, const List allmodels_all, const List allstages_all,
+  const List supplement_list, const List year_list, const List ind_terms_num_list,
   const List ind_terms_cat_list, const List dev_terms_list,
   const List density_vr_list, const List sp_density_list,
   const List density_list, const List dens_index_list,
@@ -4260,8 +4343,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   List matrix_choice_list (mpm_count);
   List zvl (mpm_count);
   for (int i = 0; i < mpm_count; i++) {
-    
-    // Rcout << "project3_pre_core A  i (mpm): " << i << "          ";
+    // Rcout << "project3_pre_core A  i (mpm): " << i << "          " << endl;
     
     IntegerVector chosen_matrix_vec;
     
@@ -4306,7 +4388,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
       chosen_mats = chosen_mats_pre;
     }
     
-    // Rcout << "project3_pre_core B    ";
+    // Rcout << "project3_pre_core B    " << endl;
     matrix_choice_list(i) = chosen_mats;
   }
   
@@ -4323,7 +4405,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     arma::mat pops_out_pre (stagecounts(i), (times + 1), fill::zeros);
     arma::vec pops_out_0 = as<arma::vec>(start_list(i));
     
-    pops_out_pre.col(0) = pops_out_0; /////
+    pops_out_pre.col(entry_time_vec(i)) = pops_out_0; /////
     
     IntegerVector chosen_mats = as<IntegerVector>(matrix_choice_list(i));
     int chosen_mats_length = static_cast<int>(chosen_mats.length());
@@ -4418,6 +4500,7 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   // Rcout << "project3_pre_core D    " << endl;
   
   // Main projection
+  NumericMatrix agg_density_pre (nreps, (times + 1));
   List N_out_pre (nreps);
   List extreme_mpm_reps (nreps);
   
@@ -4503,6 +4586,23 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
             
             double N_current = accu(running_popvec_mpm);
             N_mpm(k, j) = N_current;
+            
+            double aN_first = accu(running_popvec_mpm);
+            
+            if (stages_not_equal) {
+              arma::vec current_equivalence_vec;
+              
+              if (eq_list_length_vec(k) > 0) {
+                List current_equivalence_list = as<List>(equivalence_list(k));
+                current_equivalence_vec = as<arma::vec>(current_equivalence_list(j));
+              } else {
+                current_equivalence_vec = as<arma::vec>(equivalence_list(k));
+              }
+              arma::vec adjusted_pop_vec = running_popvec_mpm % current_equivalence_vec;
+              aN_first = accu(adjusted_pop_vec);
+            }
+            
+            agg_density_pre(i, j) = agg_density_pre(i, j) + aN_first;
           }
           
           List chosen_As = as<List>(A_list(k));
@@ -4620,6 +4720,25 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           double N_current = accu(running_popvec_mpm);
           N_mpm(k, (j + 1)) = N_current;
           
+          double aN_current = N_current; // Aggregate density, given stage weights
+          arma::vec current_equivalence_vec;
+          
+          if (stages_not_equal) {
+            if (eq_list_length_vec(k) > 0) {
+              List current_equivalence_list = as<List>(equivalence_list(k));
+              int c_eq_list_length = static_cast<int>(current_equivalence_list.length());
+              int current_trial_j = j % c_eq_list_length;
+              
+              current_equivalence_vec = as<arma::vec>(current_equivalence_list(current_trial_j));
+            } else {
+              current_equivalence_vec = as<arma::vec>(equivalence_list(k));
+            }
+            arma::vec adjusted_pop_vec = running_popvec_mpm % current_equivalence_vec;
+            aN_current = accu(adjusted_pop_vec);
+          }
+          
+          agg_density_pre(i, j + 1) = agg_density_pre(i, j + 1) + aN_current;
+          
           running_popvecs(k) = running_popvec_mpm;
           pops_out.col(j + 1) = running_popvec_mpm;
         }
@@ -4633,6 +4752,8 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     N_out_pre(i) = N_mpm;
     if (err_check_extreme) extreme_mpm_reps(i) = extreme_mpm_reps_times;
   }
+  
+  agg_density = agg_density_pre;
   N_out = N_out_pre;
   if (err_check_extreme) extreme_mpm_out = extreme_mpm_reps;
 }
@@ -4644,6 +4765,8 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' 
 //' @name project3_fb_core
 //' 
+//' @param agg_density A numeric matrix giving the aggregate community density
+//' by time (column) and replicate (row).
 //' @param N_out The main list of final population sizes, supplied as a
 //' reference and altered by this function.
 //' @param comm_out The main list of full projection results for the community,
@@ -4751,14 +4874,13 @@ void project3_pre_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' 
 //' @keywords internal
 //' @noRd
-void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
-  List& errcheck_fb_out, const List start_list, const List vrm_list,
-  const List tweights_list, const List stageframe_list, const List allmodels_all,
-  const List allstages_all, const List supplement_list, const List year_list,
-  const List ind_terms_num_list, const List ind_terms_cat_list,
-  const List dev_terms_list, const List density_vr_list,
-  const List sp_density_list, const List density_list,
-  const List dens_index_list, const List equivalence_list,
+void project3_fb_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
+  List& extreme_mpm_out, List& errcheck_fb_out, const List start_list,
+  const List vrm_list, const List tweights_list, const List stageframe_list,
+  const List allmodels_all, const List allstages_all, const List supplement_list,
+  const List year_list, const List ind_terms_num_list, const List ind_terms_cat_list,
+  const List dev_terms_list, const List density_vr_list, const List sp_density_list,
+  const List density_list, const List dens_index_list, const List equivalence_list,
   const IntegerVector dev_terms_num_vec, const IntegerVector sp_density_num_vec,
   const IntegerVector firstage_vec, const IntegerVector finalage_vec,
   const IntegerVector stagecounts, const IntegerVector entry_time_vec,
@@ -4780,7 +4902,6 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
   
   // Rcout << "Entered project3_fb_core          " << endl;
   
-  //int year_counter {0};
   IntegerVector inda_num_terms_counter (vrm_count);
   IntegerVector indb_num_terms_counter (vrm_count);
   IntegerVector indc_num_terms_counter (vrm_count);
@@ -4875,7 +4996,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     arma::mat pops_out_pre (stagecounts(i), (times + 1), fill::zeros);
     
     arma::vec pops_out_0 = as<arma::vec>(start_list(i));
-    pops_out_pre.col(0) = pops_out_0; /////
+    pops_out_pre.col(entry_time_vec(i)) = pops_out_0; /////
     
     for (int j = 0; j < nreps; j++) {
       pop_reps(j) = pops_out_pre;
@@ -4884,6 +5005,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     comm_out_pre(i) = pop_reps;
   }
   
+  NumericMatrix agg_density_pre (nreps, (times + 1));
   List extreme_mpm_reps (nreps);
   List errcheck_mpmout_rep (nreps);
   
@@ -4974,6 +5096,23 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
             
             double N_current = accu(running_popvec_vrm);
             N_vrm(i, current_time) = N_current;
+            
+            double aN_first = accu(running_popvec_vrm);
+            
+            if (stages_not_equal) {
+              arma::vec current_equivalence_vec;
+              
+              if (eq_list_length_vec(i) > 0) {
+                List current_equivalence_list = as<List>(equivalence_list(i));
+                current_equivalence_vec = as<arma::vec>(current_equivalence_list(current_time));
+              } else {
+                current_equivalence_vec = as<arma::vec>(equivalence_list(i));
+              }
+              arma::vec adjusted_pop_vec = running_popvec_vrm % current_equivalence_vec;
+              aN_first = accu(adjusted_pop_vec);
+            }
+            
+            agg_density_pre(current_rep, current_time) = agg_density_pre(current_rep, current_time) + aN_first;
           }
           
           List current_vrm_extract = as<List>(allmodels_all(i));
@@ -5324,6 +5463,21 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
           running_popvecs(i) = running_popvec_vrm;
           pops_out.col(current_time + 1) = running_popvec_vrm;
           
+          double aN_current = N_current; // Aggregate density, given stage weights
+          arma::vec current_equivalence_vec;
+          
+          if (stages_not_equal) {
+            if (eq_list_length_vec(i) > 0) {
+              List current_equivalence_list = as<List>(equivalence_list(i));
+              current_equivalence_vec = as<arma::vec>(current_equivalence_list(current_time));
+            } else {
+              current_equivalence_vec = as<arma::vec>(equivalence_list(i));
+            }
+            arma::vec adjusted_pop_vec = running_popvec_vrm % current_equivalence_vec;
+            aN_current = accu(adjusted_pop_vec);
+          }
+          
+          agg_density_pre(current_rep, current_time + 1) = agg_density_pre(current_rep, current_time + 1) + aN_current;
         }
         year_counter(i) = year_counter(i) + 1;
         
@@ -5343,6 +5497,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
     
   } // current_rep loop
   
+  agg_density = agg_density_pre;
   N_out = N_out_pre;
   if (err_check_extreme) extreme_mpm_out = extreme_mpm_reps;
   if (err_check) errcheck_fb_out = errcheck_mpmout_rep;
@@ -5538,17 +5693,21 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' \code{100000000}, but can be reset to other values during error checking.
 //' 
 //' @return A list of class \code{adaptProj}, with the following elements:
-//' \item{comm_out}{A two-level list with the top level list having number of
-//' elements equal to the number of MPMs used as input, and the lower level
-//' corresponding to the number of replicates. Each element of the lower level
-//' list is a data frame showing the number of individuals in each stage at each
-//' time. Rows and columns in the data frames correspond to stages and time
-//' steps, respectively.}
+//' \item{agg_density}{A numeric matrix giving the aggregate community density
+//' by time (column) and replicate (row). Here, the aggregate density is
+//' calculated using any stage weights supplied, and is exactly equal to the
+//' aggegate density used in density dependence calculations by this function.}
 //' \item{N_out}{A list with the number of elements equal to the number of
-//' replicates. Each element within this list is data frame showing the number
+//' replicates. Each element within this list is a numeric matrix showing the number
 //' of individuals of each species or genotype alive at each time. The number of
 //' rows are equal to the number of MPMs used, and the columns correspond to the
 //' time steps.}
+//' \item{structure}{A two-level list with the top level list having number of
+//' elements equal to the number of replicates, and the lower level
+//' corresponding to the number of MPMs. Each element of the lower level list is
+//' a numeric matrix showing the number of individuals in each stage at each
+//' time. Rows and columns in the data frames correspond to stages and time
+//' steps, respectively.}
 //' \item{stageframe_list}{A list in which each element is the stageframe for
 //' each MPM used.}
 //' \item{hstages_list}{A list giving the used \code{hstages} data frames, which
@@ -5559,7 +5718,7 @@ void project3_fb_core (List& N_out, List& comm_out, List& extreme_mpm_out,
 //' age-by-stage MPM utilized.}
 //' \item{labels}{A small data frame giving the the population and patch
 //' identities for each MPM entered.}
-//' \item{err_check}{An optional list composed of an additional six lists, each
+//' \item{err_check}{An optional list composed of six additional lists, each
 //' of which has the number of elements equal to the number of MPMs utilized.
 //' List output include \code{allstages_all}, which gives the indices of
 //' estimated transitions in MPMs constructed by function \code{project3()} from
@@ -5751,6 +5910,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   List allmodels_all; // Used in fbMPM processirg
   List extreme_mpm_out; // err_check processing only
   List err_check_fb_out; // err_check processing only
+  List err_check_mat_indices; // matrix post-processing vectors giving matrix element numbers associated with changes
+  List err_check_theoldpizzle_adapt3; // matrix post-processing indexing data frame
   
   LogicalVector sparse_vec; // Vector accounting for whether MPMs are / should be in sparse format
   IntegerVector stagecounts; // # stages in each MPM
@@ -5776,6 +5937,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   IntegerVector eq_list_length_vec;
   List fb_mpmout;
   
+  NumericMatrix agg_density; // A numeric matrix giving the aggregate community density by time (column) and replicate (row)
   List comm_out; // List of matrices of population vectors (top lvl: mpm, lower lvl: reps, mats: stages x times)
   List N_out;  // List of pop size matrices (top level: reps, mats: mpm by times)
   DataFrame labels;  // Data frame to provide order of MPMs
@@ -5865,6 +6027,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   fb_mpmout = as<List>(cleaned_input(71));
   dens_list_length_vec = as<IntegerVector>(cleaned_input(72));
   eq_list_length_vec = as<IntegerVector>(cleaned_input(73));
+  err_check_mat_indices = as<List>(cleaned_input(74));
+  err_check_theoldpizzle_adapt3 = as<List>(cleaned_input(75));
   
   // Rcout << "project3 C " << endl;
   
@@ -5875,8 +6039,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   if (preexisting || fb_override) { // Preexisting MPMs
     // Rcout << "project3 D pre_core" << endl;
     
-    project3_pre_core (N_out, comm_out, extreme_mpm_out, mpm_list, A_list,
-      tweights_list, start_list, vrm_list, stageframe_list, allmodels_all,
+    project3_pre_core (agg_density, N_out, comm_out, extreme_mpm_out, mpm_list,
+      A_list, tweights_list, start_list, vrm_list, stageframe_list, allmodels_all,
       allstages_all, supplement_list, year_list, ind_terms_num_list,
       ind_terms_cat_list, dev_terms_list, density_vr_list, sp_density_list,
       density_list, dens_index_list, equivalence_list, dev_terms_num_vec,
@@ -5893,7 +6057,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   } else if (funcbased && !fb_override) { // Function-based MPMs
     // Rcout << "project3 E fb_core" << endl;
     
-    project3_fb_core (N_out, comm_out, extreme_mpm_out, err_check_fb_out,
+    project3_fb_core (agg_density, N_out, comm_out, extreme_mpm_out, err_check_fb_out,
       start_list, vrm_list, tweights_list, stageframe_list, allmodels_all,
       allstages_all, supplement_list, year_list, ind_terms_num_list,
       ind_terms_cat_list, dev_terms_list, density_vr_list, sp_density_list,
@@ -5908,22 +6072,41 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
     final_out_matrices = err_check_fb_out;
   }
   
+  // Restructure comm_out to structure
+  List new_structure (nreps);
+  int num_mpms = mpm_count;
+  if (num_mpms < vrm_count) num_mpms = vrm_count;
+  
+  for (int i = 0; i < nreps; i++) {
+    List lovely_mpms (num_mpms);
+    
+    for (int j = 0; j < num_mpms; j++) {
+      List this_comm_out_list = as<List>(comm_out(j));
+      NumericMatrix this_comm_out_matrix = as<NumericMatrix>(this_comm_out_list(i));
+      
+      lovely_mpms(j) = this_comm_out_matrix;
+    }
+    new_structure(i) = lovely_mpms;
+  }
+  
   // Rcout << "project3 F " << endl;
   
-  int out_dim = 6;
+  int out_dim = 7;
   if (err_check_bool) out_dim++;
   
   List output (out_dim);
-  output(0) = comm_out; // Needed in final output
+  
+  output(0) = agg_density;
   output(1) = N_out; // Needed in final output
-  output(2) = stageframe_list; // Needed in final output
-  output(3) = hstages_list;
-  output(4) = agestages_list;
-  output(5) = labels;
+  output(2) = new_structure; // Needed in final output
+  output(3) = stageframe_list; // Needed in final output
+  output(4) = hstages_list;
+  output(5) = agestages_list;
+  output(6) = labels;
   
   if (err_check_extreme) {
     
-    List output_errcheck (8);
+    List output_errcheck (10);
     output_errcheck(0) = allstages_all;
     output_errcheck(1) = allmodels_all;
     output_errcheck(2) = equivalence_list;
@@ -5932,20 +6115,24 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
     output_errcheck(5) = density_vr_list;
     output_errcheck(6) = final_out_matrices;
     output_errcheck(7) = extreme_mpm_out;
+    output_errcheck(8) = err_check_mat_indices;
+    output_errcheck(9) = err_check_theoldpizzle_adapt3;
     
     CharacterVector output_errcheck_names = {"allstages_all", "allmodels_all",
       "equivalence_list", "density_list", "dens_index_list", "density_vr_list",
-      "fb_mpm_out_matrices", "modified_mpms"};
+      "fb_mpm_out_matrices", "modified_mpms", "post_processing_index_vectors",
+      "post_processing_supp_frame"};
     output_errcheck.attr("names") = output_errcheck_names;
     
-    output(6) = output_errcheck;
+    output(7) = output_errcheck;
     
-    CharacterVector output_main_names = {"comm_out", "N_out", "stageframe_list",
-      "hstages_list", "agestages_list", "labels", "err_check"};
+    CharacterVector output_main_names = {"agg_density", "N_out", "structure",
+      "stageframe_list", "hstages_list", "agestages_list", "labels",
+      "err_check"};
     output.attr("names") = output_main_names;
     
   } else if (err_check_bool) {
-    List output_errcheck (7);
+    List output_errcheck (9);
     output_errcheck(0) = allstages_all;
     output_errcheck(1) = allmodels_all;
     output_errcheck(2) = equivalence_list;
@@ -5953,21 +6140,25 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
     output_errcheck(4) = dens_index_list;
     output_errcheck(5) = density_vr_list;
     output_errcheck(6) = final_out_matrices;
+    output_errcheck(7) = err_check_mat_indices;
+    output_errcheck(8) = err_check_theoldpizzle_adapt3;
     
     CharacterVector output_errcheck_names = {"allstages_all", "allmodels_all",
       "equivalence_list", "density_list", "dens_index_list", "density_vr_list",
-      "fb_mpm_out_matrices"};
+      "fb_mpm_out_matrices", "post_processing_index_vectors",
+      "post_processing_supp_frame"};
     output_errcheck.attr("names") = output_errcheck_names;
     
-    output(6) = output_errcheck;
+    output(7) = output_errcheck;
     
-    CharacterVector output_main_names = {"comm_out", "N_out", "stageframe_list",
-      "hstages_list", "agestages_list", "labels", "err_check"};
+    CharacterVector output_main_names = {"agg_density", "N_out", "structure",
+      "stageframe_list", "hstages_list", "agestages_list", "labels",
+      "err_check"};
     output.attr("names") = output_main_names;
     
   } else {
-    CharacterVector output_main_names = {"comm_out", "N_out", "stageframe_list",
-      "hstages_list", "agestages_list", "labels"};
+    CharacterVector output_main_names = {"agg_density", "N_out", "structure",
+      "stageframe_list", "hstages_list", "agestages_list", "labels"};
     output.attr("names") = output_main_names;
   }
   output.attr("class") = "adaptProj";

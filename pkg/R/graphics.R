@@ -7,6 +7,9 @@
 #' @param x An \code{adaptProj} object.
 #' @param repl The replicate to plot. Defaults to \code{1}, in which case the
 #' first replicate is plotted.
+#' @param agg_only A logical value indicating whether to plot only the aggregate
+#' community density. Defaults to \code{FALSE}, in which case population sizes
+#' of all constituent populations are also plotted.
 #' @param auto_ylim A logical value indicating whether the maximum of the y axis
 #' should be determined automatically. Defaults to \code{TRUE}, but reverts to
 #' \code{FALSE} if any setting for \code{ylim} is given.
@@ -16,6 +19,9 @@
 #' @param auto_lty A logical value indicating whether to shift the line type
 #' associated with each replicate automatically. Defaults to \code{TRUE}, but
 #' reverts to \code{FALSE} if any setting for \code{lty} is given.
+#' @param auto_lty A logical value indicating whether to shift the line width
+#' associated with each density trend automatically. Defaults to \code{TRUE},
+#' but reverts to \code{FALSE} if any setting for \code{lwd} is given.
 #' @param auto_title A logical value indicating whether to add a title to each
 #' plot. The plot is composed of the concatenated population and patch names.
 #' Defaults to \code{FALSE}.
@@ -103,12 +109,14 @@
 #' plot(cyp_comm_proj, lwd = 2, bty = "n")
 #' 
 #' @export
-plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
-  auto_lty = TRUE, auto_title = FALSE, ...) {
+plot.adaptProj <- function(x, repl = 1, agg_only = FALSE, auto_ylim = TRUE,
+  auto_col = TRUE, auto_lty = TRUE, auto_lwd = TRUE, auto_title = FALSE, ...) {
   
   used_N_mat <- NULL
   appended <- FALSE
   num_pops <- 0
+  
+  core_lwd <- 1
   
   further_args <- list(...)
   
@@ -128,6 +136,9 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
   }
   if (is.element("main", names(further_args))) {
     auto_title <- FALSE
+  }
+  if (is.element("lwd", names(further_args))) {
+    auto_lwd <- FALSE
   }
   basal_args <- further_args
   
@@ -149,13 +160,13 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
     further_args$main <- used_string
   }
   
-  used_N_mat <- x$N_out[[repl]]
+  used_agg_mat <- x$agg_density
   
   used_col <- 1
   used_lty <- 1
   
   if (auto_ylim) {
-    further_args$ylim <- c(0, max(used_N_mat, na.rm = TRUE))
+    further_args$ylim <- c(0, max(used_agg_mat, na.rm = TRUE))
   }
   
   if (auto_col) {
@@ -165,15 +176,27 @@ plot.adaptProj <- function(x, repl = 1, auto_ylim = TRUE, auto_col = TRUE,
   if (auto_lty) {
     further_args$lty <- used_lty
   }
+  if (auto_lwd) {
+    further_args$lwd <- core_lwd + 1
+  }
   
-  num_pops <- dim(used_N_mat)[1]
-  c_xy <- xy.coords(x = c(1:length(used_N_mat[1,])), y = used_N_mat[1,])
+  current_agg <- used_agg_mat[repl,]
+  c_xy <- xy.coords(x = c(1:length(current_agg)), y = current_agg)
   further_args$x <- c_xy
   
   do.call("plot.default", further_args)
   
-  if (num_pops > 1) {
-    for (j in c(2:num_pops)) {
+  if (!agg_only) {
+    used_N_mat <- x$N_out[[repl]]
+    
+    num_pops <- dim(used_N_mat)[1]
+    c_xy <- xy.coords(x = c(1:length(used_N_mat[1,])), y = used_N_mat[1,])
+    further_args$x <- c_xy
+    
+    for (j in c(1:num_pops)) {
+      if (auto_lwd) {
+        further_args$lwd <- core_lwd
+      }
       if (auto_lty) {
         used_lty <- used_lty + 1;
         basal_args$lty <- used_lty

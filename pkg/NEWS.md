@@ -19,10 +19,32 @@
   
 * Function `summary.adaptProjBatch()` now summarizes batch community
   projections.
+  
+* Function project3() now includes aggregate density in the output.
+
+* Function `summary.adaptProj()` now also outputs mean final population sizes
+  for each MPM across replicates.
+  
+## USER-VISIBLE CHANGES
+
+* The output list structure for function project3() has changed, with item
+  `comm_out` renamed to `structure`, and with its own structure changing such
+  that the top-level list refers to replicates, and the lower-level list refers
+  to input MPMs.
 
 ## BUGS FIXED
 
 * Projection via vrm_input with deviance terms now no longer crashes.
+
+* Function project3() no longer always incorporates the current MPMs start
+  vector as the vector at time 0, but instead incorporates it only as the
+  correct start time.
+  
+* Corrected issue resulting in Leslie-format function-based MPMs yielding
+  matrices full of NAs if the format vector is missing.
+  
+* Fixed fatal error in project3() occurring when the number of MPMs entered is
+  smaller than the times projected using unequal stage weights across MPMs.
 
 # adapt3 1.0.2 (2025-08-27)
 

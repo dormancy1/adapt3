@@ -254,17 +254,21 @@ used in the negative binomial probability density kernel. Defaults to
 }
 \value{
 A list of class \code{adaptProj}, with the following elements:
-\item{comm_out}{A two-level list with the top level list having number of
-elements equal to the number of MPMs used as input, and the lower level
-corresponding to the number of replicates. Each element of the lower level
-list is a data frame showing the number of individuals in each stage at each
-time. Rows and columns in the data frames correspond to stages and time
-steps, respectively.}
+\item{agg_density}{A numeric matrix giving the aggregate community density
+by time (column) and replicate (row). Here, the aggregate density is
+calculated using any stage weights supplied, and is exactly equal to the
+aggegate density used in density dependence calculations by this function.}
 \item{N_out}{A list with the number of elements equal to the number of
-replicates. Each element within this list is data frame showing the number
+replicates. Each element within this list is a numeric matrix showing the number
 of individuals of each species or genotype alive at each time. The number of
 rows are equal to the number of MPMs used, and the columns correspond to the
 time steps.}
+\item{structure}{A two-level list with the top level list having number of
+elements equal to the number of replicates, and the lower level
+corresponding to the number of MPMs. Each element of the lower level list is
+a numeric matrix showing the number of individuals in each stage at each
+time. Rows and columns in the data frames correspond to stages and time
+steps, respectively.}
 \item{stageframe_list}{A list in which each element is the stageframe for
 each MPM used.}
 \item{hstages_list}{A list giving the used \code{hstages} data frames, which
@@ -275,7 +279,7 @@ which identify the correct age-stage pairing for each row / column in each
 age-by-stage MPM utilized.}
 \item{labels}{A small data frame giving the the population and patch
 identities for each MPM entered.}
-\item{err_check}{An optional list composed of an additional six lists, each
+\item{err_check}{An optional list composed of six additional lists, each
 of which has the number of elements equal to the number of MPMs utilized.
 List output include \code{allstages_all}, which gives the indices of
 estimated transitions in MPMs constructed by function \code{project3()} from

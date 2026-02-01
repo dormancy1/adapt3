@@ -10,6 +10,8 @@
   inf_alive = TRUE,
   milepost = c(0, 0.25, 0.5, 0.75, 1),
   ext_time = FALSE,
+  finalN_mean = FALSE,
+  finalN_used = 100,
   ...
 )
 }
@@ -34,6 +36,15 @@ into the corresponding projection steps of the total. Defaults to
 \item{ext_time}{A logical value indicating whether to output extinction times
 per population-patch. Defaults to \code{FALSE}.}
 
+\item{finalN_mean}{A logical value indicating whether to take the arithmetic
+mean of the final population sizes for each MPM across all replicates.
+Defaults to \code{FALSE}.}
+
+\item{finalN_used}{An integer value indicating the number of final population
+sizes in the arithmetic mean noted in argument \code{finalN_mean}. Defaults
+to \code{100}, unless the projections are for fewer time steps, in which case
+defaults to \code{10}.}
+
 \item{...}{Other parameters currently not utilized.}
 }
 \value{
@@ -44,6 +55,8 @@ of the milepost times that is above the threshold population/patch size.}
 \item{extinction_times}{A dataframe showing the numbers of replicates going
 extinct (\code{ext_reps}) and mean extinction time (\code{ext_time}) per
 population-patch. If \code{ext_time = FALSE}, then only outputs \code{NA}.}
+\item{final_N}{The final population size of each MPM across all replicates.
+Only given if \code{finalN_mean = TRUE}.}
 }
 \description{
 Function \code{summary.adaptProj()} summarizes \code{adaptProj} objects.
