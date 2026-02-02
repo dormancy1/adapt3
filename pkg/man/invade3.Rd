@@ -287,6 +287,7 @@ replicates. Each element within this list is data frame showing the number
 of individuals of each species or genotype alive at each time. The number of
 rows are equal to the number of MPMs used, and the columns correspond to the
 time steps.}
+\item{trait_axis}{An edited version of the input trait axis.}
 \item{stageframe_list}{A list in which each element is the stageframe for
 each MPM used.}
 \item{hstages_list}{A list giving the used \code{hstages} data frames, which

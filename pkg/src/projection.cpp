@@ -19618,6 +19618,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' of individuals of each species or genotype alive at each time. The number of
 //' rows are equal to the number of MPMs used, and the columns correspond to the
 //' time steps.}
+//' \item{trait_axis}{An edited version of the input trait axis.}
 //' \item{stageframe_list}{A list in which each element is the stageframe for
 //' each MPM used.}
 //' \item{hstages_list}{A list giving the used \code{hstages} data frames, which
@@ -19656,10 +19657,10 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' methods, Oxford University Press). In essence, function \code{invade3}
 //' determines which traits vary among all traits noted in the input trait axis.
 //' A new trait axis is then created with values of variable traits multiplied
-//' by \code{0.995}, although this can be reset with the \code{elast_mult}. This
-//' new trait axis is composed entirely of invaders that will be paired against
-//' each respective row in the original trait axis. These two trait axis frames
-//' are then used to conduct pairwise invasibility elasticity analyses,
+//' by \code{0.995}, although this can be reset with argument \code{elast_mult}.
+//' This new trait axis is composed entirely of invaders that will be paired
+//' against each respective row in the original trait axis. These two trait axis
+//' frames are then used to conduct pairwise invasibility elasticity analyses,
 //' particularly noting where fitness values and trends invert. Elasticity plots
 //' show the results of these elasticity simulations, using R's line segment
 //' default in the \code{plot.default()} function. Results are then used to
@@ -20140,7 +20141,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
     _["fitness"] = Lyapunov_optim, _["comm_elas_out"] = comm_out_optim,
     _["N_elas_out"] = N_out_optim);
   
-  int out_dim = 7;
+  int out_dim = 8;
   if (trait_optima_bool) out_dim++;
   if (err_check_bool) out_dim++;
   List output (out_dim);
@@ -20148,10 +20149,11 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   output(0) = Lyapunov; // Needed in final output
   output(1) = comm_out; // Needed in final output
   output(2) = N_out; // Needed in final output
-  output(3) = stageframe_df; // Needed in final output
-  output(4) = hstages_list;
-  output(5) = agestages_list;
-  output(6) = labels;
+  output(3) = new_trait_axis;
+  output(4) = stageframe_df; // Needed in final output
+  output(5) = hstages_list;
+  output(6) = agestages_list;
+  output(7) = labels;
   if (trait_optima_bool) output(7) = optim_list;
   
   if (err_check_bool) {
@@ -20172,7 +20174,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
         "errcheck_mpm_list_ESS", "errcheck_mpmout_list_ESS"};
       optim.attr("names") = optim_errcheck_names;
       
-      List output_errcheck (16);
+      List output_errcheck (15);
       
       output_errcheck(0) = allstages_all;
       output_errcheck(1) = allmodels_all;
@@ -20180,33 +20182,32 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       output_errcheck(3) = density_df;
       output_errcheck(4) = dens_index_df;
       output_errcheck(5) = density_vr_list;
-      output_errcheck(6) = new_trait_axis;
-      output_errcheck(7) = stageexpansion_list;
-      output_errcheck(8) = dev_terms_list;
-      output_errcheck(9) = modified_dev_terms_list;
-      output_errcheck(10) = errcheck_mpm_list;
-      output_errcheck(11) = errcheck_mpmout_list;
-      output_errcheck(12) = var_run_mat;
-      output_errcheck(13) = start_list;
-      output_errcheck(14) = final_stageframe;
-      output_errcheck(15) = optim;
+      output_errcheck(6) = stageexpansion_list;
+      output_errcheck(7) = dev_terms_list;
+      output_errcheck(8) = modified_dev_terms_list;
+      output_errcheck(9) = errcheck_mpm_list;
+      output_errcheck(10) = errcheck_mpmout_list;
+      output_errcheck(11) = var_run_mat;
+      output_errcheck(12) = start_list;
+      output_errcheck(13) = final_stageframe;
+      output_errcheck(14) = optim;
       
       CharacterVector output_errcheck_names = {"allstages_all", "allmodels_all",
         "equivalence_list", "density_df", "dens_index_df", "density_vr_list",
-        "trait_axis_reassessed", "stageexpansion_list", "dev_terms_list",
-        "modified_dev_terms_list", "modified_mpms", "fb_mpm_out_matrices",
-        "var_run_mat", "start_list", "final_stageframe", "optim"};
+        "stageexpansion_list", "dev_terms_list", "modified_dev_terms_list",
+        "modified_mpms", "fb_mpm_out_matrices", "var_run_mat", "start_list",
+        "final_stageframe", "optim"};
       output_errcheck.attr("names") = output_errcheck_names;
       
       output(out_dim - 1) = output_errcheck;
       
       CharacterVector output_main_names;
       if (trait_optima_bool) {
-        output_main_names = {"fitness", "variants_out", "N_out", "stageframe",
-          "hstages", "agestages", "labels", "optim", "err_check"};
+        output_main_names = {"fitness", "variants_out", "N_out", "trait_axis",
+          "stageframe", "hstages", "agestages", "labels", "optim", "err_check"};
       } else {
-        output_main_names = {"fitness", "variants_out", "N_out", "stageframe",
-          "hstages", "agestages", "labels", "err_check"};
+        output_main_names = {"fitness", "variants_out", "N_out", "trait_axis",
+          "stageframe", "hstages", "agestages", "labels", "err_check"};
       }
       output.attr("names") = output_main_names;
     } else {
@@ -20223,7 +20224,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       output_errcheck(8) = dev_terms_list;
       output_errcheck(9) = modified_dev_terms_list;
       output_errcheck(10) = var_run_mat;
-      output_errcheck(11) = start_list; // Remove later
+      output_errcheck(11) = start_list;
       
       CharacterVector output_errcheck_names = {"allstages_all", "allmodels_all",
         "equivalence_list", "density_df", "dens_index_df", "density_vr_list",
@@ -20235,22 +20236,22 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       
       CharacterVector output_main_names;
       if (trait_optima_bool) {
-        output_main_names = {"fitness", "variants_out", "N_out", "stageframe",
-          "hstages", "agestages", "labels", "optim", "err_check"};
+        output_main_names = {"fitness", "variants_out", "N_out", "trait_axis",
+          "stageframe", "hstages", "agestages", "labels", "optim", "err_check"};
       } else {
-        output_main_names = {"fitness", "variants_out", "N_out", "stageframe",
-          "hstages", "agestages", "labels", "err_check"};
+        output_main_names = {"fitness", "variants_out", "N_out", "trait_axis",
+          "stageframe", "hstages", "agestages", "labels", "err_check"};
       }
       output.attr("names") = output_main_names;
     }
   } else {
     CharacterVector output_main_names;
     if (trait_optima_bool) {
-      output_main_names = {"fitness", "variants_out", "N_out", "stageframe",
-        "hstages", "agestages", "labels", "optim"};
+      output_main_names = {"fitness", "variants_out", "N_out", "trait_axis",
+        "stageframe", "hstages", "agestages", "labels", "optim"};
     } else {
-      output_main_names = {"fitness", "variants_out", "N_out", "stageframe",
-        "hstages", "agestages", "labels"};
+      output_main_names = {"fitness", "variants_out", "N_out", "trait_axis",
+        "stageframe", "hstages", "agestages", "labels"};
     }
     output.attr("names") = output_main_names;
   }

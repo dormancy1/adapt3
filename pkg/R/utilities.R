@@ -297,6 +297,8 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
 #' \code{TRUE}.
 #' @param ext_time A logical value indicating whether to output extinction times
 #' per population-patch. Defaults to \code{FALSE}.
+#' @param print_output A logical value indicating whether to print the output
+#' data frame to the screen. Defaults to \code{FALSE}.
 #' @param ... Other parameters currently not utilized.
 #' 
 #' @return Apart from a statement of the results, this function outputs a data
@@ -712,21 +714,25 @@ summary.adaptInv <- function(object, ...) {
       " projected ", rep_text, "."), con = stdout())
   
   if (exists("optim", object)) {
-    if (exists("ESS_values", object$optim)) {
-      found_ESS_frame <- object$optim$ESS_values
-      
-      if (length(found_ESS_frame) > 1) {
-        found_ESS_values <- nrow(found_ESS_frame)
+    
+    if (length(object$optim) > 0) {
+      if (exists("ESS_values", object$optim)) {
+        found_ESS_frame <- object$optim$ESS_values
         
-        optimum_text <- "optima"
-        if (found_ESS_values == 1) optimum_text <- "optimum"
-        writeLines(paste0("It includes optimization data suggesting ", found_ESS_values,
-          " purported ESS ", optimum_text, "."), con = stdout())
-      } else {
-        writeLines("It includes optimization data but suggests no purported ESS optima.",
-          con = stdout())
+        if (length(found_ESS_frame) > 1) {
+          found_ESS_values <- nrow(found_ESS_frame)
+          
+          optimum_text <- "optima"
+          if (found_ESS_values == 1) optimum_text <- "optimum"
+          writeLines(paste0("It includes optimization data suggesting ", found_ESS_values,
+            " purported ESS ", optimum_text, "."), con = stdout())
+        } else {
+          writeLines("It includes optimization data but suggests no purported ESS optima.",
+            con = stdout())
+        }
       }
     }
+    
   }
   writeLines("", con = stdout())
 }

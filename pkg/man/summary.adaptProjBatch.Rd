@@ -38,6 +38,9 @@ If \code{FALSE}, then the population is considered extinct. Defaults to
 \item{ext_time}{A logical value indicating whether to output extinction times
 per population-patch. Defaults to \code{FALSE}.}
 
+\item{print_output}{A logical value indicating whether to print the output
+data frame to the screen. Defaults to \code{FALSE}.}
+
 \item{...}{Other parameters currently not utilized.}
 }
 \value{

@@ -19,7 +19,7 @@
 #' @param auto_lty A logical value indicating whether to shift the line type
 #' associated with each replicate automatically. Defaults to \code{TRUE}, but
 #' reverts to \code{FALSE} if any setting for \code{lty} is given.
-#' @param auto_lty A logical value indicating whether to shift the line width
+#' @param auto_lwd A logical value indicating whether to shift the line width
 #' associated with each density trend automatically. Defaults to \code{TRUE},
 #' but reverts to \code{FALSE} if any setting for \code{lwd} is given.
 #' @param auto_title A logical value indicating whether to add a title to each
