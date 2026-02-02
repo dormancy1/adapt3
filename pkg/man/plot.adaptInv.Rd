@@ -21,6 +21,7 @@
   auto_col = TRUE,
   auto_lty = TRUE,
   auto_title = FALSE,
+  auto_axis = FALSE,
   ...
 )
 }
@@ -80,6 +81,10 @@ reverts to \code{FALSE} if any setting for \code{lty} is given. Used only if
 \item{auto_title}{A logical value indicating whether to add a title to each
 plot. The plot is composed of the concatenated population and patch names.
 Defaults to \code{FALSE}. Used only if \code{pip = FALSE}.}
+
+\item{auto_axis}{A logical value indicating if the axis labels should be set
+as the first variable variable in the input trait axis in the given
+\code{adaptInv} object for PIPs. Defaults to \code{FALSE}.}
 
 \item{...}{Other parameters used by functions \code{plot.default()}.}
 }

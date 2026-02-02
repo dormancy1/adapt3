@@ -2764,10 +2764,10 @@ batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, mu
 #' methods, Oxford University Press). In essence, function \code{invade3}
 #' determines which traits vary among all traits noted in the input trait axis.
 #' A new trait axis is then created with values of variable traits multiplied
-#' by \code{0.995}, although this can be reset with the \code{elast_mult}. This
-#' new trait axis is composed entirely of invaders that will be paired against
-#' each respective row in the original trait axis. These two trait axis frames
-#' are then used to conduct pairwise invasibility elasticity analyses,
+#' by \code{0.995}, although this can be reset with argument \code{elast_mult}.
+#' This new trait axis is composed entirely of invaders that will be paired
+#' against each respective row in the original trait axis. These two trait axis
+#' frames are then used to conduct pairwise invasibility elasticity analyses,
 #' particularly noting where fitness values and trends invert. Elasticity plots
 #' show the results of these elasticity simulations, using R's line segment
 #' default in the \code{plot.default()} function. Results are then used to

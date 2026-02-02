@@ -713,10 +713,10 @@ summary.adaptInv <- function(object, ...) {
       num_run_variants, " ", run_variant_text, ", and ", max_reps,
       " projected ", rep_text, "."), con = stdout())
   
-  if (exists("optim", object)) {
+  if (is.element("optim", names(object))) {
     
     if (length(object$optim) > 0) {
-      if (exists("ESS_values", object$optim)) {
+      if (is.element("ESS_values", names(object$optim))) {
         found_ESS_frame <- object$optim$ESS_values
         
         if (length(found_ESS_frame) > 1) {

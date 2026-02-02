@@ -265,6 +265,9 @@ plot.adaptProj <- function(x, repl = 1, agg_only = FALSE, auto_ylim = TRUE,
 #' @param auto_title A logical value indicating whether to add a title to each
 #' plot. The plot is composed of the concatenated population and patch names.
 #' Defaults to \code{FALSE}. Used only if \code{pip = FALSE}.
+#' @param auto_axis A logical value indicating if the axis labels should be set
+#' as the first variable variable in the input trait axis in the given
+#' \code{adaptInv} object for PIPs. Defaults to \code{FALSE}.
 #' @param ... Other parameters used by functions \code{plot.default()}.
 #' 
 #' @return A contour plot showing the overall fitness dynamics of the invader
@@ -349,12 +352,13 @@ plot.adaptProj <- function(x, repl = 1, agg_only = FALSE, auto_ylim = TRUE,
 plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
   pip = TRUE, elast = FALSE, run = 1, filled = TRUE, plot.title, plot.axes,
   axes = TRUE, frame.plot = TRUE, auto_ylim = TRUE, auto_col = TRUE,
-  auto_lty = TRUE, auto_title = FALSE, ...) {
+  auto_lty = TRUE, auto_title = FALSE, auto_axis = FALSE, ...) {
   
   asp <- NA
   las <- 1
   xaxs <- yaxs <- "i"
-  xlab <- ylab <- NULL
+  xlab <- ylab <- used_trait <- used_trait_res <- used_trait_inv <- NULL
+  used_trait_axis <- used_trait_spectrum <- NULL
   chosen_colours <- c("white", "darkgrey")
   
   if (!axes) frame.plot <- FALSE
@@ -504,6 +508,48 @@ plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
       stop("Replicate entered in argument repl could not be found.", call. = FALSE)
     }
     
+    if (!is.element("trait_axis", names(x))) {
+      stop("Argument x does not appear to be an adaptInv object.", call. = FALSE)
+    }
+    
+    used_trait_axis <- x$trait_axis
+    
+    if (auto_axis[1] == TRUE) {
+      var_vector <- c(var(used_trait_axis$givenrate), var(used_trait_axis$offset),
+        var(used_trait_axis$multiplier), NA, NA, var(used_trait_axis$surv_dev),
+        var(used_trait_axis$obs_dev), var(used_trait_axis$size_dev),
+        var(used_trait_axis$sizeb_dev), var(used_trait_axis$sizec_dev),
+        var(used_trait_axis$repst_dev), var(used_trait_axis$fec_dev),
+        var(used_trait_axis$jsurv_dev), var(used_trait_axis$jobs_dev),
+        var(used_trait_axis$jsize_dev), var(used_trait_axis$jsizeb_dev),
+        var(used_trait_axis$jsizec_dev), var(used_trait_axis$jrepst_dev),
+        var(used_trait_axis$jmatst_dev), var(used_trait_axis$indcova),
+        var(used_trait_axis$indcovb), var(used_trait_axis$indcovc))
+      
+      likely_candidates <- which(var_vector != 0)
+      
+      if (length(likely_candidates) > 0) {
+        best_candidate <- likely_candidates[1]
+        
+        all_possibilities <- c("(Given Rate Value)", "(Additive Offset Value)",
+          "(Multiplier Value)", NA, NA, "(Deviation to Intercept of Survival)",
+          "(Deviation to Intercept of Observation)", "(Deviation to Intercept of Primary Size)",
+          "(Deviation to Intercept of Secondary Size)", "(Deviation to Intercept of Tertiary Size)",
+          "(Deviation to Intercept of Reproductive Status)", "(Deviation to Intercept of Fecundity)",
+          "(Deviation to Intercept of Juvenile Survival)", "(Deviation to Intercept of Juvenile Observation)",
+          "(Deviation to Intercept of Juvenile Primary Size)", "(Deviation to Intercept of Juvenile Secondary Size)",
+          "(Deviation to Intercept of Juvenile Tertiary Size)", "(Deviation to Intercept of Juvenile Reproductive Status)",
+          "(Deviation to Intercept of Maturity Status)", "(Deviation to Individual Covariate A)",
+          "(Deviation to Individual Covariate B)", "(Deviation to Individual Covariate C)")
+        
+        used_trait <- all_possibilities[best_candidate]
+        used_trait_res <- paste(xlab, used_trait)
+        used_trait_inv <- paste(ylab, used_trait)
+        
+        used_trait_spectrum <- used_trait_axis[, best_candidate + 11]
+      }
+    }
+    
     res_column <- which(names(x$fitness) == fit_var_name_res)[1]
     resfit_column <- which(names(x$fitness) == fit_var_name_fitres)[1]
     inv_column <- which(names(x$fitness) == fit_var_name_inv)[1]
@@ -534,7 +580,12 @@ plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
     on.exit(par(par.orig))
     
     if (!filled) {
-      contour(unique_variants, unique_variants, ifmat, col = "black")
+      if (!auto_axis[1]) {
+        contour(unique_variants, unique_variants, ifmat, col = "black")
+      } else {
+        contour(unique_variants, unique_variants, ifmat, col = "black")
+      }
+      
     } else {
       w <- (3 + mar.orig[2L]) * par("csi") * 2.54
       layout(matrix(c(2, 1), ncol = 2L), widths = c(1, lcm(w)))
@@ -554,9 +605,18 @@ plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
     
     if (missing(plot.axes)) {
       if (axes) {
-        title(main = "", xlab = "", ylab = "")
-        Axis(unique_variants, side = 1)
-        Axis(unique_variants, side = 2)
+        if (auto_axis[1]) {
+          title(main = "", xlab = used_trait_res, ylab = used_trait_inv)
+          range_of_spectrum <- seq(from = min(used_trait_spectrum),
+            to = max(used_trait_spectrum), length.out = length(unique_variants))
+          
+          Axis(unique_variants, unique_variants, side = 1, labels = range_of_spectrum)
+          Axis(unique_variants, unique_variants, side = 2, labels = range_of_spectrum)
+        } else {
+          title(main = "", xlab = "", ylab = "")
+          Axis(unique_variants, side = 1)
+          Axis(unique_variants, side = 2)
+        }
       }
     }
     else plot.axes

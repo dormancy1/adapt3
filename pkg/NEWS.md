@@ -25,6 +25,9 @@
 * Function `summary.adaptProj()` now also outputs mean final population sizes
   for each MPM across replicates.
   
+* Function `plot.adaptInv()` now processes the first variable trait in the trait
+  axis as the source of axis labels by default to PIPs.
+  
 ## USER-VISIBLE CHANGES
 
 * The output list structure for function project3() has changed, with item
