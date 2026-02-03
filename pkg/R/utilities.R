@@ -731,8 +731,9 @@ summary.adaptInv <- function(object, ...) {
             con = stdout())
         }
       }
+    } else {
+      writeLines("No trait optima found.")
     }
-    
   }
   writeLines("", con = stdout())
 }

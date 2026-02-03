@@ -25,6 +25,7 @@
 #' @importFrom graphics contour lines .filled.contour
 #' @importFrom grDevices palette xy.coords
 #' @importFrom methods as is
+#' @importFrom stats var
 #' @importFrom Rcpp evalCpp
 #' @useDynLib adapt3
 #' @name adapt3-package

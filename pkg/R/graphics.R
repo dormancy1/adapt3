@@ -515,16 +515,16 @@ plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
     used_trait_axis <- x$trait_axis
     
     if (auto_axis[1] == TRUE) {
-      var_vector <- c(var(used_trait_axis$givenrate), var(used_trait_axis$offset),
-        var(used_trait_axis$multiplier), NA, NA, var(used_trait_axis$surv_dev),
-        var(used_trait_axis$obs_dev), var(used_trait_axis$size_dev),
-        var(used_trait_axis$sizeb_dev), var(used_trait_axis$sizec_dev),
-        var(used_trait_axis$repst_dev), var(used_trait_axis$fec_dev),
-        var(used_trait_axis$jsurv_dev), var(used_trait_axis$jobs_dev),
-        var(used_trait_axis$jsize_dev), var(used_trait_axis$jsizeb_dev),
-        var(used_trait_axis$jsizec_dev), var(used_trait_axis$jrepst_dev),
-        var(used_trait_axis$jmatst_dev), var(used_trait_axis$indcova),
-        var(used_trait_axis$indcovb), var(used_trait_axis$indcovc))
+      var_vector <- c(stats::var(used_trait_axis$givenrate), stats::var(used_trait_axis$offset),
+        stats::var(used_trait_axis$multiplier), NA, NA, stats::var(used_trait_axis$surv_dev),
+        stats::var(used_trait_axis$obs_dev), stats::var(used_trait_axis$size_dev),
+        stats::var(used_trait_axis$sizeb_dev), stats::var(used_trait_axis$sizec_dev),
+        stats::var(used_trait_axis$repst_dev), stats::var(used_trait_axis$fec_dev),
+        stats::var(used_trait_axis$jsurv_dev), stats::var(used_trait_axis$jobs_dev),
+        stats::var(used_trait_axis$jsize_dev), stats::var(used_trait_axis$jsizeb_dev),
+        stats::var(used_trait_axis$jsizec_dev), stats::var(used_trait_axis$jrepst_dev),
+        stats::var(used_trait_axis$jmatst_dev), stats::var(used_trait_axis$indcova),
+        stats::var(used_trait_axis$indcovb), stats::var(used_trait_axis$indcovc))
       
       likely_candidates <- which(var_vector != 0)
       
@@ -627,7 +627,11 @@ plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,
   }
   
   if (elast) {
-    if (!exists("optim", x)) {
+    if (!is.element("optim", names(x))) {
+      stop("No optimization data included in object.", call. = FALSE)
+    }
+    
+    if (!is.element("fitness", names(x$optim))) {
       stop("No optimization data included in object.", call. = FALSE)
     }
     
