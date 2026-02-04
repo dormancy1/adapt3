@@ -20154,7 +20154,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   output(5) = hstages_list;
   output(6) = agestages_list;
   output(7) = labels;
-  if (trait_optima_bool) output(7) = optim_list;
+  if (trait_optima_bool) output(8) = optim_list;
   
   if (err_check_bool) {
     if (err_check_extreme) {

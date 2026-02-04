@@ -1,4 +1,4 @@
-# adapt3 1.1.0 (2025-XX-XX)
+# adapt3 2.0.0 (2026-XX-XX)
 
 ## NEW FEATURES
 
@@ -20,7 +20,7 @@
 * Function `summary.adaptProjBatch()` now summarizes batch community
   projections.
   
-* Function project3() now includes aggregate density in the output.
+* Function `project3()` now includes aggregate density in the output.
 
 * Function `summary.adaptProj()` now also outputs mean final population sizes
   for each MPM across replicates.
