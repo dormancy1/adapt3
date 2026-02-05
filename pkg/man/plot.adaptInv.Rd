@@ -22,6 +22,7 @@
   auto_lty = TRUE,
   auto_title = FALSE,
   auto_axis = FALSE,
+  auto_axis_ticks = 5,
   ...
 )
 }
@@ -85,6 +86,11 @@ Defaults to \code{FALSE}. Used only if \code{pip = FALSE}.}
 \item{auto_axis}{A logical value indicating if the axis labels should be set
 as the first variable variable in the input trait axis in the given
 \code{adaptInv} object for PIPs. Defaults to \code{FALSE}.}
+
+\item{auto_axis_ticks}{A single integer value giving the number of ticks to
+include on both axes of a PIP or on the x axis of an elasticity plot, if
+\code{auto_axis = TRUE}. Defaults to \code{5}, or to the number of variants
+in the used trait axis, whichever is smaller.}
 
 \item{...}{Other parameters used by functions \code{plot.default()}.}
 }

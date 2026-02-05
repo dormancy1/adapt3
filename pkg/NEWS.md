@@ -26,7 +26,8 @@
   for each MPM across replicates.
   
 * Function `plot.adaptInv()` now processes the first variable trait in the trait
-  axis as the source of axis labels by default to PIPs.
+  axis as the source of axis labels by default to PIPs, and to the x axis in
+  elasticity plots.
   
 ## USER-VISIBLE CHANGES
 
