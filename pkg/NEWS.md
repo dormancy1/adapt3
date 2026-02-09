@@ -49,6 +49,9 @@
   
 * Fixed fatal error in project3() occurring when the number of MPMs entered is
   smaller than the times projected using unequal stage weights across MPMs.
+  
+* Fixed bug that led function `summary.adaptProj()` to acknowledge only a single
+  replicate.
 
 # adapt3 1.0.2 (2025-08-27)
 

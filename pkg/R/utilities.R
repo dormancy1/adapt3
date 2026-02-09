@@ -224,15 +224,12 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
     }
   }
   
-  
-  
-  
   if (num_pops == 1) pop_text <- "population"
   if (num_reps == 1) rep_text <- "replicate"
   if (num_times == 1) step_text <- "step"
   
   writeLines(paste0("\nThe input adaptProj object covers ", num_pops, " ",
-      pop_text, ", ", num_times, " projected ", step_text, " and ", max_reps,
+      pop_text, ", ", num_times, " projected ", step_text, " and ", num_reps,
       " projected ", rep_text, "."), con = stdout())
   
   writeLines(paste0("The number of replicates with population size above the threshold size of ",
