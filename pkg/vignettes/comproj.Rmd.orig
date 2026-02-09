@@ -32,6 +32,8 @@ knitr::opts_chunk$set(
 
   <p style="text-indent: 20px">Package `adapt3` is built to take advantage of package `lefko3`, which offers a general language and architecture to build and analyze most kinds of matrix projection models, including even discretized integral projection models [@shefferson_lefko3_2021]. To start, we will load both `lefko3` and `adapt3`, and also load the datasets that we will use for examples.</p>
 ```{r ch1-1.0}
+rm(list=ls(all=TRUE))
+
 library(lefko3)
 library(adapt3)
 
@@ -45,7 +47,7 @@ dim(cypa_data)
 summary(cypa_data)
 ```
 
-  <p style="text-indent: 20px">This dataset includes information on 1103 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. We can see that we have data for 18 years here. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://bookdown.org/cdorm/lefko3gentle/">*lefko3: a gentle introduction*</a> for more).</p>
+  <p style="text-indent: 20px">This dataset includes information on 1103 individuals arranged horizontally, by row. There are 37 variables, by column. The first column gives identifying information for each individual. This is followed by 18 sets of two columns, each named `Inf.XX` and `Veg.XX`, where `XX` corresponds to the year of observation and with years organized consecutively. Thus, columns 2-3 refer to year 1994, columns 4-5 refer to year 1995, etc. We can see that we have data for 18 years here. This strictly repeating pattern allows us to manipulate the original dataset quickly and efficiently via `lefko3` (see our free online e-book called <a href = "https://revolutionarydemography-lefko3gentle.share.connect.posit.cloud/">*lefko3: a gentle introduction*</a> for more).</p>
   
   <p style="text-indent: 20px">Next let's look at a summary of the *C. candidum* dataset.</p>
 ```{r ch1-1.2}
@@ -99,7 +101,7 @@ cyparaw_v1 <- verticalize3(data = cypa_data, noyears = 18, firstyear = 1994,
 summary_hfv(cyparaw_v1)
 ```
   
-  <p style="text-indent: 20px">This is a much bigger dataset, as we can see, in terms of rows, variables, individuals, and years. Now let's create our MPMs. See our online book, <a href = "https://bookdown.org/cdorm/lefko3gentle/">lefko3: a gentle introduction</a>, for further material on how to construct MPMs properly.</p>
+  <p style="text-indent: 20px">This is a much bigger dataset, as we can see, in terms of rows, variables, individuals, and years. Now let's create our MPMs. See our online book, <a href = "https://revolutionarydemography-lefko3gentle.share.connect.posit.cloud/">lefko3: a gentle introduction</a>, for further material on how to construct MPMs properly.</p>
 ```{r ch1-1.6}
 cypsupp2r <- supplemental(stage3 = c("SD", "P1", "SL", "D", "XSm", "Sm", "SD",
   "P1"),
@@ -167,7 +169,7 @@ cyp_comm_proj <- project3(mpms = cyp_mpm_list, starts = cyp_start_list,
 summary(cyp_comm_proj)
 ```
   
-  <p style="text-indent: 20px">We can see that our projection did not predict extinction in *C. candidum*, but it did in *C. parviflorum*. Let's take a look at a graph of the results, showing the full population sizes over time.</p>
+  <p style="text-indent: 20px">We can see that our projection did not predict extinction in *C. candidum*, but it did in *C. parviflorum*. Let's take a look at a graph of the results, showing the full population sizes over time, as well as the aggregate community density adjusted for stage equivalence (in bold).</p>
 ```{r ch1-1.12, fig.cap = "Figure C1. Projected population sizes for Cypripedium candidum (solid black) and C. parviflorum (dashed red)"}
 plot(cyp_comm_proj)
 ```

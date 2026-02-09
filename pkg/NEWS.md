@@ -1,4 +1,4 @@
-# adapt3 2.0.0 (2026-XX-XX)
+# adapt3 2.0.0 (2026-02-09)
 
 ## NEW FEATURES
 
