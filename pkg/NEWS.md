@@ -1,3 +1,9 @@
+# adapt3 2.0.1 (2026-02-XX)
+
+## NEW FEATURES
+
+* Unit tests added.
+
 # adapt3 2.0.0 (2026-02-09)
 
 ## NEW FEATURES

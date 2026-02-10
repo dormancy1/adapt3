@@ -1,8 +1,8 @@
 Package: adapt3
 Type: Package
 Title: Adaptive Dynamics and Community Matrix Model Projections
-Version: 2.0.0
-Date: 2026-02-09
+Version: 2.0.0.9000
+Date: 2026-02-10
 Authors@R: c(person(given = "Richard P.", family = "Shefferson",
              email = "cdorm@g.ecc.u-tokyo.ac.jp", role = c("aut", "cre"),
              comment=c(ORCID="0000-0002-5234-3131")))
@@ -20,6 +20,6 @@ LinkingTo: Rcpp, RcppArmadillo, BH, lefko3
 LazyData: true
 BugReports: https://github.com/dormancy1/adapt3/issues
 RoxygenNote: 7.3.3
-Suggests: knitr, rmarkdown
+Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr, rmarkdown
 NeedsCompilation: yes
