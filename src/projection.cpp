@@ -575,7 +575,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       }
       
       for (int i = 0; i < supplement_count; i++) {
-        if (is<DataFrame>(supplement_list_fb(i))) {
+        if (is<DataFrame>(supplement_list_fb(i))) { ///// line 578 valgrind
           DataFrame chosen_supplement = as<DataFrame>(supplement_list_fb(i));
           
           if (chosen_supplement.hasAttribute("class")) {
@@ -4052,7 +4052,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         
         // Rcout << "cleanup3 U4    " << endl;
         
-        DataFrame alterations = AdaptMats::theoldpizzle_adapt3(current_stageframe,
+        DataFrame alterations = AdaptMats::theoldpizzle_adapt3(current_stageframe, ///// line 4055
           current_supplement, new_repmatrix, firstage_vec(i), finalage_vec(i),
           ehrlen_format, mpm_style, cont_vec(i), filter_style, true);
         if (err_check) err_check_theoldpizzle_adapt3(i) = alterations;
@@ -5945,7 +5945,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   
   // Rcout << "project3 A " << endl;
   
-  List cleaned_input = cleanup3(mpms, vrms, stageframes, supplements, format,
+  List cleaned_input = cleanup3(mpms, vrms, stageframes, supplements, format, ///// line 5948 & line 5952 valgrind
     firstage, finalage, fecage_min, fecage_max, cont, fecmod, starts, patches,
     years, tweights, density, entry_time, density_vr, sp_density, ind_terms,
     dev_terms, fb_sparse, equivalence, exp_tol, theta_tol, prep_mats, substoch,
@@ -8081,7 +8081,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
           Nullable<RObject> new_supplements = AdaptUtils::supplements_replacer (supplements,
             used_supplement, current_mpm_int, mpms_entered);
           
-          List current_projection = project3 (mpms, vrms, stageframes, new_supplements,
+          List current_projection = project3 (mpms, vrms, stageframes, new_supplements, ///// line 8084 & line 8089 valgrind
             equivalence, starts, years, patches, tweights, format, entry_time,
             sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
             fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,

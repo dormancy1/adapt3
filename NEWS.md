@@ -4,6 +4,10 @@
 
 * Unit tests added.
 
+## BUG FIXES
+
+* Processing of age-related parameters in batch projection of Leslie MPMs fixed.
+
 # adapt3 2.0.0 (2026-02-09)
 
 ## NEW FEATURES

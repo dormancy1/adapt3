@@ -3672,8 +3672,8 @@ namespace AdaptMats {
     arma::vec indata = as<arma::vec>(StageFrame["indataset"]);
     arma::vec binsizewidth = as<arma::vec>(StageFrame["sizebin_width"]);
     arma::vec alive = as<arma::vec>(StageFrame["alive"]);
-    arma::ivec minage = as<arma::ivec>(StageFrame["min_age"]);
-    arma::ivec maxage = as<arma::ivec>(StageFrame["max_age"]);
+    NumericVector minage = as<NumericVector>(StageFrame["min_age"]);
+    NumericVector maxage = as<NumericVector>(StageFrame["max_age"]);
     arma::vec group = as<arma::vec>(StageFrame["group"]);
     arma::vec almostborn = as<arma::vec>(StageFrame["almostborn"]);
     
@@ -3854,8 +3854,9 @@ namespace AdaptMats {
               } else if (ovage2(i) == minage(j)) {
                 bool check_age {true};
                 
-                arma::ivec minage_sorted = sort(minage);
-                arma::uvec minage_sorted_index = sort_index(minage);
+                arma::vec minage_arma = as<arma::vec>(minage);
+                arma::vec minage_sorted = sort(minage_arma);
+                arma::uvec minage_sorted_index = sort_index(minage_arma);
                 
                 for (int k = 0; k < (nostages-1); k++) {
                   if (minage_sorted(k+1) != (minage_sorted(k) + 1)) check_age = false;
@@ -3866,7 +3867,7 @@ namespace AdaptMats {
                   
                   ovindex2(i) = newstageid(minage_sorted_index(j)); 
                   if (minage(j) != found_max_age) {
-                    arma::uvec current_next_age = find(minage == (minage(j) + 1));
+                    arma::uvec current_next_age = find(minage_arma == (minage_arma(j) + 1));
                     
                     ovindex3(i) = newstageid(current_next_age(0));
                   } else {
@@ -3888,8 +3889,9 @@ namespace AdaptMats {
               } else if (ovestage2(i) == minage(j)) {
                 bool check_age {true};
                 
-                arma::ivec minage_sorted = sort(minage);
-                arma::uvec minage_sorted_index = sort_index(minage);
+                arma::vec minage_arma = as<arma::vec>(minage);
+                arma::vec minage_sorted = sort(minage_arma);
+                arma::uvec minage_sorted_index = sort_index(minage_arma);
                 
                 for (int k = 0; k < (nostages-1); k++) {
                   if (minage_sorted(k+1) != (minage_sorted(k) + 1)) check_age = false;
@@ -3900,7 +3902,7 @@ namespace AdaptMats {
                   
                   ovnew2(i) = newstageid(minage_sorted_index(j));
                   if (minage(j) != found_max_age) {
-                    arma::uvec current_next_age = find(minage == (minage(j) + 1));
+                    arma::uvec current_next_age = find(minage_arma == (minage_arma(j) + 1));
                     
                     ovnew3(i) = newstageid(current_next_age(0));
                   } else {

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Richard P. Shefferson" />
+
+
+<title>Community matrix projection</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+margin-bottom: 0em;
+}
+.hanging div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}
+</style>
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Community matrix projection</h1>
+<h4 class="author">Richard P. Shefferson</h4>
+
+
+
+<p style="text-indent: 20px">
+In this vignette, we will use the <code>cypa_data</code> dataset in
+package <code>adapt3</code>, as well as the <code>cypdata</code> dataset
+from package <code>lefko3</code>, to illustrate community matrix
+projection. Package <code>adapt3</code> allows both pre-existing MPMs to
+be utilized, as well as purely function-based MPMs, which must be
+constructed at each step. Both approaches utilize functions from and
+structures created by the package <code>lefko3</code>, and we encourage
+users to become familiar with that package to use package
+<code>adapt3</code> properly. Here, we illustrate the community matrix
+projection with pre-existing MPMs.
+</p>
+<p style="text-indent: 20px">
+To reduce vignette size, we have prevented some statements from running
+if they produce long stretches of output. Examples include most
+<code>summary()</code> calls. In these cases, we include hashtagged
+versions of these calls, and we encourage the user to run these
+statements without hashtags.
+</p>
+<p style="text-indent: 20px">
+This vignette is only a sample analysis. Detailed information and
+instructions on using <code>adapt3</code> will be made available over
+time. Please check available resources on
+<a href="http://www.revolutionarydemography.com/projects.html">the
+projects page</a> of the <code>{r}evolutionary demography</code>
+website.
+</p>
+<div id="organisms-and-populations" class="section level3">
+<h3>Organisms and populations</h3>
+<p style="text-indent: 20px">
+In this analysis, we will use data for two species that occur
+sympatrically. <em>Cypripedium parviflorum</em> and <em>Cypripedium
+candidum</em> (family Orchidaceae) are long-lived herbaceous perennials,
+native to North America and particularly common near the Great Lakes.
+They typically live in wet, calcareous wetlands on the edges of
+woodlands, with <em>C. parviflorum</em> prefering more wooded habitat
+than <em>C. candidum</em> <span class="citation">(Shefferson et al.
+2001)</span>. Individuals begin life as dust seeds, which may or may not
+germinate the year following production. Germination leads to the
+protocorm stage, a life history stage in which the individual grows
+underground in a non-photosynthetic, mycoheterotrophic state <span class="citation">(Rasmussen 1995)</span>. They may live in this state
+for several years prior to becoming a seedling, at which point they may
+or may not sprout. Maturity involves the production of flowering
+sprouts, each with several leaves and typically only a single flower,
+although an individual may produce mostly non-flowering sprouts. Most
+individuals produce only a single sprout, and vegetative dormancy is
+common and can occur for overa decade in a single individual <span class="citation">(Shefferson et al. 2018)</span>.
+</p>
+<p style="text-indent: 20px">
+Data for this study were collected from a population in northeastern
+Illinois, from 2004 to 2009 <span class="citation">(Shefferson, Mizuta,
+and Hutchings 2017)</span>. Each year at the start of the flowering
+season, all individuals at the site were located, with previously
+identified individuals identified based on their previous locations, and
+new individuals recorded via an exhaustive survey. Plant characteristics
+including the number of sprouts, which sprouts were flowering
+vs. non-flowering, and the number of flowers per sprout, were recorded
+for every individual in every year.
+</p>
+</div>
+<div id="dataset-preparation" class="section level3">
+<h3>Dataset preparation</h3>
+<p style="text-indent: 20px">
+Package <code>adapt3</code> is built to take advantage of package
+<code>lefko3</code>, which offers a general language and architecture to
+build and analyze most kinds of matrix projection models, including even
+discretized integral projection models <span class="citation">(Shefferson, Kurokawa, and Ehrlén 2021)</span>. To
+start, we will load both <code>lefko3</code> and <code>adapt3</code>,
+and also load the datasets that we will use for examples.
+</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list=</span><span class="fu">ls</span>(<span class="at">all=</span><span class="cn">TRUE</span>))</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(lefko3)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(adapt3)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">data</span>(cypa_data)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">data</span>(cypdata)</span></code></pre></div>
+<p style="text-indent: 20px">
+Let’s now take a look at the <em>C. parviflorum</em> dataset.
+</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">dim</span>(cypa_data)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt; [1] 1103   37</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">summary</span>(cypa_data)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt;       plant_id        Inf.94            Veg.94            Inf.95           Veg.95          Inf.96           Veg.96     </span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;  K NA     :  28   Min.   :0.00000   Min.   :0.00000   Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.000  </span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;  A NA     :  13   1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.000  </span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;  T NA     :  10   Median :0.00000   Median :0.00000   Median :0.0000   Median :0.000   Median :0.0000   Median :0.000  </span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt;  Willow NA:  10   Mean   :0.07253   Mean   :0.02267   Mean   :0.1732   Mean   :0.155   Mean   :0.2557   Mean   :0.282  </span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt;  X NA     :   7   3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.000  </span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;  Aspen NA :   6   Max.   :4.00000   Max.   :4.00000   Max.   :4.0000   Max.   :7.000   Max.   :6.0000   Max.   :6.000  </span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt;  (Other)  :1029                                                                                                        </span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt;      Inf.97           Veg.97          Inf.98           Veg.98           Inf.99           Veg.99           Inf.00      </span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;  Min.   :0.0000   Min.   :0.000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  </span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  </span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;  Median :0.0000   Median :0.000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000  </span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt;  Mean   :0.1333   Mean   :0.301   Mean   :0.2593   Mean   :0.2928   Mean   :0.3218   Mean   :0.2838   Mean   :0.2103  </span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0.0000   3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000  </span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;  Max.   :4.0000   Max.   :7.000   Max.   :5.0000   Max.   :5.0000   Max.   :7.0000   Max.   :4.0000   Max.   :6.0000  </span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt;                                                                                                                       </span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt;      Veg.00           Inf.01           Veg.01           Inf.02           Veg.02           Inf.03           Veg.03      </span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;  Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000  </span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000  </span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt;  Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.0000  </span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt;  Mean   :0.3554   Mean   :0.2076   Mean   :0.3772   Mean   :0.2267   Mean   :0.2937   Mean   :0.1958   Mean   :0.3699  </span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0.5000   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.0000  </span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt;  Max.   :6.0000   Max.   :5.0000   Max.   :5.0000   Max.   :6.0000   Max.   :4.0000   Max.   :6.0000   Max.   :6.0000  </span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt;                                                                                                                        </span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt;      Inf.04            Veg.04           Inf.05           Veg.05           Inf.06            Veg.06           Inf.07       </span></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a><span class="co">#&gt;  Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000  </span></span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000  </span></span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a><span class="co">#&gt;  Median :0.00000   Median :0.0000   Median :0.0000   Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000  </span></span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a><span class="co">#&gt;  Mean   :0.09791   Mean   :0.2684   Mean   :0.1233   Mean   :0.3073   Mean   :0.03626   Mean   :0.2013   Mean   :0.03264  </span></span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000  </span></span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a><span class="co">#&gt;  Max.   :4.00000   Max.   :4.0000   Max.   :6.0000   Max.   :4.0000   Max.   :3.00000   Max.   :4.0000   Max.   :3.00000  </span></span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a><span class="co">#&gt;                                                                                                                           </span></span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a><span class="co">#&gt;      Veg.07           Inf.08            Veg.08           Inf.09            Veg.09           Inf.10            Veg.10      </span></span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a><span class="co">#&gt;  Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000  </span></span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.0000  </span></span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a><span class="co">#&gt;  Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000   Median :0.0000   Median :0.00000   Median :0.0000  </span></span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a><span class="co">#&gt;  Mean   :0.1578   Mean   :0.05712   Mean   :0.1242   Mean   :0.08885   Mean   :0.1868   Mean   :0.08613   Mean   :0.1668  </span></span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.0000  </span></span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a><span class="co">#&gt;  Max.   :4.0000   Max.   :3.00000   Max.   :4.0000   Max.   :5.00000   Max.   :6.0000   Max.   :4.00000   Max.   :4.0000  </span></span>
+<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a><span class="co">#&gt;                                                                                                                           </span></span>
+<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a><span class="co">#&gt;      Inf.11           Veg.11      </span></span>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a><span class="co">#&gt;  Min.   :0.0000   Min.   :0.0000  </span></span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0.0000   1st Qu.:0.0000  </span></span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a><span class="co">#&gt;  Median :0.0000   Median :0.0000  </span></span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a><span class="co">#&gt;  Mean   :0.1342   Mean   :0.1886  </span></span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0.0000   3rd Qu.:0.0000  </span></span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a><span class="co">#&gt;  Max.   :4.0000   Max.   :4.0000  </span></span>
+<span id="cb2-51"><a href="#cb2-51" tabindex="-1"></a><span class="co">#&gt; </span></span></code></pre></div>
+<p style="text-indent: 20px">
+This dataset includes information on 1103 individuals arranged
+horizontally, by row. There are 37 variables, by column. The first
+column gives identifying information for each individual. This is
+followed by 18 sets of two columns, each named <code>Inf.XX</code> and
+<code>Veg.XX</code>, where <code>XX</code> corresponds to the year of
+observation and with years organized consecutively. Thus, columns 2-3
+refer to year 1994, columns 4-5 refer to year 1995, etc. We can see that
+we have data for 18 years here. This strictly repeating pattern allows
+us to manipulate the original dataset quickly and efficiently via
+<code>lefko3</code> (see our free online e-book called
+<a href="https://revolutionarydemography-lefko3gentle.share.connect.posit.cloud/"><em>lefko3:
+a gentle introduction</em></a> for more).
+</p>
+<p style="text-indent: 20px">
+Next let’s look at a summary of the <em>C. candidum</em> dataset.
+</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">dim</span>(cypdata)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; [1] 77 29</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">summary</span>(cypdata)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt;     plantid       patch        X               Y              censor     Inf2.04       Inf.04           Veg.04           Pod.04   </span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;  Min.   : 164.0   A:23   Min.   : 46.5   Min.   :-28.00   Min.   :1   Min.   :0    Min.   :0.0000   Min.   : 0.000   Min.   :0.0  </span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;  1st Qu.: 265.0   B:35   1st Qu.: 60.1   1st Qu.: 22.50   1st Qu.:1   1st Qu.:0    1st Qu.:0.0000   1st Qu.: 1.000   1st Qu.:0.0  </span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  Median : 455.0   C:19   Median : 91.4   Median : 75.60   Median :1   Median :0    Median :0.0000   Median : 2.000   Median :0.0  </span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;  Mean   : 669.1          Mean   : 92.9   Mean   : 55.54   Mean   :1   Mean   :0    Mean   :0.6923   Mean   : 2.923   Mean   :0.2  </span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.: 829.0          3rd Qu.:142.2   3rd Qu.: 80.10   3rd Qu.:1   3rd Qu.:0    3rd Qu.:1.0000   3rd Qu.: 4.000   3rd Qu.:0.0  </span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;  Max.   :1560.0          Max.   :173.0   Max.   :142.40   Max.   :1   Max.   :0    Max.   :8.0000   Max.   :12.000   Max.   :3.0  </span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;                                                                       NA&#39;s   :12   NA&#39;s   :12       NA&#39;s   :12       NA&#39;s   :12   </span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;     Inf2.05            Inf.05           Veg.05          Pod.05          Inf2.06       Inf.06            Veg.06           Pod.06      </span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;  Min.   :0.00000   Min.   : 0.000   Min.   :0.000   Min.   :0.0000   Min.   :0    Min.   : 0.0000   Min.   : 0.000   Min.   :0.0000  </span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0.00000   1st Qu.: 0.000   1st Qu.:1.000   1st Qu.:0.0000   1st Qu.:0    1st Qu.: 0.0000   1st Qu.: 1.000   1st Qu.:0.0000  </span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  Median :0.00000   Median : 0.000   Median :1.000   Median :0.0000   Median :0    Median : 0.0000   Median : 2.000   Median :0.0000  </span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt;  Mean   :0.04478   Mean   : 1.537   Mean   :2.134   Mean   :0.6567   Mean   :0    Mean   : 0.9016   Mean   : 2.213   Mean   :0.3934  </span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0.00000   3rd Qu.: 2.000   3rd Qu.:3.000   3rd Qu.:1.0000   3rd Qu.:0    3rd Qu.: 1.0000   3rd Qu.: 3.000   3rd Qu.:0.0000  </span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;  Max.   :1.00000   Max.   :18.000   Max.   :9.000   Max.   :7.0000   Max.   :0    Max.   :18.0000   Max.   :13.000   Max.   :4.0000  </span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt;  NA&#39;s   :10        NA&#39;s   :10       NA&#39;s   :10      NA&#39;s   :10       NA&#39;s   :16   NA&#39;s   :16        NA&#39;s   :16       NA&#39;s   :16      </span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt;  Inf2.07            Inf.07           Veg.07           Pod.07          Inf2.08       Inf.08            Veg.08          Pod.08      </span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#&gt;  Mode:logical   Min.   :0.0000   Min.   : 0.000   Min.   :0.0000   Min.   :0    Min.   : 0.0000   Min.   : 0.00   Min.   :0.0000  </span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#&gt;  NA&#39;s:77        1st Qu.:0.0000   1st Qu.: 1.000   1st Qu.:0.0000   1st Qu.:0    1st Qu.: 0.0000   1st Qu.: 1.00   1st Qu.:0.0000  </span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#&gt;                 Median :0.0000   Median : 2.000   Median :0.0000   Median :0    Median : 0.0000   Median : 2.00   Median :0.0000  </span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt;                 Mean   :0.6271   Mean   : 2.627   Mean   :0.0678   Mean   :0    Mean   : 0.8868   Mean   : 2.83   Mean   :0.1509  </span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt;                 3rd Qu.:1.0000   3rd Qu.: 4.000   3rd Qu.:0.0000   3rd Qu.:0    3rd Qu.: 1.0000   3rd Qu.: 4.00   3rd Qu.:0.0000  </span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt;                 Max.   :7.0000   Max.   :13.000   Max.   :1.0000   Max.   :0    Max.   :11.0000   Max.   :13.00   Max.   :2.0000  </span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt;                 NA&#39;s   :18       NA&#39;s   :18       NA&#39;s   :18       NA&#39;s   :24   NA&#39;s   :24        NA&#39;s   :24      NA&#39;s   :24      </span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt;     Inf2.09       Inf.09           Veg.09           Pod.09     </span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt;  Min.   :0    Min.   : 0.000   Min.   : 0.000   Min.   :0.000  </span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt;  1st Qu.:0    1st Qu.: 0.000   1st Qu.: 1.000   1st Qu.:0.000  </span></span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt;  Median :0    Median : 1.000   Median : 1.000   Median :1.000  </span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#&gt;  Mean   :0    Mean   : 1.833   Mean   : 2.233   Mean   :1.133  </span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#&gt;  3rd Qu.:0    3rd Qu.: 2.000   3rd Qu.: 3.000   3rd Qu.:1.000  </span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#&gt;  Max.   :0    Max.   :11.000   Max.   :10.000   Max.   :8.000  </span></span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#&gt;  NA&#39;s   :17   NA&#39;s   :17       NA&#39;s   :17       NA&#39;s   :17</span></span></code></pre></div>
+<p style="text-indent: 20px">
+This is a much smaller dataset, which makes sense given that this
+population is much smaller than the <em>C. parviflorum</em> population.
+There are data on 77 individuals across six years, and 29 total
+variables, each named <code>Inf2.XX</code>, <code>Inf.XX</code> and
+<code>Veg.XX</code>, where <code>XX</code> corresponds to the year of
+observation and with years organized consecutively.
+</p>
+</div>
+<div id="community-projection-with-pre-existing-mpms" class="section level3">
+<h3>Community projection with pre-existing MPMs</h3>
+<p style="text-indent: 20px">
+Our example will focus on developing MPMs for these populations, and
+using these MPMs to run community projections in which the two species
+exhibit density dependent responses in their vital rates. Because we use
+existing MPMs, the process generally proceeds quite quickly, and only
+slows when using giant matrices such as might occur in historical MPM
+projection. To make this process easier, we will develop a relatively
+small, stage-based empirical MPM
+</p>
+<p style="text-indent: 20px">
+Per <code>lefko3</code> terminology, we will develop a stageframe that
+encapsulates our life history model by noting all of the relevant
+characteristics of each stage, as below. Because these species share
+very similar life histories, we will use the same life history for both.
+Note, however, that we do not need to do this, and can use completely
+different life histories and associated stageframes.
+</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>sizevector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="fl">2.5</span>, <span class="fl">4.5</span>, <span class="dv">8</span>, <span class="fl">17.5</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>stagevector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;XSm&quot;</span>, <span class="st">&quot;Sm&quot;</span>, <span class="st">&quot;Md&quot;</span>, <span class="st">&quot;Lg&quot;</span>, <span class="st">&quot;XLg&quot;</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>repvector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>obsvector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>matvector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>immvector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>propvector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>indataset <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>binvec <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="fl">2.5</span>, <span class="dv">7</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>cypframe_raw <span class="ot">&lt;-</span> <span class="fu">sf_create</span>(<span class="at">sizes =</span> sizevector, <span class="at">stagenames =</span> stagevector,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="at">repstatus =</span> repvector, <span class="at">obsstatus =</span> obsvector, <span class="at">matstatus =</span> matvector,</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  <span class="at">propstatus =</span> propvector, <span class="at">immstatus =</span> immvector, <span class="at">indataset =</span> indataset,</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>  <span class="at">binhalfwidth =</span> binvec)</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>cypframe_raw</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt;   stage size size_b size_c min_age max_age repstatus obsstatus propstatus immstatus matstatus indataset binhalfwidth_raw sizebin_min</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; 1    SD  0.0     NA     NA      NA      NA         0         0          1         0         0         0              0.0         0.0</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; 2    P1  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0         0.0</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt; 3    SL  0.0     NA     NA      NA      NA         0         0          0         1         0         0              0.0         0.0</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt; 4     D  0.0     NA     NA      NA      NA         0         0          0         0         1         1              0.5        -0.5</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt; 5   XSm  1.0     NA     NA      NA      NA         1         1          0         0         1         1              0.5         0.5</span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt; 6    Sm  2.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0         1.5</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt; 7    Md  4.5     NA     NA      NA      NA         1         1          0         0         1         1              1.0         3.5</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt; 8    Lg  8.0     NA     NA      NA      NA         1         1          0         0         1         1              2.5         5.5</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt; 9   XLg 17.5     NA     NA      NA      NA         1         1          0         0         1         1              7.0        10.5</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt;   sizebin_max sizebin_center sizebin_width binhalfwidthb_raw sizebinb_min sizebinb_max sizebinb_center sizebinb_width</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; 1         0.0            0.0             0                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; 2         0.0            0.0             0                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt; 3         0.0            0.0             0                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt; 4         0.5            0.0             1                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt; 5         1.5            1.0             1                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt; 6         3.5            2.5             2                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt; 7         5.5            4.5             2                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt; 8        10.5            8.0             5                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt; 9        24.5           17.5            14                NA           NA           NA              NA             NA</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt;   binhalfwidthc_raw sizebinc_min sizebinc_max sizebinc_center sizebinc_width group       comments</span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt; 1                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; 2                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt; 3                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt; 4                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt; 5                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt; 6                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt; 7                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt; 8                NA           NA           NA              NA             NA     0 No description</span></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt; 9                NA           NA           NA              NA             NA     0 No description</span></span></code></pre></div>
+<p style="text-indent: 20px">
+Next we will create our verticalized datasets, in which our horizontal
+datasets are restructured to have all data for each individual split
+into blocks of three consecutive monitoring occasions, as below. Note
+that, because we are using the <code>stageassign</code> argument, we can
+have <code>R</code> assign stages to each individual in each occasion.
+Note also our use of the <code>summary_hfv()</code> function, which
+provides specialized, useful output for this style of data frame. First,
+the <em>C.candidum</em> dataset.
+</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>cycaraw_v1 <span class="ot">&lt;-</span> <span class="fu">verticalize3</span>(<span class="at">data =</span> cypdata, <span class="at">noyears =</span> <span class="dv">6</span>, <span class="at">firstyear =</span> <span class="dv">2004</span>,</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">patchidcol =</span> <span class="st">&quot;patch&quot;</span>, <span class="at">individcol =</span> <span class="st">&quot;plantid&quot;</span>, <span class="at">blocksize =</span> <span class="dv">4</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">sizeacol =</span> <span class="st">&quot;Inf2.04&quot;</span>, <span class="at">sizebcol =</span> <span class="st">&quot;Inf.04&quot;</span>, <span class="at">sizeccol =</span> <span class="st">&quot;Veg.04&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">repstracol =</span> <span class="st">&quot;Inf.04&quot;</span>, <span class="at">repstrbcol =</span> <span class="st">&quot;Inf2.04&quot;</span>, <span class="at">fecacol =</span> <span class="st">&quot;Pod.04&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">stageassign =</span> cypframe_raw, <span class="at">stagesize =</span> <span class="st">&quot;sizeadded&quot;</span>, <span class="at">NAas0 =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">NRasRep =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="fu">summary_hfv</span>(cycaraw_v1)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; This hfv dataset contains 320 rows, 57 variables, 1 population, </span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; 3 patches, 74 individuals, and 5 time steps.</span></span></code></pre></div>
+<p style="text-indent: 20px">
+Here we find that our new dataset includes 320 rows, 57 variables,
+taking blocks of 3 consecutive years at a shot and showing the fate of
+each individual across that time. Let’s do the same for <em>C.
+parviflorum</em>.
+</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>cyparaw_v1 <span class="ot">&lt;-</span> <span class="fu">verticalize3</span>(<span class="at">data =</span> cypa_data, <span class="at">noyears =</span> <span class="dv">18</span>, <span class="at">firstyear =</span> <span class="dv">1994</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">individcol =</span> <span class="st">&quot;plant_id&quot;</span>, <span class="at">blocksize =</span> <span class="dv">2</span>, <span class="at">sizeacol =</span> <span class="st">&quot;Inf.94&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">sizebcol =</span> <span class="st">&quot;Veg.94&quot;</span>, <span class="at">repstracol =</span> <span class="st">&quot;Inf.94&quot;</span>, <span class="at">fecacol =</span> <span class="st">&quot;Inf.94&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">stageassign =</span> cypframe_raw, <span class="at">stagesize =</span> <span class="st">&quot;sizeadded&quot;</span>, <span class="at">NAas0 =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">NRasRep =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="fu">summary_hfv</span>(cyparaw_v1)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; This hfv dataset contains 6871 rows, 51 variables, 1 population, </span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; 1 patch, 1025 individuals, and 17 time steps.</span></span></code></pre></div>
+<p style="text-indent: 20px">
+This is a much bigger dataset, as we can see, in terms of rows,
+variables, individuals, and years. Now let’s create our MPMs. See our
+online book,
+<a href="https://revolutionarydemography-lefko3gentle.share.connect.posit.cloud/">lefko3:
+a gentle introduction</a>, for further material on how to construct MPMs
+properly.
+</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>cypsupp2r <span class="ot">&lt;-</span> <span class="fu">supplemental</span>(<span class="at">stage3 =</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;XSm&quot;</span>, <span class="st">&quot;Sm&quot;</span>, <span class="st">&quot;SD&quot;</span>,</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="st">&quot;P1&quot;</span>),</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">stage2 =</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;rep&quot;</span>, <span class="st">&quot;rep&quot;</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">eststage3 =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;XSm&quot;</span>, <span class="st">&quot;Sm&quot;</span>, <span class="cn">NA</span>, <span class="cn">NA</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">eststage2 =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="st">&quot;XSm&quot;</span>, <span class="st">&quot;XSm&quot;</span>, <span class="st">&quot;XSm&quot;</span>, <span class="cn">NA</span>, <span class="cn">NA</span>),</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">givenrate =</span> <span class="fu">c</span>(<span class="fl">0.10</span>, <span class="fl">0.20</span>, <span class="fl">0.25</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">multiplier =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="dv">5000</span>, <span class="dv">5000</span>),</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">type =</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">3</span>),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">stageframe =</span> cypframe_raw, <span class="at">historical =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; Warning: NA values in argument multiplier will be treated as 1 values.</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>cycamatrix2r <span class="ot">&lt;-</span> <span class="fu">rlefko2</span>(<span class="at">data =</span> cycaraw_v1, <span class="at">stageframe =</span> cypframe_raw, </span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">year =</span> <span class="st">&quot;all&quot;</span>, <span class="at">stages =</span> <span class="fu">c</span>(<span class="st">&quot;stage3&quot;</span>, <span class="st">&quot;stage2&quot;</span>, <span class="st">&quot;stage1&quot;</span>),</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  <span class="at">size =</span> <span class="fu">c</span>(<span class="st">&quot;size3added&quot;</span>, <span class="st">&quot;size2added&quot;</span>), <span class="at">supplement =</span> cypsupp2r,</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>  <span class="at">yearcol =</span> <span class="st">&quot;year2&quot;</span>, <span class="at">indivcol =</span> <span class="st">&quot;individ&quot;</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>cypamatrix2r <span class="ot">&lt;-</span> <span class="fu">rlefko2</span>(<span class="at">data =</span> cyparaw_v1, <span class="at">stageframe =</span> cypframe_raw, </span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>  <span class="at">year =</span> <span class="st">&quot;all&quot;</span>, <span class="at">stages =</span> <span class="fu">c</span>(<span class="st">&quot;stage3&quot;</span>, <span class="st">&quot;stage2&quot;</span>, <span class="st">&quot;stage1&quot;</span>),</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>  <span class="at">size =</span> <span class="fu">c</span>(<span class="st">&quot;size3added&quot;</span>, <span class="st">&quot;size2added&quot;</span>), <span class="at">supplement =</span> cypsupp2r,</span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>  <span class="at">yearcol =</span> <span class="st">&quot;year2&quot;</span>, <span class="at">patchcol =</span> <span class="st">&quot;patchid&quot;</span>, <span class="at">indivcol =</span> <span class="st">&quot;individ&quot;</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="fu">writeLines</span>(<span class="st">&quot;Cypripedium candidum&quot;</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt; Cypripedium candidum</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="fu">summary</span>(cycamatrix2r)</span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt; This ahistorical lefkoMat object contains 5 matrices.</span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt; Each matrix is square with 9 rows and columns, and a total of 81 elements.</span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; A total of 115 survival transitions were estimated, with 23 per matrix.</span></span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="co">#&gt; A total of 42 fecundity transitions were estimated, with 8.4 per matrix.</span></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt; This lefkoMat object covers 1 population, 1 patch, and 5 time steps.</span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="co">#&gt; The dataset contains a total of 74 unique individuals and 320 unique transitions.</span></span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="co">#&gt; Survival probability sum check (each matrix represented by column in order):</span></span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="co">#&gt;          [,1]  [,2]  [,3]  [,4]  [,5]</span></span>
+<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a><span class="co">#&gt; Min.    0.000 0.250 0.250 0.250 0.250</span></span>
+<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a><span class="co">#&gt; 1st Qu. 0.300 0.870 0.818 0.800 0.857</span></span>
+<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a><span class="co">#&gt; Median  0.957 0.941 1.000 0.900 0.900</span></span>
+<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a><span class="co">#&gt; Mean    0.708 0.803 0.804 0.789 0.801</span></span>
+<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a><span class="co">#&gt; 3rd Qu. 1.000 1.000 1.000 1.000 1.000</span></span>
+<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a><span class="co">#&gt; Max.    1.000 1.000 1.000 1.000 1.000</span></span>
+<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a><span class="co">#&gt; Stages without connections leading to the rest of the life cycle found in matrices: 1</span></span>
+<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a><span class="fu">writeLines</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Cypripedium parviflorum&quot;</span>)</span>
+<span id="cb7-47"><a href="#cb7-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-48"><a href="#cb7-48" tabindex="-1"></a><span class="co">#&gt; Cypripedium parviflorum</span></span>
+<span id="cb7-49"><a href="#cb7-49" tabindex="-1"></a><span class="fu">summary</span>(cypamatrix2r)</span>
+<span id="cb7-50"><a href="#cb7-50" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-51"><a href="#cb7-51" tabindex="-1"></a><span class="co">#&gt; This ahistorical lefkoMat object contains 17 matrices.</span></span>
+<span id="cb7-52"><a href="#cb7-52" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-53"><a href="#cb7-53" tabindex="-1"></a><span class="co">#&gt; Each matrix is square with 9 rows and columns, and a total of 81 elements.</span></span>
+<span id="cb7-54"><a href="#cb7-54" tabindex="-1"></a><span class="co">#&gt; A total of 371 survival transitions were estimated, with 21.824 per matrix.</span></span>
+<span id="cb7-55"><a href="#cb7-55" tabindex="-1"></a><span class="co">#&gt; A total of 120 fecundity transitions were estimated, with 7.059 per matrix.</span></span>
+<span id="cb7-56"><a href="#cb7-56" tabindex="-1"></a><span class="co">#&gt; This lefkoMat object covers 1 population, 1 patch, and 17 time steps.</span></span>
+<span id="cb7-57"><a href="#cb7-57" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-58"><a href="#cb7-58" tabindex="-1"></a><span class="co">#&gt; The dataset contains a total of 1025 unique individuals and 6871 unique transitions.</span></span>
+<span id="cb7-59"><a href="#cb7-59" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-60"><a href="#cb7-60" tabindex="-1"></a><span class="co">#&gt; Survival probability sum check (each matrix represented by column in order):</span></span>
+<span id="cb7-61"><a href="#cb7-61" tabindex="-1"></a><span class="co">#&gt;          [,1]  [,2]  [,3]  [,4]  [,5]  [,6]  [,7]  [,8]  [,9] [,10] [,11] [,12] [,13] [,14] [,15] [,16] [,17]</span></span>
+<span id="cb7-62"><a href="#cb7-62" tabindex="-1"></a><span class="co">#&gt; Min.    0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000</span></span>
+<span id="cb7-63"><a href="#cb7-63" tabindex="-1"></a><span class="co">#&gt; 1st Qu. 0.250 0.300 0.300 0.300 0.250 0.300 0.300 0.300 0.300 0.300 0.250 0.300 0.250 0.250 0.250 0.300 0.250</span></span>
+<span id="cb7-64"><a href="#cb7-64" tabindex="-1"></a><span class="co">#&gt; Median  0.500 0.841 0.782 0.862 0.855 0.773 0.771 0.833 0.803 0.792 0.758 0.760 0.686 0.763 0.750 0.728 0.667</span></span>
+<span id="cb7-65"><a href="#cb7-65" tabindex="-1"></a><span class="co">#&gt; Mean    0.483 0.667 0.623 0.662 0.574 0.610 0.637 0.678 0.644 0.641 0.558 0.642 0.514 0.543 0.542 0.562 0.516</span></span>
+<span id="cb7-66"><a href="#cb7-66" tabindex="-1"></a><span class="co">#&gt; 3rd Qu. 0.733 0.909 0.826 0.880 0.904 0.787 0.875 1.000 0.835 0.883 0.952 0.875 0.829 0.806 0.825 0.755 0.788</span></span>
+<span id="cb7-67"><a href="#cb7-67" tabindex="-1"></a><span class="co">#&gt; Max.    1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000 1.000</span></span>
+<span id="cb7-68"><a href="#cb7-68" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-69"><a href="#cb7-69" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-70"><a href="#cb7-70" tabindex="-1"></a><span class="co">#&gt; Stages without connections leading to the rest of the life cycle found in matrices: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17</span></span></code></pre></div>
+<p style="text-indent: 20px">
+The summary information that we see is full of interesting information.
+For example, we see that there are incomplete life cycles in some years
+in the two populations. This suggests that there are years in which
+certain stages do not appear. It is not the end of the world, though.
+Let’s keep going and see what our analyses suggest.
+</p>
+<p style="text-indent: 20px">
+Our next step will be to create a list with our MPMs, where each element
+of the list is a single set of MPMs. We can accomplish this as follows.
+</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>cyp_mpm_list <span class="ot">&lt;-</span> <span class="fu">list</span>(cycamatrix2r, cypamatrix2r)</span></code></pre></div>
+<p style="text-indent: 20px">
+Now that we have our core MPM list, we will need to clarify some of the
+assumptions of the projection. First, let’s set up starting vectors for
+each population. We will start our populations with specific numbers of
+dormant seeds, protocorms, and seedlings, but with more of them in the
+case of <em>C. parviflorum</em>. We will also use the
+<code>start_input()</code> function in package <code>lefko3</code> for
+this purpose, and combine the results in a list with the same order as
+our MP{M list. Users should consider the starting vector carefully, as
+the starting condition of the community impacts its trajectory in
+projection.
+</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>cyca2_start <span class="ot">&lt;-</span> <span class="fu">start_input</span>(cycamatrix2r, <span class="at">stage2 =</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>),</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">value =</span> <span class="fu">c</span>(<span class="dv">500</span>, <span class="dv">100</span>, <span class="dv">200</span>))</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>cypa2_start <span class="ot">&lt;-</span> <span class="fu">start_input</span>(cypamatrix2r, <span class="at">stage2 =</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>),</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">value =</span> <span class="fu">c</span>(<span class="dv">5000</span>, <span class="dv">1000</span>, <span class="dv">2000</span>))</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>cyp_start_list <span class="ot">&lt;-</span> <span class="fu">list</span>(cyca2_start, cypa2_start)</span></code></pre></div>
+<p style="text-indent: 20px">
+Next we need to clarify how density dependence will operate on these
+populations. In herbaceous perennial plants, the germination stage is
+most commonly negatively density dependent. In orchids, germination may
+be from a fresh seed, or from a previously dormant seed, and we will
+assume density dependence in both. Determining the exact nature and
+proper parameterization of density dependence is too great a topic for
+this vignette, and so we utilize the following two-parameter Ricker
+function-based approach, which we know works in this case based on our
+own previous studies. Note that we will also toss this into a list, but
+essentially replicate it into the list to make sure that both
+populations use it.
+</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>cyp2_dv <span class="ot">&lt;-</span> <span class="fu">density_input</span>(cypamatrix2r, <span class="at">stage3 =</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>),</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="at">stage2 =</span> <span class="fu">c</span>(<span class="st">&quot;rep&quot;</span>, <span class="st">&quot;rep&quot;</span>), <span class="at">style =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">alpha =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">1.2</span>),</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">beta =</span> <span class="fu">c</span>(<span class="fl">1.0</span>, <span class="fl">2.0</span>), <span class="at">type =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>))</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>cyp_dv_list <span class="ot">&lt;-</span> <span class="fu">list</span>(cyp2_dv, cyp2_dv)</span></code></pre></div>
+<p style="text-indent: 20px">
+Our next step will be to build an equivalence data frame. This data
+frame tells <code>R</code> how different stages and different species
+relate to one another in terms of density dependence. If this structure
+is left out of the projection, then <code>R</code> will assume that each
+individual of any stage of any species is essentially equal to any other
+individual of any stage of any species. In our case, we wish to specify
+that dormant seeds do not affect the density dependence experienced by
+the populations. For this purpose, we will use the
+<code>equiv_input</code> function.
+</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>cyp_eq <span class="ot">&lt;-</span> <span class="fu">equiv_input</span>(cycamatrix2r,</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">stage2 =</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;XSm&quot;</span>, <span class="st">&quot;Sm&quot;</span>, <span class="st">&quot;Md&quot;</span>, <span class="st">&quot;Lg&quot;</span>, <span class="st">&quot;XLg&quot;</span>),</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="at">value =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>eq_list <span class="ot">&lt;-</span> <span class="fu">list</span>(cyp_eq, cyp_eq)</span></code></pre></div>
+<p style="text-indent: 20px">
+Finally, we can run our community projection. We do so as follows,
+projecting the population forward 100 years.
+</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>cyp_comm_proj <span class="ot">&lt;-</span> <span class="fu">project3</span>(<span class="at">mpms =</span> cyp_mpm_list, <span class="at">starts =</span> cyp_start_list,</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="at">density =</span> cyp_dv_list, <span class="at">equivalence =</span> eq_list, <span class="at">times =</span> <span class="dv">100</span>, <span class="at">integeronly =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="fu">summary</span>(cyp_comm_proj)</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co">#&gt; The input adaptProj object covers 2 populations, 101 projected steps and 1 projected replicate.</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; The number of replicates with population size above the threshold size of 1 is as in</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt; the following matrix, with populations given by row and milepost times given by column:</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co">#&gt; $milepost_sums</span></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co">#&gt;      1 25 50 75 101</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co">#&gt; [1,] 1  1  0  0   0</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="co">#&gt; [2,] 1  1  1  0   0</span></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="co">#&gt; $extinction_times</span></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span></code></pre></div>
+<p style="text-indent: 20px">
+We can see that our projection did not predict extinction in <em>C.
+candidum</em>, but it did in <em>C. parviflorum</em>. Let’s take a look
+at a graph of the results, showing the full population sizes over time,
+as well as the aggregate community density adjusted for stage
+equivalence (in bold).
+</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">plot</span>(cyp_comm_proj)</span></code></pre></div>
+<div class="float">
+<img role="img" aria-label="Figure C1. Projected population sizes for Cypripedium candidum (solid black) and C. parviflorum (dashed red)" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfgAAAH4CAYAAACmKP9/AAAEDmlDQ1BrQ0dDb2xvclNwYWNlR2VuZXJpY1JHQgAAOI2NVV1oHFUUPpu5syskzoPUpqaSDv41lLRsUtGE2uj+ZbNt3CyTbLRBkMns3Z1pJjPj/KRpKT4UQRDBqOCT4P9bwSchaqvtiy2itFCiBIMo+ND6R6HSFwnruTOzu5O4a73L3PnmnO9+595z7t4LkLgsW5beJQIsGq4t5dPis8fmxMQ6dMF90A190C0rjpUqlSYBG+PCv9rt7yDG3tf2t/f/Z+uuUEcBiN2F2Kw4yiLiZQD+FcWyXYAEQfvICddi+AnEO2ycIOISw7UAVxieD/Cyz5mRMohfRSwoqoz+xNuIB+cj9loEB3Pw2448NaitKSLLRck2q5pOI9O9g/t/tkXda8Tbg0+PszB9FN8DuPaXKnKW4YcQn1Xk3HSIry5ps8UQ/2W5aQnxIwBdu7yFcgrxPsRjVXu8HOh0qao30cArp9SZZxDfg3h1wTzKxu5E/LUxX5wKdX5SnAzmDx4A4OIqLbB69yMesE1pKojLjVdoNsfyiPi45hZmAn3uLWdpOtfQOaVmikEs7ovj8hFWpz7EV6mel0L9Xy23FMYlPYZenAx0yDB1/PX6dledmQjikjkXCxqMJS9WtfFCyH9XtSekEF+2dH+P4tzITduTygGfv58a5VCTH5PtXD7EFZiNyUDBhHnsFTBgE0SQIA9pfFtgo6cKGuhooeilaKH41eDs38Ip+f4At1Rq/sjr6NEwQqb/I/DQqsLvaFUjvAx+eWirddAJZnAj1DFJL0mSg/gcIpPkMBkhoyCSJ8lTZIxk0TpKDjXHliJzZPO50dR5ASNSnzeLvIvod0HG/mdkmOC0z8VKnzcQ2M/Yz2vKldduXjp9bleLu0ZWn7vWc+l0JGcaai10yNrUnXLP/8Jf59ewX+c3Wgz+B34Df+vbVrc16zTMVgp9um9bxEfzPU5kPqUtVWxhs6OiWTVW+gIfywB9uXi7CGcGW/zk98k/kmvJ95IfJn/j3uQ+4c5zn3Kfcd+AyF3gLnJfcl9xH3OfR2rUee80a+6vo7EK5mmXUdyfQlrYLTwoZIU9wsPCZEtP6BWGhAlhL3p2N6sTjRdduwbHsG9kq32sgBepc+xurLPW4T9URpYGJ3ym4+8zA05u44QjST8ZIoVtu3qE7fWmdn5LPdqvgcZz8Ww8BWJ8X3w0PhQ/wnCDGd+LvlHs8dRy6bLLDuKMaZ20tZrqisPJ5ONiCq8yKhYM5cCgKOu66Lsc0aYOtZdo5QCwezI4wm9J/v0X23mlZXOfBjj8Jzv3WrY5D+CsA9D7aMs2gGfjve8ArD6mePZSeCfEYt8CONWDw8FXTxrPqx/r9Vt4biXeANh8vV7/+/16ffMD1N8AuKD/A/8leAvFY9bLAAAAOGVYSWZNTQAqAAAACAABh2kABAAAAAEAAAAaAAAAAAACoAIABAAAAAEAAAH4oAMABAAAAAEAAAH4AAAAAAROaeoAAEAASURBVHgB7N0HeFRV/j7wN713UuiQBAi9SF+liIAKtkVEUQHXyrq4FHddsaO/v7qrIroWxBUrNlSUoiAICtIUQQmhF0MLKaT3Mv/7PXEmCcnAZEpyZ+a9zxMyc8u5537OhO/cc0/xMGgLuFCAAhSgAAUo4FICni51NbwYClCAAhSgAAWUAAM8PwgUoAAFKEABFxRggHfBQuUlUYACFKAABRjg+RmgAAUoQAEKuKAAA7wLFioviQIUoAAFKMAAz88ABShAAQpQwAUFGOBdsFB5SRSgAAUoQAEGeH4GKEABClCAAi4owADvgoXKS6IABShAAQowwPMzQAEKUIACFHBBAQZ4FyxUXhIFKEABClCAAZ6fAQpQgAIUoIALCjDAu2Ch8pIoQAEKUIACDPD8DFCAAhSgAAVcUIAB3gULlZdEAQpQgAIUYIDnZ4ACFKAABSjgggIM8C5YqLwkClCAAhSgAAM8PwMUoAAFKEABFxRggHfBQuUlUYACFKAABRjg+RmgAAUoQAEKuKAAA7wLFioviQIUoAAFKMAAz88ABShAAQpQwAUFGOBdsFB5SRSgAAUoQAEGeH4GKEABClCAAi4owADvgoXKS6IABShAAQowwPMzQAEKUIACFHBBAQZ4FyxUXhIFKEABClCAAZ6fAQpQgAIUoIALCjDAu2Ch8pIoQAEKUIACDPD8DFCAAhSgAAVcUIAB3gULlZdEAQpQgAIUYIDnZ4ACFKAABSjgggIM8C5YqLwkClCAAhSgAAM8PwMUoAAFKEABFxRggHfBQuUlUYACFKAABRjg+RmgAAUoQAEKuKAAA7wLFioviQIUoAAFKMAAz88ABShAAQpQwAUFGOBdsFB5SRSgAAUoQAEGeH4GKEABClCAAi4owADvgoXKS6IABShAAQowwPMzQAEKUIACFHBBAQZ4FyxUXhIFKEABClCAAZ6fAQpQgAIUoIALCjDAu2Ch8pIoQAEKUIACDPD8DFCAAhSgAAVcUIAB3gULlZdEAQpQgAIUYIDnZ4ACFKAABSjgggIM8C5YqLwkClCAAhSgAAM8PwMUoAAFKEABFxRggHfBQuUlUYACFKAABRjg+RmgAAUoQAEKuKAAA7wLFioviQIUoAAFKMAAz88ABShAAQpQwAUFGOBdsFB5SRSgAAUoQAEGeH4GKEABClCAAi4owADvgoXKS6IABShAAQp4uxPB0qVLUVFR4U6XzGulAAUoQIFmFIiJicGll17aLDnwMGhLs5y5iU/62Wef4fnnn8fUqVNtPvOxskgUVfmim3+azWkxAQpQgAIUcF2Bl156CR988AH69OnT5BfpNnfwcuc+ZcoU3H333U2OzBNSgAIUoIB7Chw4cABVVVXNcvF8Bt8s7DwpBShAAQpQwLECDPBW+BaVVSG3uNKKI3kIBShAAQpQoGkEGOCtcP71VBnW7C+24kgeQgEKUIACFGgaAbd5Bm9PziEd/O2ZHNOiAAUoQAEK2F2Ad/B2J2WCFKAABShAgeYXYIC3ogyKy6uQw2fwVsjxEApQgAIUaCoBBngrpPeklWHV3iIrjuQhFKAABShAgaYR4DN4K5z7t/WH/HChAAUoQAEK6FWAd/B6LRnmiwIUoAAFKGCDAAO8FXglfAZvhRoPoQAFKECBphRggLdCe196Ob5KLrTiSB5CAQpQgAIUaBoBBngLnLdt24b4+HhkZWWpvfu09sOUAaEWHMldKEABClCAAs0jwABvgXthYSGOHj2K5ORkC/bmLhSgAAUoQIHmF2CAt6AMOnbsqPaSIC+LPIPPLuJY9AqD/1CAAhSggC4FGOAtKJY2bdrAy8tL3cXL7oezKvD5bj6Dt4COu1CAAhSgQDMJsB+8BfA+Pj6QIH/s2DG1d/c4X8gPFwpQgAIUoIBeBXgHb2HJSDW9sYrewkO4GwUoQAEKUKDZBBjgLaTv0KGDKcCXVhiQVchn8BbScTcKUIACFGgGAQZ4C9HlDv7UqVMoKyvDsbPlWPprgYVHcjcKUIACFKBA0wvwGbyF5hLgq6qqkJqaii6JiegSw2fwFtJxNwpQgAIUaAYB3sFbiC5V9LLwObxi4D8UoAAFKKBzAQZ4CwvI2BdeWtKXVfIZvIVs3I0CFKAABZpJgAHeQvhWrVrB19dX3cGfya/EOz/lW3gkd6MABShAAQo0vQADvIXmnp6eaNeunQrwbcO9MXtEuIVHcjcKUIACFKBA0wswwDfCnH3hG4HFXSlAAQpQoFkFGOAbwS8BXp7BV1YZcCa/ohFHclcKUIACFKBA0wowwDfCWwL8mTNnkJ1fhFc25TXiSO5KAQpQgAIUaFoBBvhGeBu7yqWf/B3zrohsxJHclQIUoAAFKNC0AgzwjfCu3VWuEYdxVwpQgAIUoECTCzDAN4LcGOBlsJtTuXwG3wg67koBClCAAk0soLsAX1FRgezs7CZmsOx0MTExCAwMVF3lFmzMRbk24A0XClCAAhSggB4FdBHgZQKXuXPnom3btmowmcjISAQFBaFHjx5YvHixrtzkOby0pH92fBR8vDx0lTdmhgIUoAAFKGAU0MVkMzNmzEBaWhpWrlyJ+Ph4Fdzz8vKQkpKCmTNnoqSkBNOnTzfmuVl/SzU9x6Nv1iLgySlAAQpQwAIBXdzBr1mzBgsXLkSvXr0QHBwMDw8PhIWFYciQIViwYAGWLVtmwaU0zS5yBy8BXvrBS394LhSgAAUoQAE9CugiwEtV/Pr16xv0WbFiBaKjoxvc1hwr5Q5e2ggs3JSFrKKq5sgCz0kBClCAAhS4oIAuqujnzZuHyZMnY/78+UhISEBoaChyc3Oxd+9eSKO7VatWXfBCmmoHY0v6a1qlISY4tqlOy/NQgAIUoAAFGiWgiwDft29f7Ny5E1u2bFEN2OR5vNy1y3P3YcOGqSr7Rl2VA3c2DnYj1fS9e/d24JmYNAUoQAEKUMB6AV0EeMm+v78/Ro4cqe7Y8/PzERERYf1VOfBI4x18ypFTuKLCAD9vtqR3IDeTpgAFKEABKwV08QzembrJyRcPaQD4Y3owjp0tt5Kdh1GAAhSgAAUcK6CLO3hn6iYnxSHV9F4pS9ElZopjS4epU4ACFKAABawU0MUdvDN1kxNn9oW38tPGwyhAAQpQoMkEdBHgnambnJSMBPjf086iqIzd5Jrsk8oTUYACFKBAowR0UUVvr25y0q3u0KFDDQJ8//33ahz5Bjc2cmXLli1R1WYofjqah+Fdwht5NHenAAUoQAEKOF5AFwG+dje5w4cPIzU1FQMGDGh0N7msrCwcPHiwQbXk5GS7BXgZJ79w11J0i3y1wXNxJQUoQAEKUKC5BXQR4KUVvdzFv/feezh58iQMBoMKxlIVPmfOHNx2220WOV188cWQn4aW48ePq/HuG9rW2HUyo5wshYWFuhplr7HXwf0pQAEKUMB1BXQR4J2tFb3cwXv4hSAjtwgdXPezwSujAAUoQAEnFtBFIztna0UvAd6/w0BsO85+8E782WfWKUABCri0gC4CvLO1opcAX7x/HXoEZ7v0h4MXRwEKUIACziugiyp6e7Wib6pikAAvizyD50IBClCAAhTQo4AuAnztVvTHjh1TjeH0OtmMFKJ6Bu8biIy8Ej2WKfNEAQpQgAIUgC4CvJSDcbIZY5lUVlaqO2QPD/1N5iKt6H1ik7AjKxjTjBnmbwpQgAIUoICOBHTxDL68vBxPP/00/vKXv+CXX37BRx99hNjYWISHh+PPf/4zSktLdURWfQdfdvwXJHk0PKiOrjLLzFCAAhSggFsK6CLA/+Mf/8CGDRtUUJ80aRKeeOIJfPbZZ2rQmoqKCixbtkxXhcNn8LoqDmaGAhSgAAUaENBFFf2qVavw888/IzQ0FAEBAUhPT8fw4cNVdp966ik8/PDDkMCvl0UeJ8DbD5mFlXrJEvNBAQpQgAIUqCOgiwAfHx+Pffv2YeDAgbjjjjtw4sQJUyZ3796NxMRE03s9vJB2AaEtE5FS0UEP2WEeKEABClCAAvUEdFFFP3v2bFxzzTX48ssv0apVKxXoJadz585VQ9XKs3m9Lf6lGWiXvVFv2WJ+KEABClCAAkpAFwF+zJgx2L9/vymwG8vmqquuwpEjRyAD4ehtkefw7Aevt1JhfihAAQpQwCigiyp6yYw8f5ef2suQIUNqv9XV68DgEGSXeukqT8wMBShAAQpQwCigizt4Y2ac6XdgWDROhOv3C4gzWTKvFKAABShgfwEGeCtNQ3wNCE55z8qjeRgFKEABClDAsQIM8Fb6ymh2fAZvJR4PowAFKEABhwswwFtJLI3sChBs5dE8jAIUoAAFKOBYAQZ4K30lwJd01c/gO1ZeBg+jAAUoQAEXFWCAt7Jg1R38149YeTQPowAFKEABCjhWgAHeSl/2g7cSjodRgAIUoECTCDDAW8ksAb7CPwqVVVVWpsDDKEABClCAAo4TYIC30lZa0YcMmobTWflWpsDDKEABClCAAo4TYIC30lbu4HPW/D94VxZbmQIPowAFKEABCjhOgAHeSlsJ8LKwL7yVgDyMAhSgAAUcKsAAbyWvBHivkBjk5BdamQIPowAFKEABCjhOgAHeSlsJ8EG9/4zfs0qsTIGHUYACFKAABRwnwABvpa00ssvb9DrCwEZ2VhLyMApQgAIUcKAAA7yVuHwGbyUcD6MABShAgSYRYIC3klkCvGdQFLLz2YreSkIeRgEKUIACDhRggLcSVwJ8YNJoHMv1sDIFHkYBClCAAhRwnAADvJW2EuALdnyE8PLTVqbAwyhAAQpQgAKOE2CAt9JWGtnJwn7wVgLyMApQgAIUcKgAA7yVvL6+vvAOikROUbmVKfAwClCAAhSggOMEGOBtsA1PGo7jZeE2pMBDKUABClCAAo4R8HZMsu6Rqu/pbQjJaeEeF8urpAAFKEABpxLgHbwNxSUN7fgM3gZAHkoBClCAAg4TYIC3gTYwrAVySww2pMBDKUABClCAAo4R0F2Ar6ioQHZ2tmOu1s6pesd2Q2ZAop1TZXIUoAAFKEAB2wV0EeDLysowd+5ctG3bFtI6PTIyElL93aNHDyxevNj2q3RQCpFlqfA6us5BqTNZClCAAhSggPUCumhkN2PGDKSlpWHlypWIj49XwT0vLw8pKSmYOXMmSkpKMH36dOuv0kFHypeQ9PR0B6XOZClAAQpQgALWC+jiDn7NmjVYuHAhevXqheDgYHh4eCAsLAxDhgzBggULsGzZMuuv0IFH+geHo6DS14FnYNIUoAAFKEAB6wR0EeClKn79+vUNXsGKFSsQHR3d4LbmXukR2holrYY2dzZ4fgpQgAIUoEA9AV1U0c+bNw+TJ0/G/PnzkZCQgNDQUOTm5mLv3r2QRnerVq2ql3E9rIj1LUTBtre1rLyoh+wwDxSgAAUoQAGTgC4CfN++fbFz505s2bIFx44dU8/j5a5dnrsPGzZMVdmbcqyjF/IMvqioSEc5YlYoQAEKUIAC1QK6CPCSFX9/f4wcOVLdsefn5yMiIkL3ZeQfGIIq/0hILwBp/c+FAhSgAAUooBcBXTyDd9Zucp6B4QjuP5mj2enl08x8UIACFKCASUAXAV66ye3Zs0d1k5PucVVVVTh16hQWLVqE119/Ha+99popw3p6ERvijdz18xng9VQozAsFKEABCigBXQR4Z+0mxznh+VdEAQpQgAJ6FdBFgHfWbnIBgUHwCm/DhnZ6/XQzXxSgAAXcWEAXjezs1U1ORsMzN7JcRkYGSktL7VrUEuDD/nQXq+jtqsrEKEABClDAHgK6CPANdZOTVvV33nknLr30Uou7yf30009Yu3Ztgy7yjF/GuLfnEhYShLMrH0XhjG/smSzTogAFKEABCtgsoIsAP2XKFDXZjHST279/P2bPno1169apYWtvvPFGNQCOj4/PBS/2qquugvw0tMyaNUv1r29om7XrpB+8LJwT3lpBHkcBClCAAo4S0MUz+OTkZFOQfPrpp5GUlKRa0W/evFkNfCPr9LhIgPfWnsEXFBTqMXvMEwUoQAEKuLGALgJ8bf/Vq1fj8ccfV9XpnTt3xlNPPYUNGzbU3kU3r6UVfcjg25BbZN9n+7q5QGaEAhSgAAWcVkA3AV7u1k+fPo3BgwcjKyvLBLp7927IM3o9LnIHn/3NkygvytNj9pgnClCAAhRwYwFdPIO/+eabsXz5cjz55JNqkhlpYPfhhx+qO/lXXnlFPY/XYxmxH7weS4V5ogAFKEABEdBFgJ8zZw7kR5aTJ09CRrOT5fLLL8f999+vGtupFTr7x8vLC4HRHZBXWKyznDE7FKAABSjg7gK6CPC1C6F169aQH1mkur6yslL1X/fz86u9m25eh150A84yvuumPJgRClCAAhSoFtDFM/jjx49DusoFBwdj9OjROHTokKl8Pv30U9x6662m93p74bPnQ6DgjN6yxfxQgAIUoICbC+giwM+fPx8tW7bEzz//jCFDhqg54A8cOOAURSMN7dgP3imKipmkAAUo4FYCuqiiX7VqFXbu3ImAgADIsLXdunXD2LFjsWnTJt0Xhn9UG+QXlek+n8wgBShAAQq4l4Au7uAloMvdu3GR0etkCtkrrriiTpc543Y9/fZofzFyEKKnLDEvFKAABShAAegiwN9zzz2YOHEinn32WVORyHC1EyZMgAwxq+clLnsbKs7s03MWmTcKUIACFHBDAV1U0Y8ZMwaHDx/GkSNH6hTBY489huHDh6ttdTbo6I30hU9NTdVRjpgVClCAAhSggE76wUtBSGO1nj171iuTESNGQH70uviERKOwnHfwei0f5osCFKCAuwro4g7emfFLIrqiJPi4M18C804BClCAAi4ooItn8M7smuh1HPn7NzjzJTDvFKAABSjgggIM8DYWqjxaKC7mUHY2MvJwClCAAhSwswADvI2gXoHhgF8oioqKbEyJh1OAAhSgAAXsJ8AAb6Nlnm9L+HccwgBvoyMPpwAFKEAB+wowwNvo2T28GEUpX3O4WhsdeTgFKEABCthXgAHeRk95Bi8Lx6O3EZKHU4ACFKCAXQUY4G3k9PIPgWew1he+sNDGlHg4BShAAQpQwH4CDPA2WhZ4hiEwaTQDvI2OPJwCFKAABewrwABvo2fXGG8U/LyEjexsdOThFKAABShgXwEGeBs9+QzeRkAeTgEKUIACDhFggLeR1ds/CF6hLVlFb6MjD6cABShAAfsKMMDb6FnmEYCg3tcxwNvoyMMpQAEKUMC+AgzwNnomxIUgb+OrDPA2OvJwClCAAhSwrwADvI2eAQEB8PDwYIC30ZGHU4ACFKCAfQUY4G30rKwyILhlJ7ait9GRh1OAAhSggH0FGOBt9CypMCBk0BTewdvoyMMpQAEKUMC+AgzwNnoG+XrCb9f/GOBtdOThFKAABShgXwEGeDt4Sl94DlVrB0gmQQEKUIACdhNggLcDpV9MIgO8HRyZBAUoQAEK2E+AAd4OlmWJ41FYXGqHlJgEBShAAQpQwD4CDPB2cGx/ahmKCvLskBKToAAFKEABCthHgAHeDo4RERHIzs62Q0pMggIUoAAFKGAfAQZ4OziGtu6CU6fP2CElJkEBClCAAhSwj4DuAnxFRYXT3Q1nRvRHmWeA0+XbPh8hpkIBClCAAnoU0EWALysrw9y5c9G2bVv4+voiMjIS0vWsR48eWLx4sR7d6uTp+vh8VBVm4tSpU3XW8w0FKEABClCguQS8m+vEtc87Y8YMpKWlYeXKlYiPj1fBPS8vDykpKZg5cyZKSkowffr02ofo6nWrVq1UfiTAd+/eXVd5Y2YoQAEKUMA9BXRxB79mzRosXLgQvXr1QnBwsJq8JSwsDEOGDMGCBQuwbNkyXZeOd1greHj78Q5e16XEzFGAAhRwLwFdBHipil+/fn2D8itWrEB0dHSD2/Sy8rfcUHhHtGWA10uBMB8UoAAFKABdVNHPmzcPkydPxvz585GQkIDQ0FDk5uZi7969kEZ3q1at0nVR3TE0Ev+qymaA13UpMXMUoAAF3EtAFwG+b9++2LlzJ7Zs2YJjx46p5/Fy1y7P3YcNG6aq7PVeLPIcno3s9F5KzB8FKEAB9xHQRYAXbn9/f4wcOVLdsefn50MGj3GWJb2gErFt4xngnaXAmE8KUIACbiCgi2fwzt5NbvPRYoS0680A7wZ/MLxEClCAAs4iYNEdvHRha9GiBby9Ldq90dfu7N3kru0ZjJ+jKrHi9GkYDAaneKTQ6ELiARSgAAUo4FQCZu/gq6qq8NRTT6mua6NHj8a6detw7bXXIiMjw+4X6Ozd5AREnsGXl5cjMzPT7j5MkAIUoAAFKNBYAbMB/o033sB3332Hzz//XKV56aWXonXr1pD19l6cvZvc2aJKhMW0VSxsaGfvTwfTowAFKEABawTM1rlv3LgR999/v7ozlYR9fHzUqHL33HMPHnroIWvOZfYYe3WTkxHvSksbnpdd1ldWVprNgy0bfjtVhlz/dioJCfC9e/e2JTkeSwEKUIACFLBZwGyAl3HhJciPGDHCdJIvv/wSLVu2NL2314va3eQOHz6M1NRUDBgwoNHd5D799FN89tlnDWZr9+7daNOmTYPbbF05IjEAif5RuFdLiHfwtmryeApQgAIUsIeA2QA/a9YsFWS//fZbnNYaj8mwsdJHfe3atfY4b500pBW93MW/9957OHnypGqoFhgYiI4dO2LOnDm47bbb6uxv7s2tt94K+WlokeuRxoKOWmJjY1XjOgZ4RwkzXQpQgAIUaIyA2QAvAUsme/n444/VHfXw4cMhP15eXo1J36J9nb0VfUFpFQpKPRATE8M7eItKnDtRgAIUoICjBcwG+K+++kpN/HL77beb8iDV3F988QUeffRR0zp7vJBW9DKKXVxcnCm52pPNPPbYY7qeTS6zsBJrDxSr9gq8gzcVIV9QgAIUoEAzCphtRb9hwwZcddVVWLRokSl7OTk5SE5ONr231wtnb0XfIdIHdwwOZYC31weC6VCAAhSggM0CZu/gJWWZ/OXll1/GwYMH8cwzz9h8MnMJ2KsVvbn0m2q99IWXMfW5UIACFKAABZpb4LwBXgLWpk2bMGHCBFx//fX461//6pD81m5F76yTzRzMKENLzevMmTOqO54j2io4BJ+JUoACFKCASwqcN8DLFcvUrTJd61133YW//OUvGDx4sEMgjJPNnJu49F2XKWP9/PzO3aSr99/sK0Z4XHsV3NPT0x3SnVBXF8zMUIACFKCArgXMPoMfNWoUEhMTVeZlkJvFixdDBrlJSkqy+wUdP34cU6ZMUY36ZFjcQ4cOmc4hfdvNdX0z7aSDFzMuCUOnNtEqJ2xop4MCYRYoQAEKuLmA2Tv4cePG1aOZO3duvXX2WCHP+mUAnZ9//hlLlixRc8BLI7/OnTvbI/kmS0MeacgiAf6iiy5qsvPyRBSgAAUoQIFzBeoF+EGDBuHf//43Nm/erO7azz3giiuuwIIFC85dbdN7eQQgjdMCAgLUgDfdunXD2LFj1fN/mxJuwoPT8ioQEFE9yh/v4JsQnqeiAAUoQIEGBeoFeJlMpkOHDkhISMCYMWPqHRQREVFvna0rJKDL3fsll1yikrrxxhvVXbB8mbj77rttTb5Jjj9ytgJFZaFqICAG+CYh50koQAEKUOA8AvWewctEKTLIjIzbLgPP9OrVS1WVS2t6GSM+Pj7+PMlZt0me7U+cOBHPPvusKYHZs2er1vsyxKwzLEM7+OOyLkHKjAHeGUqMeaQABSjg2gL17uCNlytV9NLgbf/+/araXO6wZcz4s2fPovbodsb9bfktNQUyycyRI0fqJCMj2MnwuLLNWRZ5Ds8A7yylxXxSgAIUcF0BswH+/fffx5tvvgkZk/6TTz5Rz8Olu9qDDz5o9wAvvEFBQejZs2c9aZnNrvaMdvV20MmKkvIqHM+pUKPZ/f777zrJFbNBAQpQgALuKlCvit4IkZubi+joaDVlrEyiIsPJypzq0i+eS30Bg7ZqZUoRh6utT8M1FKAABSjQDAJm7+Clm9zMmTPVwC3Tpk1TM8tNnToVDz30UDNkU/+nDPDxxMzh4XhqYytkZGSgvLwcMn4AFwpQgAIUoEBzCJgN8JMnT0aLFi0gE8zIMLXyfPy1117DyJEjmyOfTnNOeQZvMBjU3PNt27Z1mnwzoxSgAAUo4FoCZgO8XGbtbnIyqp1xZDvXIrDf1RxIL0NkbGuVoDS0Y4C3ny1TogAFKECBxgmYfQbfuGS4twjsSSuDd1hNgKcKBShAAQpQoLkEznsH31yZctbzXtcrGJmZcSr77CrnrKXIfFOAAhRwDQHewdu5HKOiouDr68u+8HZ2ZXIUoAAFKNA4AbN38NK4TuZ/3717txrgxpisDB/74osvGt/ydy2BjIJKbbjaKjVxzsmTJ2tt4UsKUIACFKBA0wqYDfAy4Yz0hX/ppZfUNK7GbEVGRhpf8vc5AnklVfjtVClkbH2ZPIcLBShAAQpQoLkEzAZ4uQOVO3h2i7O8aBJa+EB+9gwdChlmNy8vjwMDWc7HPSlAAQpQwI4CZp/B//nPf8Z7772H9PR0O57OPZIaqgX4qqoqbNu2zT0umFdJAQpQgAK6EzAb4KUVuMzT3rJlS3Tq1AlJSUnqR0a342JeYHtqCQYOHKimjZUJe7hQgAIUoAAFmkPAbBX9+PHj0b9//3p54jP4eiR1Vuw6WYYeccGQaXd//PHHOtv4hgIUoAAFKNBUAmYDvIzCJj9ZWVk4ceKEuosPDAxsqnw57XnuGlI9GY9U07/77ruqqt7T02xFidNeJzNOAQpQgAL6FjAbeSorK3Hbbbep8egvvfRShISEYMKECWpGOX1fkj5yJwFeGtklJyfrI0PMBQUoQAEKuJWA2QC/cOFCHDp0SM0iJ3fxBw8eVJOoPPvss24F1NiLPZhRjvT8CkiAl4XP4RsryP0pQAEKUMAeAmYD/NatW/GPf/wDXbt2VeeJj4/Ho48+iu+//94e53XZNDILK5GaU4H27durueEZ4F22qHlhFKAABXQtYDbAyx3oxo0b62Re3kdHR9dZxzd1BYZ08Ef/tv5qpRiyoV1dH76jAAUoQIGmETDbyG7ixIno2bOnumO/+OKLsWPHDuzatYt38I0oFwnwS5cuxZkzZxAbG9uII7krBShAAQpQwDYBs3fwMmmKjEN/yy23qJbg48aNUw3G+vTpY9sZXfxoGa5218lSdZV8Du/ihc3LowAFKKBjgXp38IMGDYKMQy/PjhcvXlwn62+++SZkspkFCxbUWc83dQWStXnh+7T2Q9++feHv768sr7vuuro78R0FKEABClDAgQL1Avwbb7yBDh06ICEhAWPGjKl36oiIiHrruKJGINTfE7dcFKJWyLSxMlgQG9rV+PAVBShAAQo0jUC9AC8jsMkig7PExMSouc2NWSkpKcHp06eNb/nbAgGpppcaj9LSUvj5+VlwBHehAAUoQAEK2C5Q7xl8WVkZJJA//PDDWLdunXot7+Vn2bJl+Nvf/mb7WV08BRmPXuaFl0UCvAR3aaTIhQIUoAAFKNBUAvUC/FtvvYWAgAA1D/yVV16pXst7+bnrrrsgje0cuVRUVCA7O9uRp3B42mfyK5FdXBPg5YTsLudwdp6AAhSgAAVqCdQL8Pfccw/Ky8vx/PPPY8uWLeq1vJfAK0OvyvC19l6k1mDu3Llq7Ht5bi0T2gQFBaFHjx71GvrZ+9yOSO+q7kFoHVb99EPGDejevTvWrl3riFMxTQpQgAIUoECDAvWewcte3t7emDJlCiTYyxC1Mi69zG8u1fSDBw/GkiVLGkzM2pUzZsxAWloaVq5cCRkxT4K7fJlISUmBTE8r550+fbq1yTf7cWPHjsWrr76qrkNa1XOhAAUoQAEKOFqg3h288YTz589HUVER7rzzTrRp0wbz5s1DaGioutM27mOv32vWrIGMfd+rVy8EBwfDw8MDYWFhGDJkiGqgJs/+nWnJ0oar3XysxJRl6Y0gX1J++OEH0zq+oAAFKEABCjhSwGyAP3z4MObMmYNp06bh5MmTuP7661V1uVTd23uRqvj169c3mOyKFSucbnjc8ABPnMqtQEWVQV3TsGHDVH94+SLDhQIUoAAFKNAUAg1W0cuJW7dujdTUVIwaNQryjFxmlJNn47LO3ovUDkyePBlSayD976WmIDc3F3v37lXP/letWmXvUzo0PS9PD1zfO9h0DmmgeMkll4AB3kTCFxSgAAUo4GABswH+9ttvV1XkiYmJuPrqqzF+/HgV6GWMensvMuLbzp07VaO+Y8eOqefx0jhNnrvL3a9U2Tv7ItX0MjufjCPQsmVLZ78c5p8CFKAABXQuYDbAd+vWDfv374eXl5cK9K+//jrCw8Nxww03OOSSpPHZyJEj1R17fn4+nH3EvPSCSmz/vQTjtRb1shgDvNzFT5061SGGTJQCFKAABShgFDD7DF52iIuLU8+/pVW9DHAjE89INzZ7L67WTU58YoK9EOznaXoOLw0IxZPV9Pb+9DA9ClCAAhRoSKDeHbxUiefk5DS0r1ond6LPPfec2e3WbHDVbnIjEgPqcIjd119/DYPB4BKPHepcHN9QgAIUoICuBOoFeAneMrCNuaVFixbmNlm9Xu5qZVAducM1LrW7yT322GNO3Q/eeE0S4N99913V3qBfv37G1fxNAQpQgAIUsLtAvQA/cOBAu5/kQgkau8nddNNN9XZ1xm5yxotIy6vA6v1FmDogVK0aPXq0unOXLzQM8EYl/qYABShAAUcI1AvwxpNIf/f33nvP+Nb0W+5CZb54ey6u1k3OaBMX6o3+bf1RqfWHl65zMjtfnz591HP4f/3rX8bd+JsCFKAABShgdwGzAf66666D8W5enhmfOnVKjSonE9DYe7FXNzmZy97cMLqHDh1Cx44d7Z31C6bXPa5uo0T5giT9/QsLC9WQvBdMgDtQgAIUoAAFrBAwG+BlTHj5qb3Ie3lGP2LEiNqr7fLa2E3OmFhGRobqKteYPvAy2538NLTMmjVL9a9vaFtTrpMA/+yzz+L777+HI74sNeW18FwUoAAFKKBfgfN2kzs320ePHlUjzJ273tb3MrHNvn37VDLS916mpG3btq1qdCfd887X6M/Wczv6eBmy9rn1NdPfyvj6MrbA9u3bHX1qpk8BClCAAm4sYDbAy5269N02/nTq1EkN0CIzzNl7SU5OVlXWku7TTz+NpKQk9Uhg8+bNkJHtZJ2zLq20aWNv7R+CKu0xhywybK1c3y+//OKsl8R8U4ACFKCAEwiYraKfMGGCGsFO7p5lKle5o+7cubPDJ35ZvXo1Dhw4gJCQEDX2/VNPPYXZs2fj0UcfdQLOhrMYG1KXWdocbNiwoeGduZYCFKAABShgBwGzd/AyRaw0WJNnxjJl7KWXXoqHHnrIYdXlcrcu47TLfPMysY1x2b17NyQgutIiXeROnDiBzMxMV7osXgsFKEABCuhIwGyAlxbpR44cwW+//QYZG15+S+B1RHX5zTffjOXLl6N3796QmeMefPBBRfT444+ru3dnH7u9qKwK93yaYRq21viFhdX0OvpLYFYoQAEKuJiA2QAvjcBk9jN5XixLly5dVDW5tP629yLzzsvgL+np6epLhbE6/vLLL4c07JN2AM68BPp64vWJ0fDW+sLLIn3hZZEZ9LhQgAIUoAAFHCFgNsDLqGuvvvoqsrOrW4CXlJTgnXfewfDhwx2RD1OaMg99165d1Xuprg8OrplX3bSTk7+QWfmkyyEDvJMXJLNPAQpQQMcCdVt/1cpoXl4eVq5cqRrVde/eHQcPHkRxcTFkfnjjYDI7duywy2AtMmre+brCSS3CtddeWyt3zvdSRrPLKqpSs8xJ7o2D+zjflTDHFKAABSjgDAJmA/xVV12FAQMGnPcapMuXPRbpCvff//5XdcMLCqqeP712utHR0bXfOuVrGar2gx35uL5XENpG+KgA//nnn6OgoMAlaymcspCYaQpQgAIuJGA2wEu3OPmRhnXS4lv6wQcGBjrk0l9++WVUVVWpn1deecUh59BDorOGh5uyIS3pZQjgXbt24eKLLzat5wsKUIACFKCAPQTMPoOvrKzEbbfdBpkeVrrISb906RtfWlpqj/PWS0OGb5XHAnJH6w6LsSU9n8O7Q2nzGilAAQo0vYDZAL9w4ULIBC0pKSnqLl6ewcsdpwRiRyzSmO6DDz5w+erqXSdLUVJhUMPwxsXFcUQ7R3yYmCYFKEABCsBsgN+6davqJmds0S6tvqX7miO6yblTOeQUV2HfmTJ1yWxo504lz2ulAAUo0LQCZgP80KFDsXHjxjq5kfeu0OCtzkU18ZsRiQHo09pPnVWew0sNiaMeezTxpfF0FKAABSigIwGzjewmTpyInj17qjt2aQQmXeKkQRjv4O1XenIHL90DZbKdiy66yH4JMyUKUIACFHB7AbN38FFRUZBx4G+55RbVul2mcJVAZByFze3lbAD48Wgx0gsqTWPss6GdDZg8lAIUoAAFGhRo8A7+559/xk8//YSxY8fivvvua/BArrReINjPE2cLK5GktWuQUe0Y4K235JEUoAAFKNCwQL07+HfffReXXHIJ3nvvPcgIdg888EDDR3Kt1QK9W/khKdZXHS81Ipx0xmpKHkgBClCAAmYE6gV4GXTm/fffh0zfum3bNsgwsmwEZkbPDqvlObzM1CcD/XChAAUoQAEK2EugXoA/efIkBg0apNKXWdyk1fzx48ftdT6m84fAxzvzUVZpgLSkLyoqwt69e2lDAQpQgAIUsJtAvQBfVlYGHx8f0wkiIiIgM8lxsa9Ah0gf5JdUqcchkvJ3331n3xMwNQpQgAIUcGuBegFeNGTI2JycHPUjQ9bm5+eb3svdJhfbBQa190dUkBfat2+PhIQErFu3zvZEmQIFKEABClDgD4EGW9F37ty5DpAMemNcpH/8J598YnzL33YQuOyyy/DRRx9Bvkx5eXnZIUUmQQEKUIAC7i5QL8Abx5w3B+PrW93629x2rrdMILuoEl/vK8LkfiEYNWoUZOx/GUxo4MCBliXAvShAAQpQgALnEagX4OWZOxfHC0QEeqGj9hy+ssqAkSNHwsPDA2vXrmWAdzw9z0ABClDALQQafAbvFleug4sc0sEfXp4eakpe6Q/P5/A6KBRmgQIUoICLCDDA66QgpZr+xx9/ZI8FnZQHs0EBClDA2QUY4JuxBJNPl2LFnkKVAwnwMqDQpk2bmjFHPDUFKEABCriKAAN8M5ZkYgsfdIquHnNAhgeWBoyspm/GAuGpKUABCriQAAN8Mxamv48nusRU90oICgrC4MGDGeCbsTx4agpQgAKuJMAAr6PSlGp66SongwxxoQAFKEABCtgiwABvi54djpVn8JuPVQ8FLAFeJp1Zv369HVJmEhSgAAUo4M4CDPDNXPrDEwMgz+JlkUl+QkJCWE3fzGXC01OAAhRwBYF6A924wkU50zWE+HkixK86x97e3hg2bJga8MaZroF5pQAFKEAB/QnwDl5nZTJmzBjs378fhw4d0lnOmB0KUIACFHAmAQZ4HZTWoq15+Cm1+jn8hAkT1LC1MvkMFwpQgAIUoIC1Agzw1srZ8bipA0LQo2V1d7nWrVvj4osvxscff2zHMzApClCAAhRwNwHdBfiKigpkZ2e7VTn4enkgQOsTb1xuvPFGJCcnIyUlxbiKvylAAQpQgAKNEqiJKo06zL47l5WVYe7cuWjbtq0azS0yMhIy8EuPHj2wePFi+55Mp6nJrHLG5frrr1fzwvMu3ijC3xSgAAUo0FgBXQT4GTNmYM+ePVi5ciXy8vJUX/BTp05h0aJFeP311/Haa6819rqcbv/PfyvEV8nV49LHxMRgxIgRrKZ3ulJkhilAAQroR0AXAX7NmjVYuHAhevXqheDgYNXILCwsDEOGDMGCBQuwbNky/Yg5KCcT+wTj6h5BptQnTZqkWtPv2rXLtI4vKEABClCAApYK6CLAS1W8udHbVqxYgejoaEuvx2X2k9b0Pj4+vIt3mRLlhVCAAhRoWgFdDHQzb948TJ48GfPnz0dCQgJCQ0ORm5uLvXv3QhrdrVq1qmlVmulsGQWVCPL1QKCvJ6QdwmWXXaYC/NNPP91MOeJpKUABClDAWQV0EeD79u2LnTt3YsuWLTh27BjS0tLUXfv06dPVyG4eHh7O6tuofB89W44TORX4c69gdZxU00+bNg3bt2/HwIEDG5UWd6YABShAAfcW0EWAlyLw9/fHyJEj1R17fn4+IiIi3K5kBrbzx8B2NZd97bXXws/PT93FM8DXuPAVBShAAQpcWEAXz+DZTa7hgpKGhmPHjsXSpUsb3oFrKUABClCAAmYEdBHg2U2upnR+16rpT+ZWmFbIXXxqaip+++030zq+oAAFKEABClxIQBcBnt3kaorJU2tuYByXXtZeeeWVqtug9CbgQgEKUIACFLBUQBcBnt3kaoqrbYQPru1Z3chO1sbGxqJ///5qEKCavfiKAhSgAAUocH4BXTSyYze58xfSuHHjIEZZWVmIioo6/87cSgEKUIACFNAEdBHg7dVN7o033sCSJUsaLFiZX71jx44NbtPbyrNFlfjhcLHpTn78+PF4/PHH8fXXX+OWW27RW3aZHwpQgAIU0KGALgK8uNijm9xdd90F+WlomTVrlupf39A2va2LDPRC6zBv5JZUIczfE/369UNcXJyqpmeA11tpMT8UoAAF9Cmgi2fw7CZX/8MxQOsTL8FdFhnoRxrbrV69GpWVlfV35hoKUIACFKDAOQK6CPDsJndOqTTwVqrps7Oz8eOPPzawlasoQAEKUIACdQV0EeDZTa5uoRjfLd6eh92nS9Xb0aNHw9fXl63pjTj8TQEKUIAC5xXQRYBnN7mGy+imvsFoG17dTEKm0R0+fDjYH75hK66lAAUoQIG6ArpoZMducnULxfjO38cT/j7Gd4B0l5s5c6aakKdDhw41G/iKAhSgAAUocI6ALu7gjd3knn32WYwZMwYSvGSq1JdeegnJyclo3779Odl2n7cVVQZUaj+ySICXZeXKleo3/6EABShAAQqYE9DFHbxkzthNzlxG3XX9oYxyfJlciAdGRSAxMRFdunTBsmXLcO+997orCa+bAhSgAAUsENBFgH/++edRXl5uNrtJSUmQSVfccUmK9YX8GJcbb7wRTz75JE6ePInWrVsbV/M3BShAAQpQoI6ALqrojx07hgcffBD79u3D8ePH6/3IEK1cqgWmTJmCqqoqvP/++yShAAUoQAEKmBXQxR38yy+/rIKWBK5XXnnFbGbddUNhWRUyCyrRPtIH8fHxuPjii/Huu+/igQcecFcSXjcFKEABClxAQBd38JJHaWCXl5eHgoKCC2TZ/TYH+HhgmfYcXgK9LHIXn5KSgh07drgfBq+YAhSgAAUsEtBNgJd+3h988AHkN5e6Ap7aULV/HxaOIN/q4rrhhhtUo8R33nmn7o58RwEKUIACFPhDQDcBniViuUBYWBiuueYafPjhh+dtnGh5ityTAhSgAAVcTYAB3klKtMpgwLf7i1BWWd0nXqrpMzMz1RSyTnIJzCYFKEABCjShAAN8E2Lbciqppg/RZpc7kVOhkhk7dixiY2NVYztb0uWxFKAABSjgmgIM8E5UroPb+yM+qnrsWi8vL0yePBnLly9Xs8w50WUwqxSgAAUo0AQCDPBNgOyoU0ydOhVlZWX46KOPHHUKpksBClCAAk4qwADvZAW3bHchUtLKVK579+6NPn364M0333Syq2B2KUABClDA0QIM8I4WtnP6IxL94V2r1O6880788ssv6sfOp2JyFKAABSjgxAK1QoUTX0UTZD37y3VNcJYLnyI8wAudY2rGpr/55psRGBiIN95448IHcw8KUIACFHAbAQZ4C4s677stFu7ZtLtJn3gZ+Eb6xBcWFjbtyXk2ClCAAhTQrQADvIVF4+Hvh8qiYgv3duxuWYWVmPNlJsr/6BMv1fQyzO/HH3/s2BMzdQpQgAIUcBoBBngLi8orOBBV+UUW7u3Y3aKCvPDc1VHw8fJQJxo6dCi6d+/OanrHsjN1ClCAAk4lwABvYXFFXDcangF+Fu7t+N08tIFvai9yF79t2zbs3r279mq+pgAFKEABNxVggLew4AN7dIZXqL4mwjmeXW4auvbWW29VE9AsWrTIwivibhSgAAUo4MoCDPBOXLpHzlbg+0PV7QIiIyMxYcIEvPfeeygu1kdbASemZdYpQAEKOL0AA7wTF+HwhACM7hJougKpps/JycFnn31mWscXFKAABSjgngIM8BaWe/G+IyjckWzh3s2z2/DhwxEfH88JaJqHn2elAAUooCsBBngLi6MyrwBFyQct3LvpdkvLq8B3B2uq5OVZ/Lp163Dq1KmmywTPRAEKUIACuhNggLewSFQ3uQJ9dJOrneW4UG81dG1uSZVaLQG+qqoKH3zwQe3d+JoCFKAABdxMgAHewgL3DA5CZaH+Arxkf5j2LD5MmyteloSEBEi/eGlsx4UCFKAABdxXgAHewrL3iWuBsLGXWLh38+4md/HSH37Xrl3NmxGenQIUoAAFmk2AAd5Cek9fHwT1TrJw76bfbemvBfjhcPWz+EmTJsHX15d38U1fDDwjBShAAd0IMMDrpihsy8h1PYPQs2X1LHMREREYP348lixZgsrKStsS5tEUoAAFKOCUAgzwTlls9TPt5emBiEAv0wappk9LS8PatWtN6/iCAhSgAAXcR4ABvhFlnbNyA8ozsxtxRNPuWlphQN4fremvvPJKyOh27777btNmgmejAAUoQAFdCDDAN6IYSlNPofxMZiOOaNpdvbXSnLfmLDK16WTlGfyNN96IZcuWIT8/v2kzwrNRgAIUoECzCzDAN6IIvLSuclU67AtvvASppn/u6hZooU0nK8vUqVNRVFTExnZGIP6mAAUo4EYCDPCNKGxPbU74Sh0H+HMvZeDAgZCfl19+GQaD4dzNfE8BClCAAi4swADfiMINGdIXAUnxjTiieXbdcaIU6QXVref//ve/Y9++fVizZk3zZIZnpQAFKECBZhFggG8Euwx249s6thFHNM+uLQI9kZJWpk4+ceJEtGrVCgsWLGiezPCsFKAABSjQLAK6C/AVFRXIztZvS/VmKaVGnrR9pA9GJAaoo3x8fDB9+nR88803OHDgQCNT4u4UoAAFKOCsAroI8GVlZZg7dy7atm2rWn9L966goCD06NEDixcvdlZb3eT77rvvVq7yLJ4LBShAAQq4h4AuAvyMGTOwZ88erFy5Enl5eWo2NJnudNGiRXj99dfx2muv6aI0ZMrYrE+/1kVeLpSJLK2r3MLNuapxXXR0NCZPnoy3334bubm5FzqU2ylAAQpQwAUEdBHgpQHYwoUL0atXLwQHB8PDwwNhYWEYMmSIenYsfbn1sHj4eKNw+249ZOWCeYjSusqNTQpEQVl16/n77rsPBQUFeOutty54LHegAAUoQAHnF9BFgJeq+PXr1zeouWLFCsgdqB4WzwB/GMrLYahwjvHdO2jP4kP8qou4T58+GDZsGP773/9yfHo9fJisyMOirXnIKXaOz54Vl8dDKEABOwt42zk9q5KbN2+eqkKeP3++ms88NDRUVSXv3bsX0uhu1apVVqXriIM8g7S+8Nq88N5hIY5I3qFp/vOf/1ST0Mhjj3vvvdeh52Li9hcY2M7P9IXN/qkzRQpQwNUEdBHg+/bti507d2LLli04duyYmiRF7tql9bfcdUqVvV6W6GnXwdOvetY2veTpfPlYvqcQ+aVVmNwvBOPGjcPo0aPx6KOPqi9UMuscF+cRkHkGUs6UabMG+jlPpplTClCg2QR0EeDl6v39/TFy5Eh1xy5jp+s1+Ph36tBshWXNia/qHlTnMKkl6d27Nx577DG89NJLdbbxjb4FOkR4o4oDEuq7kJg7CuhIQBfP4NlNruk+Ed27d8c999yjeiakpKQ03Yl5JpsEcrVn76v2FkHGOOBCAQpQwBIBXdzBSzc5mbtcusnFx8erPvDSXU4C0MyZM1FSUqKq6y90QTI16tKlSxvcLTk5WfWzb3Cji68s0aaR3XWyFAPa+kEmpHniiSewZMkSzJ49Ww2A4+KX7xKX5+vtgeEJ1YMXucQF8SIoQAGHC3hok5A0e6Vfx44d1fP3uLi4ehe8detWVZ28evXqetvOXSE1AaWlpeeuVu//9a9/ITMzEx9//HGD2y1dWfjLHhgqqxA8oKelh+hivx+PFiMiwAvd4qrbD0j1vIxTv3z5ctXwTheZZCbOK3AmvwIbDpVgUt/g8+7HjRSggH4E5syZg5tvvhn9+vVr8kzpooreXt3kZA70kJCQBn9km6en7ZdbVVSM0iOpTV5Qtp7wTx0DTMFd0vrrX/+Krl27QvrHnzlzxtbkeXwTCIRrX9ASo1lF3wTUPAUFXEJAF1X0TtdNLr/I6Qvf29tbjWx36aWXYsyYMdiwYYNuGzY6PbYdLuDXU6U4lVuJK7oG2iE1JkEBCriDgC4CfEPd5KRV/Z133gkJQHrqJucVHIQqrR+8My7708vw2W+FeODScPUsXuaK//LLL1X3uSuuuAJr165VIwk647W5ep5bhnojWhudkAsFKEABSwVsr7O29Ezn2W/KlCmq/7t0kxs6dCg2bdqEBx98EJMmTYI0wCvXRo/Ty+LbriXCx4/US3YalY8uMb6YcUkYpNGdcRk1ahQ++eQT7NixA1dffbVq0Gjcxt/6EYgJ9kKrMG+881Mesos4mp1+SoY5oYB+BXQR4KWFe2FhoVJ6+umnkZSUBJlsZvPmzSrwyzq9LDLIjX9CO71kp9H5kKFrg3zrFrsE9nfeeQfff/897rjjjkanyQOaTmBgO39V+9J0Z+SZKEABZxWo+z+9Dq5CWss//vjjkCljO3fujKeeeko9H9ZB1lwmCzLT3NbfS1BZa9QUmW3u4YcfxgcffIDt27e7zLW6yoUs212Ivdoodl1jfRHqr7s/W1dh5nVQwKUEdPM/hdytnz59GoMHD0ZWVpYJeffu3ZBn9FzsJyAzzQX4eGBfet1HH//4xz8QExMD6VLIRV8CvVv5ok24LprM6AuGuaEABcwK6CLASx9B6Y8tQ6jKxDLy/F0WuZOXwVimTp1q9gKaY0PmkhWoyM5rjlPb7Zy9W/mhu9Ynvqyy5nm8TNX7yCOPqJn9ZApfLvoR6BhVPTOg1LxsOlKsn4wxJxSggG4FdBHgZSAACSjp6ek4cuSImgxFxC6//HIcPXpUzROvJ8GK9CxUZGXrKUtW5+V4dgXS8ipMx999991qNEG5i9fBGEimfPFFtUBiCx/eyfPDQAEKWCSgiwBfO6etW7dWA7DIOqmul7tKvS2ewdqUsQXO2VXuXMvWYV7YfKzEtNrHxwcyLoHM7mfrqH+mRPnCZoEXNuSgpLwKLbTHKx04Hr3NnkyAAu4goLsA7wzoXlqAr3KRAO/v44mxSdWDp8iEJrJIgzt5XCLV9XrqougMnw1H5XFMlwBIWXGhAAUoYKkA/8ewVKrWfqGXDUVAt4Raa5z7pbHb3Jvb8vH29jw1sJB0TTx06BAWLlzo3BfnIrnv8ccc8DIn/Oubc13kqngZFKCAIwUY4K3Q9WkRAe/IcCuO1Pchs4aHYVTnQJRrDe9kZLuxY8eqFvX79+/Xd8bdKHfSRW5we383umJeKgUoYK0AA7y1ci54nKeHB9pqXbF8vDzU1S1evBgBAQG46aabIDP1cWkeAWkEuWhrTa+NPq39micjPCsFKOBUAgzwTlVcTZPZ49nlKNYadLVs2RIS5KXBHfvGN419Q2cJ0e7aR3fmXPAN2XAdBShgXoAB3ryN2S1VZeVI++/7MFS45pjgZdplLf21eujg8ePHq/kAXnzxRXzzzTdmTbiwPwHgAAAjlklEQVTBcQLSRqJ2y/klv+QjVfsSxoUCFKDA+QQY4M+nY2abp68PDOUVKDl0zMwezr06QetrfWv/ENNF/Oc//0HPnj0xbdo0NVaBaQNfNIvAxR39OVxts8jzpBRwLgEGeCvLK6BrAor3HrHyaOc6zM/PDx9++CFycnLw0EMPOVfmXSC3Mk7B2gM14y60i/BBeACnjnWBouUlUMChAgzwVvIGdI3XAvxhK492jsNkatLFWrc5Wbp16wYZ5e7tt99Wow06xxW4Ri5l9Do2rHONsuRVUKApBRjgrdT2a98acX+f4tLDuU4dEIqbLwoxzToncwTISHdPPPGElWo8zBoBmQteRrAzLr+eKsXyPdVtJIzr+JsCFKDAuQIM8OeKNOK9V1CgGhSmEYc43a6+Wpc5L8/qbnNxcXG499571ZSy7BvffEUZr008I7PLcaEABShwPgEG+PPpcJsSSC+oVFX1Z4sq8cADD6i+8byLb7oPx/s78nE4s6bVfIifJ+Q5PBcKUIAC5xNggD+fjgXbqkpdfwAYqSK+qW+wVlUPREVF4b777lMT0ezZs8cCIe5iq4C0mpdJgc6ePevSj4RsdeLxFKBAXQEG+LoejX53+rn/oTT1dKOPc7YDZKKTaC3Qe2ij3d1///0ICQnBY4895myX4ZT5lT7wZcUFaNOmDd58801UGQx4as1Zp7wWZpoCFGg6AQZ4G60DusSjZJ97dJeTMep/Pl6CwJBwzJo1C59//jmef/55VFTUzCdvIycPNyMgbR6Ki4vx1VdfQYYUnqRqVAxm9uZqClCAAgADvI2fAn/pLrfPtbvLGYlkjHo/bw/s0IL8nDlzMG7cOHU336dPH2zYsMG4G3/bWWDe6rM4cPCQSlWcZQrfTtG+psaPdj4dk6MABVxEgAHexoIM6NIRWp2pGtnOxqSc4vCe2rSlQzsGIDg4GMuXL1d3lHJnOXLkSNx8883Iy6uZFMUpLkjnmZTq+Jv6heDI4eoAX1BQgK1bt+o818weBSigBwEGeBtLwcPbG3Ezp8LDx9vGlJzz8KuuugrS2O7xxx/Hp59+ikGDBuHAgQPOeTE6zLVUx3eK9sHBgwfRokULeHl54dtvv9XmCijA7tOlOswxs0QBCuhFgAHejiVh0O623GGR6/zPd9nYd6a6B4G/v79qcLdu3TrV0luCPCemse8n4dChQ+jVqxcGDhyItWvXYlhCgJra175nYWoUoIArCTDA27E0Sw/9jsqiYjumqM+kpCX9nJHhiNeGUK29XHLJJfjpp5/QsWNH9Xz+//7v/1BSUlJ7F75upMDRrHI1BoEE+MTERFx22WXYvn07/CoLOB59Iy25OwXcTYAB3o4l7qmNbJf2wmJU5ObbMVV9JiVVxzLKnSwf7yxATnH11Lnt2rXDpk2bcMMNN+Dhhx9GfHw8XnjhBRQV1UyWos8r0meupGvin1pXISMjQwX40aNHo7KyEuvXr9dnhpkrClBANwIM8HYsCt9WMQi5uD/Snn8L5elZdkxZ30kNau+H3GJtFBxtKakwIDAwUM0+9/3336tJaqTFfYcOHfDvf/+bgb6RRRmsjVqXn1bdS6NTp04YPHiwauD4+Xe/4N2fXf+LZCO5uDsFKFBLgAG+FoY9XoaOGIiI60Yj+6t19kjOKdKQgVjaaz+y5Gl38t8drH5MMWzYMPW8ePPmzejfv78a5lbu6F966SWUlrKBmKWFK9XzskgVvUz2M2LECGxZ8xlGJgZYmgT3owAF3FCAAd4BhR7Utxta3HqtA1LWf5JSpVymDYhTexkyZAhWrVoFCfQ9evTA3//+d8jd6HvvvVd7N75uQEDmgV9/sFCNIJiQkKD2kGr6Q/tTUJV7soEjuIoCFKBAtQADvIM+CZ5+dWf7ynhrKfLWb0VlgWs/i5YGeJcnBZpUF23NQ1FZdfW9BHppAS7Pj1u3bo0pU6bgiiuuQGpqqml/vqgr0KuVHwqO/qS8AgKq79glwMsillwoQAEKmBNggDcnY+f1oZcNRdmJMzg577/IfHdZndRduXvdiAR/FJdX39FXaAMCncipUFXMcjf/yiuvqAZ5clf/2muvcSKVOp+K6jcy0c+x/btV9bxxc9euXVXAf+eXEuw44d6POvakleH5DTlGGv6mAAVqCTDA18Jw5Eu/dq20avtr0ObJmfCX0e9qLVX5hTj1zEKcXfatGvbWINO2ucgiQ6pGBXmZruaNLdUj3cmd/t33TFeD5AwdOhR//etfMWDAAEhfei51BYxd5Gqvle5yez+dhy7R7jnAklhIcF+2uwB//VNobRq+pgAF/hBggG/ij4JU3QcP6l3nrF6hwYiaNA6efn7I+Xoj0uYvrrPdUF5R572zvvH29MC8KyJN2f/5eClK/OPUoDhLlixBVlaW6uct1fa//fabaT93frFgfToyS33q3MGLh1TTZ2akY9dPW9yWp3ucLx4aHYkAbaZDLhSgQH0B/mXUN2mWNX4d2yD8imFoOWuaNvTttDp5KE45BJmWNnftZlRkuU51ZK9WvjhTUN1//qabboLMmCZ95mWwHJnARgL9l19+qfp91wFxozdJfmmozEtTjRJrX7YMESztGO6ZMQupma7drqP2dTf0Wh79GNt5NLSd6yjgrgIM8DoseQ/vmiptyV5g7ySEjx+pBfdsnNYG0sn/8Zc6uXbWKn2587okvqar13++L8T0v/0dhw8fxrx581T1/bXXXqv60Mt7ucN3tyXv5H5tMqOKenfwoaGham74Pb/uwL0vrkD6H1+U3Mmn8I/Gm1p8x+Ors7W2Hq7zaMudypHX6jgBBnjH2do15YCkeFWN3/b/ZqmAXzvxs0u/xvGH5uP0/LeR+f5XKM84W3uz07z+y6AQSA+7sLAwzPrnXHyxaZ+6g+/ZsyeeeOIJFegfeOABpKenO8012ZpRYx94Yxe52uldfvnluPuuu7Dq6Ztw6LdttTe5/OvU7HK88EfjOhlR8d9XRbGq3uVLnRfYWAEG+MaK6WB/r+CabmiSHXl+3/L+2xGh3eX7d2qPquK6Latz121B3ndbIVX9FTnVjdx0cBn1stAy1BtBvtUfSXle/8upClx99dWqD/3Gn5Mx/trr8fzzz6ux7qUvfXJycr00XGlFqTYq4KqzCWjZsiWCgoIavLTnnntOffGZOnUqCgsLG9xHzyt3nSzFV8mNz3e7CB88MqamPYeer5F5o0BzCTDAN5e8nc/rHRGqgrs04PNr17JO6j6xUag4m6v64Z/+z5soS8uos12Pb/y8PXDn4JrW0W07dsLIv76IvXv3YtKkSXj99dchd/bS8v7VV19Fdna2Hi/Dpjx5a3+dlb99XO/5e+1Eg4OD8fbbb+OUV3tMe/jV2puc4nV4gCcu6xxgc/V6pVZPL63qXbnLqVMUKDOpKwEGeF0Vh2MyE9ijMyKvH4vYe29B2/+bDZ8WEXVOdPLJV3DmtSVaC/4fUPjrvjrb9PKmbbg3bhsYqoLdW2+9hUXrU/HgC++qBnj33nsvWrVqBWmot2bNGlRV6fNZ7NmiSmw+Wgzjs+ML2XpptRjHdm+p9/z93ONkFr/bxw/EtztT0X/AIHz66adO0zBRhjkO1GptPv21ED8ctnwmxpO5FZCgblzEan96GQ5llhtX8TcF3F6AAd4NPwIe3nX7TsfNug0hQ/vBUFaOwu11u6dJA770Nz5WY+sX/LQbpamnmk3M54/Z6yQDNwyIxt/+chN++eUX7Ny5E6Puew1rtyZj7Nixqsp67ty5qpFes2X2nBPnlVThsBZ8ZGQ642OIc3ap91aq3E+fPn3BAC8Hzn/2Sfzn5t4oyM9VM/l1uvZBvPjiizh48GC9dPWyQgK08Y57Sv8QNce9JXmTL0rvaxPtSFCvvfy5VzBk3AUuFKBAtQADPD8JkGf60lI/4ppRiLnzhjoiHl6eCNKq/T18fdUz/Jzl39XZXllUrKr+Sw4eQ1VJ3Wf/dXa08xt/rQV+q7DqLyrSpe7tR2/Frh3b1d2rVN2/tjkPPS8arLrbySx2e/bsMQUTO2fFouRC/T0xoJ0/ZHY4S5dvfzmK4AG3WBTgvby8cOeddyAlJQWff/45wjyLMWvWLHTu3BkdOvfApL89jvfff19tl+lmm3s5ro1o+Ng31jUGjQz0wgOj6tZC1b6e2nf2tdfzNQXcTaDurZy7XT2v1yKBIC34Q34aWDy0wFKemY3CXXtRfjoDPtFRaPmP2017VuTmo3Dbb/AMDoB3eCh84lrAOzLctN1eL1rIaHlBAbj++uvVz08HzmDj6p747KN31Sx2T6/JgPdv72LYJRdDZrnr2as3enTvhpiYGHtlocF05M79R61avl8bP8SGVP+5ndKql9/aloe/XRKG8IC6XSJrJ1KUdghFe1ZpAX527dXnfe3p6YnrrrtO/Rw5Mgvffvstvl67ARv2nMEnrzyhjg2KS0Bi/9Ho26IEMrtfh/hEdE6MV6+jo6PPm769Nsojl6eujKqTnHRzW5lShPHdAiFf4C60SHdKGdGvqKhITUvcrVs37Xd3VCZdh/tG1W2HcqG0Gtou5fanjjXdOBvah+sooGcBBng9l44T5E1G5ouaeIUpp+eOuidfAKpKSrQvAWdRlLtP1QTE3H69af/ytEzkb9kJaSQogd+3TaxdvgAM6ByLAZ3vxuwZd+P48eN4/5vtONAuCxt/+AGff/EFoif/DxkfjERUVBQ6J3VDYKdhSPTLRIsWLRAX1xJdkpLUFwBpwW7tIrPqncmvUEFC7uCNi9Q8PGxBC/DjR/ajquisRXfwxrRr/5bgfffdd6sfuWvfv3+Gepzx085kbP+9UJusZgVOnjwJ79iuCOx2OXK/ewEhISHo0HMI4jr1w8A2XqbA2aVLFxgnu6l9Dnu+lnER+rf1w6m8SsRH1Xidew551l6VcwJjLxuJ4uJiXHPNNarxpYyGmJOTg8ieXyJ/0jBVgxEYWLfHyblpne/9em3aYwb48wlxm94FPLRnYDUtVXSQ24qKCuTn5yMiwnwVnDXZlOrKtLQ0fPjhh9YczmMcJCCz6xVs+xWVWvc9qQnwCglGi8njTWeTZ/6y3TsiDF5hIfBtGwffONvuMuVzsDt5D/btTVFV1gcOHcHJoF7I3fY+MjMzUempfWm55hlkfnofwsPDkZDUE+Gd/4RuYYVo06YN2rZrj06JCeqONzKyflctGVkt+XQZ+rT2M11H7RdlZWUqsJ44cQJpxb4YNrAXYsPr3yneeeedWL58ufrc1j7enq9LtC9fx44dw4FDh3HsyGE1yNC+1EwcKY3AsW8XQv4e/ToO0cy7wu/gV+r6Y+J7I65NewzoFG36AhAXF2dxtqQtgiwJLXxMx8jfvDSQlOv9/fffVdAePPYGDO7ayrSPvCjRug4+s/IY3poxXAV3mbugV69epn3kUcwjjzyCL7QvcfLl7N65z+CaEf1UWVkS7PNLqxDyx2OUEq1GwViTsPTXAlzXM6jec3/TifmCAmYE5syZg5tvvhn9+vUzs4fjVusiwMt/eI8//riaH1zuKOQ7h/wxduzYEYJz22232SzAAG8zYbMkUJlXgMJfUrThWvNVVz+f6EiEjxthyov07c/74SfTFwAZB8A/oZ1pe2NfyGfvzJkz2JOy1/QF4ODR40j17IgzP76r7hC9QmIQNuLvOLv8IfUFoGWHJAQnDEJ7j5OqBqAkshsig7wRH1YFX63tgkyHe+TIERU8jx49ioyMDFN7AO/wNgjudDF6BZzC8OHD0bVHb7SKbQGpKp/8yFvwLs/Dz1+90djLsMv+5eXlqpHe7j0p2HngJHJP7FNfTH7PBU6XBCBj+yfqPP6Jw+DtFwjDsY3w0+ZT8G8/AEEhoYgzpCkP/1bdERASgfjgYm19GN4pGIUJfutRlHVCWYjNxo0bIeeTL0wyBO/u3bsRPnIm+nrvx7ixWtuQmFi00Ez8fH0wbdo0VS3/3Xff1QnutS9aZiv85z//ib2RV6pykm0t23dCbL/xaF91RPlGRsfCR/NvF+4JGRnQJygcG8+EoadHivqiJ+UkDR1LS0uR4RkLr6IMxMeFomvXbmjfuTv6de+kjpMy5kIBcwJuH+ClGlHuqp588kn1TVsG9cjLy1N3VzNnzlR/0NOnTzfnZ1r/1VdfqWeOphW1Xsh/IFIdy9nKaqG4wMuqohKUHElVNQAV2fnwjgpTPQKMl1awdRfOfrEWnv6+8AzQWrAP6IWwUUOMm1G89zDytS8IxoqsgK4JCB0+0Ox2z/g2SG8diX0HjyD16CGU7dqHgIxiHPRvjbjU7fjlbBpWZZ1BSV71sLo9giMxJrqdCgQR4RGoiolAQa8EFcSkNsBw9CTOanMMpB5PVV8svu84AnuO/aRd04/wDIzE7Gsn4P5LRqr8yAx8/tqIhufmL+/77RZth3a8jIjY0PEe2rN7g9a9sKHrl/Tl3GJUe7v8zR5Y8z0yN+1CZkklQktycNrfAzuDQ5GTX4yCkykIPVuAFuE94VlwFkGZR7A7Pwvrzp5U+fXx8cGfWnfE2NgO6Ni+AxI7JSJh1CVaYB+MAwcO4P0lH2L70hVIyi9FhW8gdl4yAwFfPoBdHiXq77h3b63XgNazo3BHzYBHtfMnJ9n+xTco2rBZfTHLyCnAD36tsPvACvXFQlrjtx04DeP2f63yU+4TiN1lpfghdad6L/8PXRTVEiPC4uDt5Y0q7XHT9lNHsSrtGFpMeAGZS2dCyndEbCIO97oW3Xd/hr1Fufi+OBcBF92C4q2L0DUgDBdHdcTBpCvRNfkzpBi3D74DxRtfNm3f1/1q9Pz1E+wpyqk+fsA0FG9+zbR9f7dx6PHbZzXbL7pVS/8N0/YDSVege/IXavsP5SXw7z3RdP4/RXXAoaRx6Jb8ea3ja/Jny/YBwS3QR/uSJNdnLn3j9cv230sLsLIgq0GfCx2fpPmdz/dC223x3xYSiRWr37aqZtntA7zcqW/ZskV79lm/mm/r1q147LHHsHr1avVHd75/5M5LvnU3tCxbtkz9ByXVd1zcS0C+BFQVaz9aK38P7Q5QagGMS0V2LspOpUP7cKhVqh1Aq5qGdxfaXp6eBfkxLsbjpVZKvqQWnclEhFatLK3cZfEKCYJf+9bG3aHSP3lGvS/WeiScKsxDhqFc3UHK44LRg4eitRbcqhcPrX1CGHzPzd8fxwMX2K4FaXnU0eDx2jYxMObfmEFT/i6w3fgFocHj//CV6v4SXy+UaA0uZThi+bmQr2w/e+AIss+eRW5OLjK14NX1kiGqdk/yaM6/Xv7/WHGuf+6JU8g9dEzdqcvdupfWFiSqS6K6w5c2B6brV8d7qO2ny4vVzYcMI1yuDSDlnVOINIQivDgNxVo7gjx/H+R6tUBEZQb8yysRpH35yfKJQXR5uml7jlcMIivPmLZn+MQhtvy0tt1LHZ/jFa1tTzdtz/SJRUy5pF+9vV76vlr6ZWf+2O6rnT+q1vmrtPNHa+c3bj83f9ZvDyytRECZ8frMpV+zvUwbvSk7QPLXkM+Fjq/xa/h4y7c31r80uiUeeeKfpr9j4+fLkt/NGeB10ciuR48eWL9+vRqo5FywFStWqD+2c9c39D42Nhby09Aiz+ZccbSzhq6V6+oKeAb6a3fD/nVX/vFOAp78mFsutN0nJgryc+4i1bbSYE/759xNdd7XTl/CeP2U6uxe703t4+tt1FbobXvN2ITVubUkfzGD+qLmK1fdqzTnb9zrQumHtWkF+TG3NHR8B23nDh3kXy4U0LeALgK8zBQ2efJkzJ8/HzKphjwPy83NVS1j5Vv/qlWr9K3I3FGAAhSgAAV0JqCLAN+3b1/VfUeq6aVFrzzbk0ZG8txd+izL8z8uFKAABShAAQpYLqCLAC/Z9ff3x8iR1Y2JLM8+96QABShAAQpQoCEB86NJNLQ311GAAhSgAAUo4BQCDPBOUUzMJAUoQAEKUKBxAgzwjfPi3hSgAAUoQAGnEGCAd4piYiYpQAEKUIACjRNggG+cF/emAAUoQAEKOIUAA7xTFBMzSQEKUIACFGicAAN847y4NwUoQAEKUMApBBjgnaKYmEkKUIACFKBA4wR0MV1s47Js3d67du3CuHHjIKPmWbJs2LBBTX1pyb7cp1pAJuuQGbi4WCZQWVmppkiVQZ64WCYgk/jIyJYyEx0XywSKi4vV/2We2oyBXCwTKCoqwqhRoyzb+QJ7yXTI3377rZpB8gK72n2z2wT4xsqNGDECEuS5WCYgwWrs2LFYu3atZQdwL2zbtg1ffPEFnnnmGWpYKPDqq6+qYawnTpxo4RHc7fbbb8dDDz2kpuKmhmUCrvL/P7/SWVbe3IsCFKAABSjgVAIM8E5VXMwsBShAAQpQwDIBBnjLnLgXBShAAQpQwKkEGOCdqriYWQpQgAIUoIBlAgzwljlxLwpQgAIUoIBTCTDAO1VxMbMUoAAFKEABywTYTc6M0+nTp9GyZUszW7m6IQGaNaRifl1paSlk7IDIyEjzO3FLHYG8vDx4eXlxvIU6Kud/k5mZifDwcHh7e59/R241CbjK/2UM8KYi5QsKUIACFKCA6wiwit51ypJXQgEKUIACFDAJMMCbKPiCAhSgAAUo4DoCDPCuU5a8EgpQgAIUoIBJgAHeRMEXFKAABShAAdcRYIB3nbLklVCAAhSgAAVMAgzwJgq+oAAFKEABCriOAAO865Qlr4QCFKAABShgEmCAN1HwBQUoQAEKuJNAeXm5S18uA/w5xbthwwb86U9/UqPYXX/99SgoKDhnD76tqKjAAw88gF69eqmfRx55BMY/lOzsbNxwww1o06YNevbsiR07dhCsloCMxNa+fXusXbvWtJafORNFnRe//vorBgwYoLyuuuoq7Nu3z7T9mWeeQdeuXdG2bVu88MILpvXu/mL16tW49NJL0blzZ9x9992QUeyMC82MEtW/v/jiCwwZMqTOyvP9LTqln4GLSUD7YzBow9MaNm/ebCgqKjLcc889hrvuusu0nS+qBd58803DlVdeacjPz1c/Y8eONcg6WSZNmmR48MEHDVrANyxfvtzQqlUrQ3FxcfWB/Nfwl7/8xRAaGmr49ttvlQY/cw1/KMrKygxakDKsWbNG7bBo0SLDhAkT1OulS5catMBvOHPmjOHo0aOGbt26mTwbTs091srfWevWrQ0///yzobKy0jBjxgzD7NmzaXZO8Ws3IYZ//etfhri4OEO/fv1MW8/3t+isnznewdf6/qb9YSApKUl9qwsICMD999+PTz75pNYefCkCcue+YMECBAcHq5++ffti06ZNCmfVqlXQ/lNR416PHz8e2h8RNm7cSDhNQPvCoxzkM2Zc+JkzStT9vXLlSnTo0AGjR4+G9kUSd9xxB7T/ZNVOX3/9NW677TbExMSofW699Vb+nWoyWlBXd+zR0dHw9PREbGwsTp06RbO6Hy1oX64htZD/+9//6mw539+is37mGOBrFXFqaiq0O07TGplsJicnB9rdhGkdX0BVmyYmJioKraYDH374IbQ7emUlE6i0aNHCxCQBPj093fTeXV9kZWXh0UcfxXPPPVeHgJ+5OhymN7///juioqJUdXNERISqct67d6/a3pAZP2NQE/DMnz8fI0aMgFaThvfffx/y+EwWmikG9c/EiRPxn//8B4GBgTUrzRgZ//93Vj8G+FpFLM+rgoKCTGvkLl4WPoc3kdR5Id+Cb7nlFnVHL3805/rJzuJJP2D69Ol4+OGHIcGq9nKuGT9z1ToSsKX2TO7OMzIyVNB69tln1UZ5X/vvVP6j5mcMkC/XUpMmd+7SBqakpATGL0U0q/1X1/Dr8/0tOqsf5w+sVdZyx7B7927TGvlPw8/Pr95/yqYd3PiFBPcbb7xR3bVLtbws4ifVqbUXaVTm7tPufvbZZ6qBmEwLu379eojJrl27VCMxfuZqf1pqXoeFhaFLly6qKl7Wau06cNFFF6nGnFJDVPtzxs9YtZt8trZs2YLDhw/Dw8MD0jDxpptugtZ2QdWq0azm89XQq/P9LTrrZ44BvlZJaw1UVFWWcZVUy8g3Yflj4VIjUFVVhWnTpqk7Kwnu/v7+aqPcnfr6+qL2XMpiKC2d3XmR56BipjV6UgxS/fzKK6+ox0H8zDX8yRAX+Q/XuBhrguSLpWw7fvy4cZN67e6fMcE4cuSI6gFk/P9q0KBBOHv2rPoSTjPTx8Xsi/P9LTqtn6kJIV+o1t5aAxWD9i1YtQKXVvTGVqjkqRHQgpNB6wJn0J5PGbT/cNWPtNqVZcqUKaqFqrzXuuwYtGf1Bq2qsOZgvjIMHDjQ1OpbWj7zM1f/QyEtnbUAb9C6yqmN2rNlgxaw1GvpndG/f3+DVqVq0L48GbTucqrnS/1U3GtNWlqaQWuYaNCqk9WFL1682HDFFVfQzMzHQKvxqNOK/nx/i876mYOZa3fb1UuWLDGEhPz/du7nFboojuP4d1BCTxErUsasNJthwRJRsrCys/IHKLZsFcrG3kqWFv6DWVgqSqQ0SRQLUbKicJ/7vTXTM3Nmnp55Oubc475v3Zo5xrnn+zozPnN/+RWk0+lgcnIyCA//JdaiVuH6RyT8Gly26m1zuoSHB6M/uPqaTCYT5PP5Wt0ktv3PgFcE3nPV3woHBwfRbV/ZbDYID9cHhUIheqF+eQzPzQfhYdMgPMIWhBcvVu8gga365Tu8tzvI5XJRuOstc7pgZr4ZKgNeX1Hrs+irX0qLqnnMIqE/0MOAer6q8oKohHL8V9l6UYrersPybwK856o76akNvQOh2ntJz73rNTK6spQLqE34/xbKG8NnmBkkRsPfPou++RHwxvTSgAACCCCAgP8C3Cbn/xxSAQIIIIAAAoYAAW+Q0IAAAggggID/AgS8/3NIBQgggAACCBgCBLxBQgMCCCCAAAL+CxDw/s8hFSCAAAIIIGAIEPAGCQ0IIIAAAgj4L0DA+z+HVIAAAggggIAhQMAbJDQggAACCCDgvwAB7/8cUgECCCCAAAKGAAFvkNCAAAIIIICA/wIEvP9zSAUIIIAAAggYAgS8QUIDAggggAAC/gsQ8P7PIRUggAACCCBgCBDwBgkNCCCAAAII+C9AwPs/h1SAAAIIIICAIUDAGyQ0IIAAAggg4L8AAe//HFIBAggggAAChgABb5DQgAACCCCAgP8CBLz/c0gFCNQlMDs7K6lUqur6+Pgog4ODcnZ2VlefvBgBBOInkArCJX7DYkQIIPBdAl9fX1L82A8MDMje3p6Mj49Hm2tubpbLy0tJp9PS1tb2XUOgXwQQaIAAe/ANQGYTCMRJoKmpSTTIddWl+Lj4fHl5We7u7uT8/FwWFxdlaWlJenp6RPf8b25uZGJiQvr7+2VnZ6dU1tHRkeRyOens7JT5+Xl5fn4u/YwHCCDgRoCAd+POVhGIrcD19bW8vb1F6/7+vvT29srx8bE8PDzI2NiYrK6uyuHhoayvr8v7+7s8PT3J3NycrKysyMXFhbS3t8vW1lZs62NgCCRFoCUphVInAgjUL9Da2ipra2vRL05PT8vV1ZXMzMxEz7u7u6O9/NPTU8lms7KwsBC1b25uRq/Z3t6uf4P8BgIIWBMg4K1R0hECP09A996LS0dHhwwNDRWfiob/x8eH3N7eysnJSXQYv/TD8MH9/b309fX92cRjBBBooACH6BuIzaYQ8E2gpaV8H0Cvvq9curq6ZGpqSl5fX0urHs4n3CuleI5AYwUI+MZ6szUEfpyAhns+n5dCoRDVpufnR0dHo737H1csBSHgkUD513OPBs5QEUAgHgLDw8OysbEhIyMjkslkoqvyd3d3pXLvPx6jZRQIJEeA++CTM9dUisC3Cnx+fsrLy4voxXcsCCDgXoCAdz8HjAABBBBAAAHrApyDt05KhwgggAACCLgXIODdzwEjQAABBBBAwLoAAW+dlA4RQAABBBBwL0DAu58DRoAAAggggIB1AQLeOikdIoAAAggg4F6AgHc/B4wAAQQQQAAB6wIEvHVSOkQAAQQQQMC9AAHvfg4YAQIIIIAAAtYFCHjrpHSIAAIIIICAewEC3v0cMAIEEEAAAQSsCxDw1knpEAEEEEAAAfcCBLz7OWAECCCAAAIIWBcg4K2T0iECCCCAAALuBQh493PACBBAAAEEELAuQMBbJ6VDBBBAAAEE3AsQ8O7ngBEggAACCCBgXeA3M5tu0Pp2QtgAAAAASUVORK5CYII=" alt="Figure C1. Projected population sizes for Cypripedium candidum (solid black) and C. parviflorum (dashed red)" />
+<div class="figcaption">Figure C1. Projected population sizes for
+Cypripedium candidum (solid black) and C. parviflorum (dashed red)</div>
+</div>
+<p style="text-indent: 20px">
+The <em>C. candidum</em> population stayed relatively low but did not go
+extinct over the 100 years, while the <em>C. parviflorum</em> population
+exploded in size early on and then dropped. Let’s view the actual
+population sizes over the course of the projection.
+</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>cyp_comm_proj<span class="sc">$</span>N_out</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co">#&gt; [[1]]</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt;      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13] [,14] [,15] [,16] [,17] [,18] [,19] [,20] [,21] [,22] [,23]</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; [1,]  800  347  213  180  157  143  138  128  120   108   100    95    87    81    72    64    60    54    49    42    38    35    30</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; [2,] 8000 3215 1987 1608 1464 1344 1158 1028  928   815   723   635   542   463   408   377   312   267   200   185   159   144   130</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt;      [,24] [,25] [,26] [,27] [,28] [,29] [,30] [,31] [,32] [,33] [,34] [,35] [,36] [,37] [,38] [,39] [,40] [,41] [,42] [,43] [,44]</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; [1,]    26    21    17    13     9     5     2     0     0     0     0     0     0     0     0     0     0     0     0     0     0</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; [2,]   110    95    84    70    60    50    40    33    27    24    18    14     9     6    30    69    19     4     1   556   153</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt;      [,45] [,46] [,47] [,48] [,49] [,50] [,51] [,52] [,53] [,54] [,55] [,56] [,57] [,58] [,59] [,60] [,61] [,62] [,63] [,64] [,65]</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; [1,]     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; [2,]    72    53    43    36    31    26    20    16    10     9     7    13    96    27     5     2   160    45    14     8     5</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt;      [,66] [,67] [,68] [,69] [,70] [,71] [,72] [,73] [,74] [,75] [,76] [,77] [,78] [,79] [,80] [,81] [,82] [,83] [,84] [,85] [,86]</span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt; [1,]     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt; [2,]     8    36    11     1     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt;      [,87] [,88] [,89] [,90] [,91] [,92] [,93] [,94] [,95] [,96] [,97] [,98] [,99] [,100] [,101]</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; [1,]     0     0     0     0     0     0     0     0     0     0     0     0     0      0      0</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co">#&gt; [2,]     0     0     0     0     0     0     0     0     0     0     0     0     0      0      0</span></span></code></pre></div>
+<p style="text-indent: 20px">
+Although <em>C. parviflorum</em> started off with an order of magnitude
+more individuals, it went extinct. And, unfortunately, C. candidum
+appears to be dropping to extinction, though has not done so at the end
+of the 100 year projection. No doubt further research is required to
+understand the results.
+</p>
+</div>
+<div id="acknowledgements" class="section level2">
+<h2>Acknowledgements</h2>
+<p style="text-indent: 20px">
+<p>We are grateful to two anonymous reviewers whose scrutiny improved
+the quality of this vignette. The project resulting in this package and
+this tutorial was funded by Grant-In-Aid 23H02552 from the Japan Society
+for the Promotion of Science.</p>
+</p>
+</div>
+<div id="literature-cited" class="section level2">
+<h2>Literature cited</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-rasmussen_orchids_1995" class="csl-entry">
+Rasmussen, Hanne. 1995. <em>Terrestrial Orchids: From Seed to
+Mycotrophic Plant</em>. Cambridge, England, United Kingdom: Cambridge
+University Press.
+</div>
+<div id="ref-shefferson_drivers_2018" class="csl-entry">
+Shefferson, Richard P., Tiiu Kull, Michael J. Hutchings, Marc-André
+Selosse, Hans Jacquemyn, Kimberly M. Kellett, Eric S. Menges, et al.
+2018. <span>“Drivers of Vegetative Dormancy Across Herbaceous Perennial
+Plant Species.”</span> <em>Ecology Letters</em> 21 (5): 724–33. <a href="https://doi.org/10.1111/ele.12940">https://doi.org/10.1111/ele.12940</a>.
+</div>
+<div id="ref-shefferson_lefko3_2021" class="csl-entry">
+Shefferson, Richard P., Shun Kurokawa, and Johan Ehrlén. 2021.
+<span>“<em>Lefko3</em>: Analysing Individual History Through
+Size-Classified Matrix Population Models.”</span> <em>Methods in Ecology
+and Evolution</em> 12 (2): 378–82. <a href="https://doi.org/10.1111/2041-210X.13526">https://doi.org/10.1111/2041-210X.13526</a>.
+</div>
+<div id="ref-shefferson_predicting_2017" class="csl-entry">
+Shefferson, Richard P., Ryo Mizuta, and Michael J. Hutchings. 2017.
+<span>“Predicting Evolution in Response to Climate Change: The Example
+of Sprouting Probability in Three Dormancy-Prone Orchid Species.”</span>
+<em>Royal Society Open Science</em> 4 (1): 160647. <a href="https://doi.org/10.1098/rsos.160647">https://doi.org/10.1098/rsos.160647</a>.
+</div>
+<div id="ref-shefferson_estimating_2001" class="csl-entry">
+Shefferson, Richard P., Brett K. Sandercock, Joyce Proper, and Steven R.
+Beissinger. 2001. <span>“Estimating Dormancy and Survival of a Rare
+Herbaceous Perennial Using Mark-Recapture Models.”</span>
+<em>Ecology</em> 82 (1): 145–56. <a href="https://doi.org/10.1890/0012-9658(2001)082%5B0145:EDASOA%5D2.0.CO;2">https://doi.org/10.1890/0012-9658(2001)082[0145:EDASOA]2.0.CO;2</a>.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
