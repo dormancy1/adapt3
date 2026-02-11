@@ -15,5 +15,4 @@ LaTeX: pdfLaTeX
 
 BuildType: Package
 PackageUseDevtools: Yes
-PackagePath: pkg
 PackageInstallArgs: --no-multiarch --with-keep.source

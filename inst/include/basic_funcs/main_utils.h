@@ -4405,9 +4405,9 @@ namespace AdaptUtils {
     }
     
     if (old_supplements.isNotNull()) {
-      cloned_supplements = clone(old_supplements);
-      RObject cloned_supplements_RO = RObject(cloned_supplements);
-      List cloned_supplements_list = as<List>(cloned_supplements_RO);
+      RObject old_supplements_RO = RObject(old_supplements);
+      List uncloned_supplements_list = as<List>(old_supplements_RO);
+      List cloned_supplements_list = clone(uncloned_supplements_list); // line 4408 in valgrind
       
       cloned_supplements_list(current_mpm) = new_supplement;
       cloned_supplements = as<Nullable<RObject>>(cloned_supplements_list);

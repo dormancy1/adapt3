@@ -8,6 +8,9 @@
 
 * Processing of age-related parameters in batch projection of Leslie MPMs fixed.
 
+* Processing of supplements in batch_project3() no longer leads to an occasional
+  memory leak.
+
 # adapt3 2.0.0 (2026-02-09)
 
 ## NEW FEATURES
