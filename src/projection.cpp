@@ -6858,7 +6858,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
     if (using_vrms) {
       if (stageframes.isNotNull()) {
         RObject stageframes_true = RObject(stageframes);
-        List stageframes_list = as<List>(stageframes);
+        List stageframes_list = as<List>(stageframes_true);
         current_stageframe = clone(as<DataFrame>(stageframes_list(current_mpm_int)));
       }
       
