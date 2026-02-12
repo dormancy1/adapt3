@@ -868,13 +868,13 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       bool trial_supp_null {false};
       
       if (is<DataFrame>(supp_trial)) {
-        chosen_supplement = as<DataFrame>(supp_trial);
+        chosen_supplement = as<DataFrame>(supplement_list_fb(i));
       } else {
         trial_supp_null = true;
       }
       
       if (format_vec(i) < 5) {
-        chosen_stageframe = as<DataFrame>(supp_trial);
+        chosen_stageframe = as<DataFrame>(stageframe_list_fb(i));
         
         bool agemat = false;
         bool historical = false;
@@ -4035,7 +4035,6 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       DataFrame current_stageframe = as<DataFrame>(stageframe_list(i));
       DataFrame current_supplement;
       int cs_length {1};
-      
       if (is<DataFrame>(supplement_list_fb(i))) {
         current_supplement = as<DataFrame>(supplement_list_fb(i));
         cs_length = static_cast<int>(current_supplement.length());
