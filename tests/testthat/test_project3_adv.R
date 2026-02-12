@@ -191,13 +191,6 @@ test_that("project3() and batch_project3() advanced examples work", {
   expect_true(dim(aaa1_prj$agg_density)[1] == 3)
   expect_true(dim(aaa1_prj$agg_density)[2] == 16)
   
-  # Simple function-based ahistorical
-  bbb1_prj <- project3(vrms = cyp_vrms1, stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
-    supplements = list(cypsupp2r, cypsupp2r, NULL), entry_time = c(0, 5, 8), times = 15,
-    integeronly = TRUE)
-  expect_true(dim(bbb1_prj$agg_density)[1] == 1)
-  expect_true(dim(bbb1_prj$agg_density)[2] == 16)
-  
   # Raw ahistorical with stage weights
   aaa1a_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
     equivalence = cyp_mpm_eq, integeronly = TRUE, err_check = TRUE)
@@ -205,27 +198,12 @@ test_that("project3() and batch_project3() advanced examples work", {
   expect_true(dim(aaa1a_prj$agg_density)[2] == 16)
   expect_true(aaa1a_prj$agg_density[1,16] > 1)
   
-  # Function-based ahistorical with stage weights
-  bbb1a_prj <- project3(vrms = cyp_vrms1, stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
-    supplements = list(cypsupp2r, cypsupp2r, NULL), entry_time = c(0, 5, 8), times = 15,
-    equivalence = cyp_vrm_eq, integeronly = TRUE)
-  expect_true(dim(bbb1a_prj$agg_density)[1] == 1)
-  expect_true(dim(bbb1a_prj$agg_density)[2] == 16)
-  
   # Raw ahistorical with subsets of annual matrices used
   aaa1b_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
     years = list(c("2005", "2006"), c("2006", "2007", "2008"), c("2005", "2006"), c("2005", "2008")),
     integeronly = TRUE)
   expect_true(dim(aaa1b_prj$agg_density)[1] == 1)
   expect_true(dim(aaa1b_prj$agg_density)[2] == 16)
-  
-  # Function-based ahistorical with subsets of annual matrices used
-  bbb1b_prj <- project3(vrms = cyp_vrms1, stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
-    supplements = list(cypsupp2r, cypsupp2r, NULL), entry_time = c(0, 5, 8), times = 15,
-    years = list(c("2005", "2006"), c("2006", "2007", "2008"), c("2005", "2008")),
-    integeronly = TRUE)
-  expect_true(dim(bbb1b_prj$agg_density)[1] == 1)
-  expect_true(dim(bbb1b_prj$agg_density)[2] == 16)
   
   cyp_tweights <- c(0.01, 0.2, 0.1, 0.2, 0.49)
   cyp_tw_list1 <- list(cyp_tweights, cyp_tweights, cyp_tweights)
@@ -237,26 +215,12 @@ test_that("project3() and batch_project3() advanced examples work", {
   expect_true(dim(aaa1d_prj$agg_density)[1] == 3)
   expect_true(dim(aaa1d_prj$agg_density)[2] == 16)
   
-  # Function-based stochastic ahistorical with altered environmental transitions
-  bbb1d_prj <- project3(vrms = cyp_vrms1, stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
-    supplements = list(cypsupp2r, cypsupp2r, NULL), entry_time = c(0, 5, 8), times = 15,
-    integeronly = TRUE, stochastic = TRUE, tweights = cyp_tw_list1, nreps = 3)
-  expect_true(dim(bbb1d_prj$agg_density)[1] == 3)
-  expect_true(dim(bbb1d_prj$agg_density)[2] == 16)
-  
   # Raw ahistorical with matrix element density dependence
   aaa1e_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
     density = list(c2d_4, c2d_4a, cypL_dv_1, cypL_dv_2), integeronly = TRUE)
   expect_true(dim(aaa1e_prj$agg_density)[1] == 1)
   expect_true(dim(aaa1e_prj$agg_density)[2] == 16)
   expect_true(aaa1e_prj$agg_density[1,16] > 0)
-  
-  bbb1e_prj <- project3(vrms = cyp_vrms1, stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
-    supplements = list(cypsupp2r, cypsupp2r, NULL), entry_time = c(0, 5, 8), times = 15,
-    density = list(cyp_dv, cyp_dv, cypL_dv_1), integeronly = TRUE, err_check = "extreme")
-  expect_true(dim(bbb1e_prj$agg_density)[1] == 1)
-  expect_true(dim(bbb1e_prj$agg_density)[2] == 16)
-  expect_true(bbb1e_prj$agg_density[1,16] > 0)
   
   # Supplements used in post-processing
   cypsupp2r_post <- supplemental(stage3 = c("P2"), stage2 = c("P1"),

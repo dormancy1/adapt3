@@ -483,20 +483,24 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       }
     } else AdaptUtils::pop_error2("vrms", "a list of vrm_input objects", "", 1);
     
-    if (is<List>(stageframes)) {
-      stageframe_list_fb = as<List>(stageframes);
-      stageframe_count = static_cast<int>(stageframe_list_fb.length());
+    if (stageframes.isNotNull()) {
+      RObject stageframes_RO = RObject(stageframes_RO);
       
-      if (stageframe_count != vrm_count) {
-        throw Rcpp::exception("A stageframe is required for each vrm_input object.", false);
+      if (is<List>(stageframes_RO)) {
+        stageframe_list_fb = as<List>(stageframes_RO);
+        stageframe_count = static_cast<int>(stageframe_list_fb.length());
+        
+        if (stageframe_count != vrm_count) {
+          throw Rcpp::exception("A stageframe is required for each vrm_input object.", false);
+        }
+      } else {
+        bool throw_error {false};
+        for (int i = 0; i < vrm_count; i++) {
+          if (format_vec(i) != 5) throw_error = true;
+        }
+        if (throw_error) AdaptUtils::pop_error2("stageframes", "a list of stageframe objects", "", 1);
+        pure_fleslie = true;
       }
-    } else {
-      bool throw_error {false};
-      for (int i = 0; i < vrm_count; i++) {
-        if (format_vec(i) != 5) throw_error = true;
-      }
-      if (throw_error) AdaptUtils::pop_error2("stageframes", "a list of stageframe objects", "", 1);
-      pure_fleslie = true;
     }
     
     for (int i = 0; i < vrm_count; i++) {

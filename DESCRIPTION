@@ -1,7 +1,7 @@
 Package: adapt3
 Type: Package
 Title: Adaptive Dynamics and Community Matrix Model Projections
-Version: 2.0.5
+Version: 2.0.6
 Date: 2026-02-12
 Authors@R: c(person(given = "Richard P.", family = "Shefferson",
              email = "cdorm@g.ecc.u-tokyo.ac.jp", role = c("aut", "cre"),
