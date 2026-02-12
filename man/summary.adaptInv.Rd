@@ -19,6 +19,7 @@ time steps, replicates, ESS optima, etc.
 Function \code{summary.adaptInv()} summarizes \code{adaptInv} objects.
 }
 \examples{
+\donttest{
 library(lefko3)
 data(cypdata)
 
@@ -83,5 +84,6 @@ cyp_inv <- invade3(axis = cyp_ta, mpm = cypmean, density = c2d_4, times = 350,
   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
   var_per_run = 2)
 summary(cyp_inv)
+}
 
 }

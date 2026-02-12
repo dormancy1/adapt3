@@ -609,6 +609,7 @@ summary.adaptProjBatch <- function(object, finalN_mean = FALSE,
 #' time steps, replicates, ESS optima, etc.
 #' 
 #' @examples
+#' \donttest{
 #' library(lefko3)
 #' data(cypdata)
 #' 
@@ -673,6 +674,7 @@ summary.adaptProjBatch <- function(object, finalN_mean = FALSE,
 #'   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
 #'   var_per_run = 2)
 #' summary(cyp_inv)
+#' }
 #' 
 #' @export
 summary.adaptInv <- function(object, ...) {
