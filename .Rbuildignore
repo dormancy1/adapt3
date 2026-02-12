@@ -2,5 +2,5 @@
 ^\.Rproj\.user$
 ^doc$
 ^Meta$
-^\.github
-^README.md
+^.github$
+^README.md$
