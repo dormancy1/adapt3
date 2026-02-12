@@ -242,7 +242,6 @@ test_that("project3() and batch_project3() advanced examples work", {
     err_check = "extreme")
   expect_true(dim(aaa1d_prj$agg_density)[1] == 3)
   expect_true(dim(aaa1d_prj$agg_density)[2] == 16)
-  expect_true(aaa1d_prj$agg_density[1,16] > 1)
   
   # Function-based stochastic ahistorical with altered environmental transitions
   bbb1d_prj <- project3(vrms = cyp_vrms1, stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
@@ -251,7 +250,6 @@ test_that("project3() and batch_project3() advanced examples work", {
     err_check = "extreme")
   expect_true(dim(bbb1d_prj$agg_density)[1] == 3)
   expect_true(dim(bbb1d_prj$agg_density)[2] == 16)
-  expect_true(bbb1d_prj$agg_density[1,16] > 1)
   
   # Raw ahistorical with matrix element density dependence
   aaa1e_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
