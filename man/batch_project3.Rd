@@ -10,7 +10,6 @@ batch_project3(
   offset = NULL,
   multiplier = NULL,
   all_elems = NULL,
-  quiet = NULL,
   mpms = NULL,
   vrms = NULL,
   stageframes = NULL,
@@ -35,6 +34,7 @@ batch_project3(
   density = NULL,
   density_vr = NULL,
   err_check = NULL,
+  benchmark = NULL,
   stochastic = FALSE,
   integeronly = FALSE,
   substoch = 0L,
@@ -70,11 +70,6 @@ cannot be used. Defaults to \code{NULL}.}
 \item{all_elems}{A logical value indicating whether to use the alterations
 specified in argument \code{givenrate}, \code{offset}, or \code{multiplier}
 on all matrix elements. Defaults to \code{FALSE}.}
-
-\item{quiet}{A logical value indicating whether to block messages during
-the batch projection informing the user of which projection is currently
-being performed, and how many total projections are planned. Defaults to
-\code{TRUE}, which silences all such messages.}
 
 \item{mpms}{An optional list of MPMs. Each MPM must be of class
 \code{lefkoMat}.}
@@ -248,6 +243,9 @@ to the text value \code{"extreme"}, in which case all \code{err_check}
 output plus a multiple level list with each MPM used in each time step will
 be output.}
 
+\item{benchmark}{A logical value indicating whether to issue messages during
+projection indicating progress. Defaults to \code{FALSE}.}
+
 \item{stochastic}{A logical value indicating whether the projection will be
 run as a temporally stochastic projection. Defaults to \code{FALSE}.}
 
@@ -315,8 +313,8 @@ offset values for each element. Each regression is run on the offset values
 within each element.
 
 The only arguments unique to this function are arguments \code{used_mpms},
-\code{givenrate}, \code{offset}, \code{multiplier}, \code{all_elems}, and
-\code{quiet}. All others are passed to function \code{project3}.
+\code{givenrate}, \code{offset}, \code{multiplier}, and \code{all_elems}.
+All others are passed to function \code{project3}.
 
 Setting \code{all_elems = TRUE} will lead to very time-intensive analysis.
 We encourage users to break down their analyses into smaller batches, in 

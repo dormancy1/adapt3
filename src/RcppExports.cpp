@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // project3
-List project3(Nullable<RObject> mpms, Nullable<RObject> vrms, Nullable<RObject> stageframes, Nullable<RObject> supplements, Nullable<RObject> equivalence, Nullable<RObject> starts, Nullable<RObject> years, Nullable<RObject> patches, Nullable<RObject> tweights, Nullable<RObject> format, Nullable<RObject> entry_time, Nullable<RObject> sp_density, Nullable<RObject> ind_terms, Nullable<RObject> dev_terms, Nullable<RObject> fb_sparse, Nullable<RObject> firstage, Nullable<RObject> finalage, Nullable<RObject> fecage_min, Nullable<RObject> fecage_max, Nullable<RObject> cont, Nullable<RObject> fecmod, Nullable<RObject> density, Nullable<RObject> density_vr, Nullable<RObject> err_check, bool stochastic, bool integeronly, int substoch, int nreps, int times, int prep_mats, bool force_fb, double exp_tol, double theta_tol);
-RcppExport SEXP _adapt3_project3(SEXP mpmsSEXP, SEXP vrmsSEXP, SEXP stageframesSEXP, SEXP supplementsSEXP, SEXP equivalenceSEXP, SEXP startsSEXP, SEXP yearsSEXP, SEXP patchesSEXP, SEXP tweightsSEXP, SEXP formatSEXP, SEXP entry_timeSEXP, SEXP sp_densitySEXP, SEXP ind_termsSEXP, SEXP dev_termsSEXP, SEXP fb_sparseSEXP, SEXP firstageSEXP, SEXP finalageSEXP, SEXP fecage_minSEXP, SEXP fecage_maxSEXP, SEXP contSEXP, SEXP fecmodSEXP, SEXP densitySEXP, SEXP density_vrSEXP, SEXP err_checkSEXP, SEXP stochasticSEXP, SEXP integeronlySEXP, SEXP substochSEXP, SEXP nrepsSEXP, SEXP timesSEXP, SEXP prep_matsSEXP, SEXP force_fbSEXP, SEXP exp_tolSEXP, SEXP theta_tolSEXP) {
+List project3(Nullable<RObject> mpms, Nullable<RObject> vrms, Nullable<RObject> stageframes, Nullable<RObject> supplements, Nullable<RObject> equivalence, Nullable<RObject> starts, Nullable<RObject> years, Nullable<RObject> patches, Nullable<RObject> tweights, Nullable<RObject> format, Nullable<RObject> entry_time, Nullable<RObject> sp_density, Nullable<RObject> ind_terms, Nullable<RObject> dev_terms, Nullable<RObject> fb_sparse, Nullable<RObject> firstage, Nullable<RObject> finalage, Nullable<RObject> fecage_min, Nullable<RObject> fecage_max, Nullable<RObject> cont, Nullable<RObject> fecmod, Nullable<RObject> density, Nullable<RObject> density_vr, Nullable<RObject> err_check, Nullable<RObject> benchmark, bool stochastic, bool integeronly, int substoch, int nreps, int times, int prep_mats, bool force_fb, double exp_tol, double theta_tol);
+RcppExport SEXP _adapt3_project3(SEXP mpmsSEXP, SEXP vrmsSEXP, SEXP stageframesSEXP, SEXP supplementsSEXP, SEXP equivalenceSEXP, SEXP startsSEXP, SEXP yearsSEXP, SEXP patchesSEXP, SEXP tweightsSEXP, SEXP formatSEXP, SEXP entry_timeSEXP, SEXP sp_densitySEXP, SEXP ind_termsSEXP, SEXP dev_termsSEXP, SEXP fb_sparseSEXP, SEXP firstageSEXP, SEXP finalageSEXP, SEXP fecage_minSEXP, SEXP fecage_maxSEXP, SEXP contSEXP, SEXP fecmodSEXP, SEXP densitySEXP, SEXP density_vrSEXP, SEXP err_checkSEXP, SEXP benchmarkSEXP, SEXP stochasticSEXP, SEXP integeronlySEXP, SEXP substochSEXP, SEXP nrepsSEXP, SEXP timesSEXP, SEXP prep_matsSEXP, SEXP force_fbSEXP, SEXP exp_tolSEXP, SEXP theta_tolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -41,6 +41,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Nullable<RObject> >::type density(densitySEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type density_vr(density_vrSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type err_check(err_checkSEXP);
+    Rcpp::traits::input_parameter< Nullable<RObject> >::type benchmark(benchmarkSEXP);
     Rcpp::traits::input_parameter< bool >::type stochastic(stochasticSEXP);
     Rcpp::traits::input_parameter< bool >::type integeronly(integeronlySEXP);
     Rcpp::traits::input_parameter< int >::type substoch(substochSEXP);
@@ -50,13 +51,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type force_fb(force_fbSEXP);
     Rcpp::traits::input_parameter< double >::type exp_tol(exp_tolSEXP);
     Rcpp::traits::input_parameter< double >::type theta_tol(theta_tolSEXP);
-    rcpp_result_gen = Rcpp::wrap(project3(mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol));
+    rcpp_result_gen = Rcpp::wrap(project3(mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol));
     return rcpp_result_gen;
 END_RCPP
 }
 // batch_project3
-Rcpp::List batch_project3(Nullable<RObject> used_mpms, Nullable<RObject> givenrate, Nullable<RObject> offset, Nullable<RObject> multiplier, Nullable<RObject> all_elems, Nullable<RObject> quiet, Nullable<RObject> mpms, Nullable<RObject> vrms, Nullable<RObject> stageframes, Nullable<RObject> supplements, Nullable<RObject> equivalence, Nullable<RObject> starts, Nullable<RObject> years, Nullable<RObject> patches, Nullable<RObject> tweights, Nullable<RObject> format, Nullable<RObject> entry_time, Nullable<RObject> sp_density, Nullable<RObject> ind_terms, Nullable<RObject> dev_terms, Nullable<RObject> fb_sparse, Nullable<RObject> firstage, Nullable<RObject> finalage, Nullable<RObject> fecage_min, Nullable<RObject> fecage_max, Nullable<RObject> cont, Nullable<RObject> fecmod, Nullable<RObject> density, Nullable<RObject> density_vr, Nullable<RObject> err_check, bool stochastic, bool integeronly, int substoch, int nreps, int times, int prep_mats, bool force_fb, double exp_tol, double theta_tol);
-RcppExport SEXP _adapt3_batch_project3(SEXP used_mpmsSEXP, SEXP givenrateSEXP, SEXP offsetSEXP, SEXP multiplierSEXP, SEXP all_elemsSEXP, SEXP quietSEXP, SEXP mpmsSEXP, SEXP vrmsSEXP, SEXP stageframesSEXP, SEXP supplementsSEXP, SEXP equivalenceSEXP, SEXP startsSEXP, SEXP yearsSEXP, SEXP patchesSEXP, SEXP tweightsSEXP, SEXP formatSEXP, SEXP entry_timeSEXP, SEXP sp_densitySEXP, SEXP ind_termsSEXP, SEXP dev_termsSEXP, SEXP fb_sparseSEXP, SEXP firstageSEXP, SEXP finalageSEXP, SEXP fecage_minSEXP, SEXP fecage_maxSEXP, SEXP contSEXP, SEXP fecmodSEXP, SEXP densitySEXP, SEXP density_vrSEXP, SEXP err_checkSEXP, SEXP stochasticSEXP, SEXP integeronlySEXP, SEXP substochSEXP, SEXP nrepsSEXP, SEXP timesSEXP, SEXP prep_matsSEXP, SEXP force_fbSEXP, SEXP exp_tolSEXP, SEXP theta_tolSEXP) {
+Rcpp::List batch_project3(Nullable<RObject> used_mpms, Nullable<RObject> givenrate, Nullable<RObject> offset, Nullable<RObject> multiplier, Nullable<RObject> all_elems, Nullable<RObject> mpms, Nullable<RObject> vrms, Nullable<RObject> stageframes, Nullable<RObject> supplements, Nullable<RObject> equivalence, Nullable<RObject> starts, Nullable<RObject> years, Nullable<RObject> patches, Nullable<RObject> tweights, Nullable<RObject> format, Nullable<RObject> entry_time, Nullable<RObject> sp_density, Nullable<RObject> ind_terms, Nullable<RObject> dev_terms, Nullable<RObject> fb_sparse, Nullable<RObject> firstage, Nullable<RObject> finalage, Nullable<RObject> fecage_min, Nullable<RObject> fecage_max, Nullable<RObject> cont, Nullable<RObject> fecmod, Nullable<RObject> density, Nullable<RObject> density_vr, Nullable<RObject> err_check, Nullable<RObject> benchmark, bool stochastic, bool integeronly, int substoch, int nreps, int times, int prep_mats, bool force_fb, double exp_tol, double theta_tol);
+RcppExport SEXP _adapt3_batch_project3(SEXP used_mpmsSEXP, SEXP givenrateSEXP, SEXP offsetSEXP, SEXP multiplierSEXP, SEXP all_elemsSEXP, SEXP mpmsSEXP, SEXP vrmsSEXP, SEXP stageframesSEXP, SEXP supplementsSEXP, SEXP equivalenceSEXP, SEXP startsSEXP, SEXP yearsSEXP, SEXP patchesSEXP, SEXP tweightsSEXP, SEXP formatSEXP, SEXP entry_timeSEXP, SEXP sp_densitySEXP, SEXP ind_termsSEXP, SEXP dev_termsSEXP, SEXP fb_sparseSEXP, SEXP firstageSEXP, SEXP finalageSEXP, SEXP fecage_minSEXP, SEXP fecage_maxSEXP, SEXP contSEXP, SEXP fecmodSEXP, SEXP densitySEXP, SEXP density_vrSEXP, SEXP err_checkSEXP, SEXP benchmarkSEXP, SEXP stochasticSEXP, SEXP integeronlySEXP, SEXP substochSEXP, SEXP nrepsSEXP, SEXP timesSEXP, SEXP prep_matsSEXP, SEXP force_fbSEXP, SEXP exp_tolSEXP, SEXP theta_tolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -65,7 +66,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Nullable<RObject> >::type offset(offsetSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type multiplier(multiplierSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type all_elems(all_elemsSEXP);
-    Rcpp::traits::input_parameter< Nullable<RObject> >::type quiet(quietSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type mpms(mpmsSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type vrms(vrmsSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type stageframes(stageframesSEXP);
@@ -90,6 +90,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Nullable<RObject> >::type density(densitySEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type density_vr(density_vrSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type err_check(err_checkSEXP);
+    Rcpp::traits::input_parameter< Nullable<RObject> >::type benchmark(benchmarkSEXP);
     Rcpp::traits::input_parameter< bool >::type stochastic(stochasticSEXP);
     Rcpp::traits::input_parameter< bool >::type integeronly(integeronlySEXP);
     Rcpp::traits::input_parameter< int >::type substoch(substochSEXP);
@@ -99,13 +100,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type force_fb(force_fbSEXP);
     Rcpp::traits::input_parameter< double >::type exp_tol(exp_tolSEXP);
     Rcpp::traits::input_parameter< double >::type theta_tol(theta_tolSEXP);
-    rcpp_result_gen = Rcpp::wrap(batch_project3(used_mpms, givenrate, offset, multiplier, all_elems, quiet, mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol));
+    rcpp_result_gen = Rcpp::wrap(batch_project3(used_mpms, givenrate, offset, multiplier, all_elems, mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol));
     return rcpp_result_gen;
 END_RCPP
 }
 // invade3
-List invade3(Nullable<RObject> axis, Nullable<RObject> mpm, Nullable<RObject> vrm, Nullable<RObject> stageframe, Nullable<RObject> supplement, Nullable<RObject> equivalence, Nullable<RObject> starts, Nullable<RObject> years, Nullable<RObject> patches, Nullable<RObject> tweights, Nullable<RObject> format, Nullable<RObject> entry_time, Nullable<RObject> sp_density, Nullable<RObject> ind_terms, Nullable<RObject> dev_terms, Nullable<RObject> fb_sparse, Nullable<RObject> firstage, Nullable<RObject> finalage, Nullable<RObject> fecage_min, Nullable<RObject> fecage_max, Nullable<RObject> cont, Nullable<RObject> prebreeding, Nullable<RObject> fecmod, Nullable<RObject> density, Nullable<RObject> density_vr, Nullable<RObject> stochastic, Nullable<RObject> A_only, Nullable<RObject> integeronly, Nullable<RObject> fitness_table, Nullable<RObject> trait_optima, Nullable<RObject> zap_min, Nullable<RObject> converged_only, Nullable<RObject> err_check, int var_per_run, int substoch, double elast_mult, int nreps, int times, int fitness_times, double exp_tol, double theta_tol, double threshold, int loop_max);
-RcppExport SEXP _adapt3_invade3(SEXP axisSEXP, SEXP mpmSEXP, SEXP vrmSEXP, SEXP stageframeSEXP, SEXP supplementSEXP, SEXP equivalenceSEXP, SEXP startsSEXP, SEXP yearsSEXP, SEXP patchesSEXP, SEXP tweightsSEXP, SEXP formatSEXP, SEXP entry_timeSEXP, SEXP sp_densitySEXP, SEXP ind_termsSEXP, SEXP dev_termsSEXP, SEXP fb_sparseSEXP, SEXP firstageSEXP, SEXP finalageSEXP, SEXP fecage_minSEXP, SEXP fecage_maxSEXP, SEXP contSEXP, SEXP prebreedingSEXP, SEXP fecmodSEXP, SEXP densitySEXP, SEXP density_vrSEXP, SEXP stochasticSEXP, SEXP A_onlySEXP, SEXP integeronlySEXP, SEXP fitness_tableSEXP, SEXP trait_optimaSEXP, SEXP zap_minSEXP, SEXP converged_onlySEXP, SEXP err_checkSEXP, SEXP var_per_runSEXP, SEXP substochSEXP, SEXP elast_multSEXP, SEXP nrepsSEXP, SEXP timesSEXP, SEXP fitness_timesSEXP, SEXP exp_tolSEXP, SEXP theta_tolSEXP, SEXP thresholdSEXP, SEXP loop_maxSEXP) {
+List invade3(Nullable<RObject> axis, Nullable<RObject> mpm, Nullable<RObject> vrm, Nullable<RObject> stageframe, Nullable<RObject> supplement, Nullable<RObject> equivalence, Nullable<RObject> starts, Nullable<RObject> years, Nullable<RObject> patches, Nullable<RObject> tweights, Nullable<RObject> format, Nullable<RObject> entry_time, Nullable<RObject> sp_density, Nullable<RObject> ind_terms, Nullable<RObject> dev_terms, Nullable<RObject> fb_sparse, Nullable<RObject> firstage, Nullable<RObject> finalage, Nullable<RObject> fecage_min, Nullable<RObject> fecage_max, Nullable<RObject> cont, Nullable<RObject> prebreeding, Nullable<RObject> fecmod, Nullable<RObject> density, Nullable<RObject> density_vr, Nullable<RObject> stochastic, Nullable<RObject> A_only, Nullable<RObject> integeronly, Nullable<RObject> fitness_table, Nullable<RObject> trait_optima, Nullable<RObject> zap_min, Nullable<RObject> converged_only, Nullable<RObject> err_check, Nullable<RObject> benchmark, int var_per_run, int substoch, double elast_mult, int nreps, int times, int fitness_times, double exp_tol, double theta_tol, double threshold, int loop_max);
+RcppExport SEXP _adapt3_invade3(SEXP axisSEXP, SEXP mpmSEXP, SEXP vrmSEXP, SEXP stageframeSEXP, SEXP supplementSEXP, SEXP equivalenceSEXP, SEXP startsSEXP, SEXP yearsSEXP, SEXP patchesSEXP, SEXP tweightsSEXP, SEXP formatSEXP, SEXP entry_timeSEXP, SEXP sp_densitySEXP, SEXP ind_termsSEXP, SEXP dev_termsSEXP, SEXP fb_sparseSEXP, SEXP firstageSEXP, SEXP finalageSEXP, SEXP fecage_minSEXP, SEXP fecage_maxSEXP, SEXP contSEXP, SEXP prebreedingSEXP, SEXP fecmodSEXP, SEXP densitySEXP, SEXP density_vrSEXP, SEXP stochasticSEXP, SEXP A_onlySEXP, SEXP integeronlySEXP, SEXP fitness_tableSEXP, SEXP trait_optimaSEXP, SEXP zap_minSEXP, SEXP converged_onlySEXP, SEXP err_checkSEXP, SEXP benchmarkSEXP, SEXP var_per_runSEXP, SEXP substochSEXP, SEXP elast_multSEXP, SEXP nrepsSEXP, SEXP timesSEXP, SEXP fitness_timesSEXP, SEXP exp_tolSEXP, SEXP theta_tolSEXP, SEXP thresholdSEXP, SEXP loop_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -142,6 +143,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Nullable<RObject> >::type zap_min(zap_minSEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type converged_only(converged_onlySEXP);
     Rcpp::traits::input_parameter< Nullable<RObject> >::type err_check(err_checkSEXP);
+    Rcpp::traits::input_parameter< Nullable<RObject> >::type benchmark(benchmarkSEXP);
     Rcpp::traits::input_parameter< int >::type var_per_run(var_per_runSEXP);
     Rcpp::traits::input_parameter< int >::type substoch(substochSEXP);
     Rcpp::traits::input_parameter< double >::type elast_mult(elast_multSEXP);
@@ -152,7 +154,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type theta_tol(theta_tolSEXP);
     Rcpp::traits::input_parameter< double >::type threshold(thresholdSEXP);
     Rcpp::traits::input_parameter< int >::type loop_max(loop_maxSEXP);
-    rcpp_result_gen = Rcpp::wrap(invade3(axis, mpm, vrm, stageframe, supplement, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, prebreeding, fecmod, density, density_vr, stochastic, A_only, integeronly, fitness_table, trait_optima, zap_min, converged_only, err_check, var_per_run, substoch, elast_mult, nreps, times, fitness_times, exp_tol, theta_tol, threshold, loop_max));
+    rcpp_result_gen = Rcpp::wrap(invade3(axis, mpm, vrm, stageframe, supplement, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, prebreeding, fecmod, density, density_vr, stochastic, A_only, integeronly, fitness_table, trait_optima, zap_min, converged_only, err_check, benchmark, var_per_run, substoch, elast_mult, nreps, times, fitness_times, exp_tol, theta_tol, threshold, loop_max));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -215,9 +217,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_adapt3_project3", (DL_FUNC) &_adapt3_project3, 33},
+    {"_adapt3_project3", (DL_FUNC) &_adapt3_project3, 34},
     {"_adapt3_batch_project3", (DL_FUNC) &_adapt3_batch_project3, 39},
-    {"_adapt3_invade3", (DL_FUNC) &_adapt3_invade3, 43},
+    {"_adapt3_invade3", (DL_FUNC) &_adapt3_invade3, 44},
     {"_adapt3_ta_skeleton", (DL_FUNC) &_adapt3_ta_skeleton, 1},
     {"_adapt3_trait_axis", (DL_FUNC) &_adapt3_trait_axis, 36},
     {NULL, NULL, 0}

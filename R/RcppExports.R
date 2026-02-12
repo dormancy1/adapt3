@@ -299,6 +299,8 @@ NULL
 #' of output objects for error checking.
 #' @param err_check_extreme A Boolean value indicating whether to include an
 #' extra list of all matrices projected in the \code{err_check} object.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return The first three arguments are directly manipulated without any
 #' values returned.
@@ -415,8 +417,10 @@ NULL
 #' stochastic projection.
 #' @param err_check A logical value indicating whether to include an extra list
 #' of output objects for error checking.
-#' @param err_check_extreme A logical value indicating whether to include an
+#' @param err_check_extreme A Boolean value indicating whether to include an
 #' extra list of all matrices projected in the \code{err_check} object.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return The first three arguments are directly manipulated without any
 #' values returned.
@@ -1101,6 +1105,8 @@ NULL
 #' values of individuals or not.
 #' @param dens_yn_bool A Boolean value stating whether density dependence is
 #' used, given through \code{lefkoDens} objects.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return Arguments 2 through 7 are directly manipulated without any values
 #' returned.
@@ -1176,6 +1182,8 @@ NULL
 #' values of individuals or not.
 #' @param dens_yn_bool A Boolean value stating whether density dependence is
 #' used, given through \code{lefkoDens} objects.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return Arguments 2 through 7 are directly manipulated without any values
 #' returned.
@@ -1325,6 +1333,8 @@ NULL
 #' fitness in trait optimization. Defaults to 0.995.
 #' @param zap_min A Boolean value describing whether to round fitness values
 #' below the value given in \code{threshold}.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return The first four arguments are directly manipulated without any
 #' values returned.
@@ -1488,6 +1498,8 @@ NULL
 #' values of individuals or not.
 #' @param dens_yn_bool A Boolean value stating whether density dependence is
 #' used, given through \code{lefkoDens} objects.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return The first four arguments are directly manipulated without any
 #' values returned.
@@ -1666,6 +1678,8 @@ NULL
 #' values of individuals or not.
 #' @param dens_yn_bool A Boolean value stating whether density dependence is
 #' used, given through \code{lefkoDens} objects.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return The first four arguments are directly manipulated without any
 #' values returned.
@@ -1833,6 +1847,8 @@ NULL
 #' fitness in trait optimization. Defaults to 0.995.
 #' @param zap_min A Boolean value describing whether to round fitness values
 #' below the value given in \code{threshold}.
+#' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+#' statements on progress through the projection.
 #' 
 #' @return The first four arguments are directly manipulated without any
 #' values returned.
@@ -1998,6 +2014,8 @@ NULL
 #' of output objects for error checking. Can also be set to the text value
 #' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
 #' level list with each MPM used in each time step will be output.
+#' @param benchmark A logical value indicating whether to issue messages during
+#' projection indicating progress. Defaults to \code{FALSE}.
 #' @param stochastic A logical value indicating whether the projection will be
 #' run as a temporally stochastic projection. Defaults to \code{FALSE}.
 #' @param integeronly A logical value indicating whether to round the number of
@@ -2159,8 +2177,8 @@ NULL
 #' summary(cyp_comm_proj)
 #' 
 #' @export project3
-project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
-    .Call('_adapt3_project3', PACKAGE = 'adapt3', mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
+project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, benchmark = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
+    .Call('_adapt3_project3', PACKAGE = 'adapt3', mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
 }
 
 #' Project Multiple MPMs In Batches With Varying Starting Conditions
@@ -2190,11 +2208,6 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' @param all_elems A logical value indicating whether to use the alterations
 #' specified in argument \code{givenrate}, \code{offset}, or \code{multiplier}
 #' on all matrix elements. Defaults to \code{FALSE}.
-#' @param quiet A logical value indicating whether to block messages during
-#' the batch projection informing the user of which projection is currently
-#' being performed, and how many total projections are planned. Defaults to
-#' \code{TRUE}, which silences all such messages.
-#' 
 #' @param mpms An optional list of MPMs. Each MPM must be of class
 #' \code{lefkoMat}.
 #' @param vrms An optional list of \code{vrm_input} objects, each corresponding
@@ -2343,6 +2356,8 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' to the text value \code{"extreme"}, in which case all \code{err_check}
 #' output plus a multiple level list with each MPM used in each time step will
 #' be output.
+#' @param benchmark A logical value indicating whether to issue messages during
+#' projection indicating progress. Defaults to \code{FALSE}.
 #' @param stochastic A logical value indicating whether the projection will be
 #' run as a temporally stochastic projection. Defaults to \code{FALSE}.
 #' @param integeronly A logical value indicating whether to round the number of
@@ -2395,8 +2410,8 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' within each element.
 #' 
 #' The only arguments unique to this function are arguments \code{used_mpms},
-#' \code{givenrate}, \code{offset}, \code{multiplier}, \code{all_elems}, and
-#' \code{quiet}. All others are passed to function \code{project3}.
+#' \code{givenrate}, \code{offset}, \code{multiplier}, and \code{all_elems}.
+#' All others are passed to function \code{project3}.
 #' 
 #' Setting \code{all_elems = TRUE} will lead to very time-intensive analysis.
 #' We encourage users to break down their analyses into smaller batches, in 
@@ -2516,8 +2531,8 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
 #' 
 #' @export batch_project3
-batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, multiplier = NULL, all_elems = NULL, quiet = NULL, mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
-    .Call('_adapt3_batch_project3', PACKAGE = 'adapt3', used_mpms, givenrate, offset, multiplier, all_elems, quiet, mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
+batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, multiplier = NULL, all_elems = NULL, mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, benchmark = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
+    .Call('_adapt3_batch_project3', PACKAGE = 'adapt3', used_mpms, givenrate, offset, multiplier, all_elems, mpms, vrms, stageframes, supplements, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check, benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb, exp_tol, theta_tol)
 }
 
 #' Run Pairwise and Multiple Invasibility Analysis
@@ -2678,6 +2693,8 @@ batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, mu
 #' of output objects for error checking. Can also be set to the text value
 #' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
 #' level list with each MPM used in each time step will be output.
+#' @param benchmark A logical value indicating whether to issue messages during
+#' projection indicating progress. Defaults to \code{FALSE}.
 #' @param var_per_run The number of variants to run in each simulation.
 #' Defaults to \code{2}, resulting in pairwise invasibility analysis. See
 #' \code{Notes} for details.
@@ -2848,8 +2865,8 @@ batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, mu
 #' plot(cyp_inv)
 #' 
 #' @export invade3
-invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supplement = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, prebreeding = NULL, fecmod = NULL, density = NULL, density_vr = NULL, stochastic = NULL, A_only = NULL, integeronly = NULL, fitness_table = NULL, trait_optima = NULL, zap_min = NULL, converged_only = NULL, err_check = NULL, var_per_run = 2L, substoch = 0L, elast_mult = 0.995, nreps = 1L, times = 10000L, fitness_times = 100L, exp_tol = 700.0, theta_tol = 100000000.0, threshold = 0.00000001, loop_max = 150L) {
-    .Call('_adapt3_invade3', PACKAGE = 'adapt3', axis, mpm, vrm, stageframe, supplement, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, prebreeding, fecmod, density, density_vr, stochastic, A_only, integeronly, fitness_table, trait_optima, zap_min, converged_only, err_check, var_per_run, substoch, elast_mult, nreps, times, fitness_times, exp_tol, theta_tol, threshold, loop_max)
+invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supplement = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, prebreeding = NULL, fecmod = NULL, density = NULL, density_vr = NULL, stochastic = NULL, A_only = NULL, integeronly = NULL, fitness_table = NULL, trait_optima = NULL, zap_min = NULL, converged_only = NULL, err_check = NULL, benchmark = NULL, var_per_run = 2L, substoch = 0L, elast_mult = 0.995, nreps = 1L, times = 10000L, fitness_times = 100L, exp_tol = 700.0, theta_tol = 100000000.0, threshold = 0.00000001, loop_max = 150L) {
+    .Call('_adapt3_invade3', PACKAGE = 'adapt3', axis, mpm, vrm, stageframe, supplement, equivalence, starts, years, patches, tweights, format, entry_time, sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage, fecage_min, fecage_max, cont, prebreeding, fecmod, density, density_vr, stochastic, A_only, integeronly, fitness_table, trait_optima, zap_min, converged_only, err_check, benchmark, var_per_run, substoch, elast_mult, nreps, times, fitness_times, exp_tol, theta_tol, threshold, loop_max)
 }
 
 #' Create Skeleton Data Frame for Trait Variation for Invasion Analysis

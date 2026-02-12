@@ -2,6 +2,9 @@
 
 ## NEW FEATURES
 
+* A benchmark option has been added to functions project3(), invade3(), and
+  batch_project3().
+
 * Unit tests added.
 
 ## BUG FIXES

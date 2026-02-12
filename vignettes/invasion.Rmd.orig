@@ -246,19 +246,19 @@ cyp_proj1 <- f_projection3(format = 3, stageframe = cypframe_fb,
 plot(cyp_proj1)
 ```
   
-  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 10 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using many more variants, such as 50 or 100, in order to get a good resolution of trait variation for the pairwise invasibility plot, in case the actual adaptive dynamics are complex, and to estimate the trait optima properly.</p>
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 8 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using many more variants, such as 50 or 100, in order to get a good resolution of trait variation for the pairwise invasibility plot, in case the actual adaptive dynamics are complex, and to estimate the trait optima properly.</p>
 ```{r ch2-2.8}
 current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
-  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 10)) 
+  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 8)) 
 current_traits
 ```
   
-  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 10 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values). Note that we are also setting `trait_optima = TRUE`, which allows us to estimate the ESS value of the additive deviation to the sprouting model, if one exists.</p>
+  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 8 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values). Note that we are also setting `trait_optima = TRUE`, which allows us to estimate the ESS value of the additive deviation to the sprouting model, if one exists.</p>
 ```{r ch2-2.9}
 cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
   starts = cyp_start, years = 2008, stageframe = cypframe_fb,
-  supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
-  times = 1000, fitness_times = 100, var_per_run = 2, stochastic = FALSE,
+  supplement = cypsupp2f, entry_time = c(0, 300), integeronly = FALSE,
+  times = 500, fitness_times = 60, var_per_run = 2, stochastic = FALSE,
   density = c2d_1, trait_optima = TRUE)
 ```
   
@@ -290,10 +290,11 @@ plot(cyp_inv3, auto_axis = TRUE)
 plot(cyp_inv3, pip = FALSE, elast = TRUE, auto_axis = TRUE)
 ```
 
-  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Here, we see a potential optimum near 0, corresponding roughly to variant 7 in our trait axis. Let's take a look at the predicted ESS value of the trait.</p>
+  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Let's take a look at the predicted ESS value of the trait.</p>
 ```{r ch2-2.15}
 cyp_inv3$optim$ESS_values
 ```
+  
   <p style="text-indent: 20px">Our converged ESS value is at a slightly positive additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS or very close to it. This is similar to what was found in @shefferson_life_2014, so we've done reasonably well.</p>
   
   <p style="text-indent: 20px">Let's now estimate the standard error for the ESS value. We will use the demographic shuffling approach used in @shefferson_life_2014.</p>
@@ -302,7 +303,7 @@ library(lme4)
 library(glmmTMB)
 
 sample_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
-  historical = FALSE, obs_dev = seq(from = -1.5, to = 3.0, length.out = 10))
+  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 8))
 
 num_runs <- 10
 
@@ -348,8 +349,8 @@ for (i in c(1:num_runs)) {
   
   sample_inv3 <- try(invade3(axis = sample_traits, vrm = sample_vrm, format = 3,
     starts = cyp_start, years = 2008, stageframe = cypframe_fb,
-    supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
-    times = 1000, fitness_times = 190, var_per_run = 2, stochastic = FALSE,
+    supplement = cypsupp2f, entry_time = c(0, 300), integeronly = FALSE,
+    times = 500, fitness_times = 60, var_per_run = 2, stochastic = FALSE,
     density = c2d_1, trait_optima = TRUE))
   
   try(output_vec[i] <- sample_inv3$optim$ESS_values$obs_dev[1])

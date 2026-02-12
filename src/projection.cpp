@@ -4306,6 +4306,8 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
 //' of output objects for error checking.
 //' @param err_check_extreme A Boolean value indicating whether to include an
 //' extra list of all matrices projected in the \code{err_check} object.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return The first three arguments are directly manipulated without any
 //' values returned.
@@ -4335,7 +4337,7 @@ void project3_pre_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
   const int substoch, const double exp_tol, const double theta_tol,
   const bool integeronly, const bool stages_not_equal, const bool stochastic,
   const bool entry_time_vec_use, const bool err_check,
-  const bool err_check_extreme) {
+  const bool err_check_extreme, const bool benchmark_bool) {
   
   // Matrix order set up and creation of zero stage vectors
   // Rcout << "Entered project3_pre_core          " << endl;
@@ -4505,6 +4507,10 @@ void project3_pre_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
   List extreme_mpm_reps (nreps);
   
   for (int i = 0; i < nreps; i ++) {
+    if (benchmark_bool) {
+      Rcout << "Beginning replicate " << (i + 1) << endl;
+    }
+    
     List running_popvecs = clone(start_list);
     NumericMatrix N_mpm (mpm_count, (times + 1));
     List extreme_mpm_reps_times (times);
@@ -4513,6 +4519,11 @@ void project3_pre_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
     for (int j = 0; j < times; j++) {
       if (j % 10 == 0){
         Rcpp::checkUserInterrupt();
+      }
+      
+      if (benchmark_bool) {
+        if ((j + 1) % 100 == 1 && j > 50) Rcout <<
+          "Finished projecting " << (j + 1) << " time steps." << endl;
       }
       
       List extreme_mpm_reps_times_mpms (mpm_count);
@@ -4866,8 +4877,10 @@ void project3_pre_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
 //' stochastic projection.
 //' @param err_check A logical value indicating whether to include an extra list
 //' of output objects for error checking.
-//' @param err_check_extreme A logical value indicating whether to include an
+//' @param err_check_extreme A Boolean value indicating whether to include an
 //' extra list of all matrices projected in the \code{err_check} object.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return The first three arguments are directly manipulated without any
 //' values returned.
@@ -4894,7 +4907,8 @@ void project3_fb_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
   const CharacterVector patch_vec, const int vrm_count, const int nreps,
   const int times, const int substoch, const double exp_tol,
   const double theta_tol, const bool integeronly, const bool stages_not_equal,
-  const bool stochastic, const bool err_check, const bool err_check_extreme) {
+  const bool stochastic, const bool err_check, const bool err_check_extreme,
+  const bool benchmark_bool) {
   
   // start_list
   // density_vr_list
@@ -5013,6 +5027,10 @@ void project3_fb_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
   // Rcout << "project3_fb_core B          " << endl;
   
   for (int current_rep = 0; current_rep < nreps; current_rep++) {
+    if (benchmark_bool) {
+      Rcout << "Beginning replicate " << (current_rep + 1) << endl;
+    }
+    
     List running_popvecs = clone(start_list);
     NumericMatrix N_vrm (vrm_count, (times + 1));
     List extreme_mpm_reps_times (times);
@@ -5025,6 +5043,11 @@ void project3_fb_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
       // Rcout << "project3_fb_core c current_time: " << current_time << "          ";
       
       Rcpp::checkUserInterrupt();
+      
+      if (benchmark_bool) {
+        if ((current_time + 1) % 100 == 1 && current_time > 50) Rcout <<
+          "Finished projecting " << (current_time + 1) << " time steps." << endl;
+      }
       
       List extreme_mpm_reps_times_vrms (vrm_count);
       List errcheck_mpmout_rep_time_vrm (vrm_count); 
@@ -5660,6 +5683,8 @@ void project3_fb_core (NumericMatrix& agg_density, List& N_out, List& comm_out,
 //' of output objects for error checking. Can also be set to the text value
 //' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
 //' level list with each MPM used in each time step will be output.
+//' @param benchmark A logical value indicating whether to issue messages during
+//' projection indicating progress. Defaults to \code{FALSE}.
 //' @param stochastic A logical value indicating whether the projection will be
 //' run as a temporally stochastic projection. Defaults to \code{FALSE}.
 //' @param integeronly A logical value indicating whether to round the number of
@@ -5837,7 +5862,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   Nullable<RObject> cont = R_NilValue, Nullable<RObject> fecmod = R_NilValue,
   
   Nullable<RObject> density = R_NilValue, Nullable<RObject> density_vr = R_NilValue,
-  Nullable<RObject> err_check = R_NilValue,
+  Nullable<RObject> err_check = R_NilValue, Nullable<RObject> benchmark = R_NilValue,
   
   bool stochastic = false, bool integeronly = false, int substoch = 0,
   int nreps = 1, int times = 10000, int prep_mats = 20, bool force_fb = false,
@@ -5870,6 +5895,14 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
   //bool indc_char {false};
   bool err_check_bool {false};
   bool err_check_extreme {false};
+  bool benchmark_bool = false;
+  
+  // benchmark processing
+  if (benchmark.isNotNull()) {
+    if (is<RObject>(benchmark)) {
+      benchmark_bool = LefkoInputs::yesno_to_logic(as<RObject>(benchmark), "benchmark");
+    }
+  }
   
   // err_check processing
   LefkoInputs::RObj_TF_input_check("err_check", "extreme", err_check_bool,
@@ -6051,7 +6084,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
       eq_list_length_vec, tweights_type_vec, fecmod_vec, sparse_vec, patch_vec,
       vrm_count, mpm_count, nreps, times, substoch, exp_tol, theta_tol,
       integeronly, stages_not_equal, stochastic,  entry_time_vec_use,
-      err_check_bool, err_check_extreme);
+      err_check_bool, err_check_extreme, benchmark_bool);
     final_out_matrices = fb_mpmout;
     
   } else if (funcbased && !fb_override) { // Function-based MPMs
@@ -6068,7 +6101,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
       indc_terms_cat_vec, dens_yn_vec, dens_vr_yn_vec, dens_list_length_vec,
       eq_list_length_vec, tweights_type_vec, fecmod_vec, sparse_vec, patch_vec,
       vrm_count, nreps, times, substoch, exp_tol, theta_tol, integeronly,
-      stages_not_equal, stochastic, err_check_bool, err_check_extreme);
+      stages_not_equal, stochastic, err_check_bool, err_check_extreme,
+      benchmark_bool);
     final_out_matrices = err_check_fb_out;
   }
   
@@ -6193,11 +6227,6 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 //' @param all_elems A logical value indicating whether to use the alterations
 //' specified in argument \code{givenrate}, \code{offset}, or \code{multiplier}
 //' on all matrix elements. Defaults to \code{FALSE}.
-//' @param quiet A logical value indicating whether to block messages during
-//' the batch projection informing the user of which projection is currently
-//' being performed, and how many total projections are planned. Defaults to
-//' \code{TRUE}, which silences all such messages.
-//' 
 //' @param mpms An optional list of MPMs. Each MPM must be of class
 //' \code{lefkoMat}.
 //' @param vrms An optional list of \code{vrm_input} objects, each corresponding
@@ -6346,6 +6375,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 //' to the text value \code{"extreme"}, in which case all \code{err_check}
 //' output plus a multiple level list with each MPM used in each time step will
 //' be output.
+//' @param benchmark A logical value indicating whether to issue messages during
+//' projection indicating progress. Defaults to \code{FALSE}.
 //' @param stochastic A logical value indicating whether the projection will be
 //' run as a temporally stochastic projection. Defaults to \code{FALSE}.
 //' @param integeronly A logical value indicating whether to round the number of
@@ -6398,8 +6429,8 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 //' within each element.
 //' 
 //' The only arguments unique to this function are arguments \code{used_mpms},
-//' \code{givenrate}, \code{offset}, \code{multiplier}, \code{all_elems}, and
-//' \code{quiet}. All others are passed to function \code{project3}.
+//' \code{givenrate}, \code{offset}, \code{multiplier}, and \code{all_elems}.
+//' All others are passed to function \code{project3}.
 //' 
 //' Setting \code{all_elems = TRUE} will lead to very time-intensive analysis.
 //' We encourage users to break down their analyses into smaller batches, in 
@@ -6523,19 +6554,19 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
   Nullable<RObject> givenrate = R_NilValue, Nullable<RObject> offset = R_NilValue,
   Nullable<RObject> multiplier = R_NilValue, Nullable<RObject> all_elems = R_NilValue,
-  Nullable<RObject> quiet = R_NilValue, Nullable<RObject> mpms = R_NilValue,
-  Nullable<RObject> vrms = R_NilValue, Nullable<RObject> stageframes  = R_NilValue,
-  Nullable<RObject> supplements = R_NilValue, Nullable<RObject> equivalence = R_NilValue,
-  Nullable<RObject> starts = R_NilValue, Nullable<RObject> years = R_NilValue,
-  Nullable<RObject> patches = R_NilValue, Nullable<RObject> tweights = R_NilValue,
-  Nullable<RObject> format = R_NilValue, Nullable<RObject> entry_time = R_NilValue,
-  Nullable<RObject> sp_density = R_NilValue, Nullable<RObject> ind_terms = R_NilValue,
-  Nullable<RObject> dev_terms = R_NilValue, Nullable<RObject> fb_sparse = R_NilValue,
-  Nullable<RObject> firstage = R_NilValue, Nullable<RObject> finalage = R_NilValue,
-  Nullable<RObject> fecage_min = R_NilValue, Nullable<RObject> fecage_max = R_NilValue,
-  Nullable<RObject> cont = R_NilValue, Nullable<RObject> fecmod = R_NilValue,
-  Nullable<RObject> density = R_NilValue, Nullable<RObject> density_vr = R_NilValue,
-  Nullable<RObject> err_check = R_NilValue, bool stochastic = false,
+  Nullable<RObject> mpms = R_NilValue, Nullable<RObject> vrms = R_NilValue,
+  Nullable<RObject> stageframes  = R_NilValue, Nullable<RObject> supplements = R_NilValue,
+  Nullable<RObject> equivalence = R_NilValue, Nullable<RObject> starts = R_NilValue,
+  Nullable<RObject> years = R_NilValue, Nullable<RObject> patches = R_NilValue,
+  Nullable<RObject> tweights = R_NilValue, Nullable<RObject> format = R_NilValue,
+  Nullable<RObject> entry_time = R_NilValue, Nullable<RObject> sp_density = R_NilValue,
+  Nullable<RObject> ind_terms = R_NilValue, Nullable<RObject> dev_terms = R_NilValue,
+  Nullable<RObject> fb_sparse = R_NilValue, Nullable<RObject> firstage = R_NilValue,
+  Nullable<RObject> finalage = R_NilValue, Nullable<RObject> fecage_min = R_NilValue,
+  Nullable<RObject> fecage_max = R_NilValue, Nullable<RObject> cont = R_NilValue,
+  Nullable<RObject> fecmod = R_NilValue, Nullable<RObject> density = R_NilValue,
+  Nullable<RObject> density_vr = R_NilValue, Nullable<RObject> err_check = R_NilValue,
+  Nullable<RObject> benchmark = R_NilValue, bool stochastic = false,
   bool integeronly = false, int substoch = 0, int nreps = 1, int times = 10000,
   int prep_mats = 20, bool force_fb = false, double exp_tol = 700.0,
   double theta_tol = 100000000.0) {
@@ -6546,7 +6577,6 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
   int trial_alterations {0};
   bool sensitivity_bool {false};
   bool all_elems_bool {false};
-  bool quiet_bool {true};
   bool using_vrms {false};
   bool using_supplements {false};
   
@@ -6554,6 +6584,14 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
   bool offset_used {false};
   bool multiplier_used {false};
   bool err_check_bool {true};
+  bool benchmark_bool = false;
+  
+  // benchmark processing
+  if (benchmark.isNotNull()) {
+    if (is<RObject>(benchmark)) {
+      benchmark_bool = LefkoInputs::yesno_to_logic(as<RObject>(benchmark), "benchmark");
+    }
+  }
   
   IntegerVector used_mpm_vec;
   IntegerVector format_vec;
@@ -6721,12 +6759,6 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
     all_elems_bool = LefkoInputs::yesno_to_logic (all_elems_true, "all_elems");
   }
   
-  // Probably need to get rid of this one
-  if (quiet.isNotNull()) {
-    RObject quiet_true = RObject(quiet);
-    quiet_bool = LefkoInputs::yesno_to_logic (quiet_true, "quiet");
-  }
-  
   if (format.isNotNull()) {
     RObject format_RO = RObject(format);
     
@@ -6787,7 +6819,6 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
   // Rcout << "mpms_entered: " << mpms_entered << endl;
   // Rcout << "sensitivity_bool: " << sensitivity_bool << endl;
   // Rcout << "all_elems_bool: " << all_elems_bool << endl;
-  // Rcout << "quiet_bool: " << quiet_bool << endl;
   // Rcout << "using_vrms: " << using_vrms << endl;
   // Rcout << "using_supplements: " << using_supplements << endl;
   // Rcout << "givenrate_used: " << givenrate_used << endl;
@@ -6849,6 +6880,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
   for (int i = 0; i < mpms_entered; i++) {
     // Rcout << "batch_project3 D mpm " << i << " started." << endl;
     
+    if (benchmark_bool) Rcout << "Running batch projection. Currently running projections focused on MPM " << (i+1) << endl;
+    
     int current_mpm_int = (used_mpm_vec(i) - 1);
     int numstages {0};
     
@@ -6908,7 +6941,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
             for (int stage3 = 0; stage3 < numstages; stage3++) {
               for (int try1 = 0; try1 < trial_alterations; try1++) {
                 Rcpp::checkUserInterrupt();
-                if (!quiet_bool) {
+                if (benchmark_bool) {
                   Rcout << "Currently on projection " << (current_tracker + 1) <<
                     " out of " << current_planned_projections << " for Ehrlen-formatted historical mpm " <<
                     (current_mpm_int + 1) << "." << endl;
@@ -6965,8 +6998,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                   equivalence, starts, years, patches, tweights, format, entry_time,
                   sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                   fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                  stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                  exp_tol, theta_tol);
+                  benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                  force_fb, exp_tol, theta_tol);
                 
                 projections_list_current_mpm_supp(current_tracker) = current_projection;
                 
@@ -6995,7 +7028,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
             for (int stage3 = 0; stage3 < (numstages - 1); stage3++) {
               for (int try1 = 0; try1 < trial_alterations; try1++) {
                 Rcpp::checkUserInterrupt();
-                if (!quiet_bool) {
+                if (benchmark_bool) {
                   Rcout << "Currently on projection " << (current_tracker + 1) <<
                     " out of " << current_planned_projections << " for deVries-formatted historical mpm " <<
                     (current_mpm_int + 1) << "." << endl;
@@ -7052,8 +7085,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                   equivalence, starts, years, patches, tweights, format, entry_time,
                   sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                   fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                  stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                  exp_tol, theta_tol);
+                  benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                  force_fb, exp_tol, theta_tol);
                 
                 projections_list_current_mpm_supp(current_tracker) = current_projection;
                 
@@ -7070,7 +7103,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
             for (int stage3 = 0; stage3 < (numstages - 1); stage3++) {
               for (int try1 = 0; try1 < trial_alterations; try1++) {
                 Rcpp::checkUserInterrupt();
-                if (!quiet_bool) {
+                if (benchmark_bool) {
                   Rcout << "Currently on projection " << (current_tracker + 1) <<
                     " out of " << current_planned_projections << " for deVries-formatted historical mpm " <<
                     (current_mpm_int + 1) << "." << endl;
@@ -7127,8 +7160,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                   equivalence, starts, years, patches, tweights, format, entry_time,
                   sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                   fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                  stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                  exp_tol, theta_tol);
+                  benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                  force_fb, exp_tol, theta_tol);
                 
                 projections_list_current_mpm_supp(current_tracker) = current_projection;
                 
@@ -7153,7 +7186,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
           for (int stage3 = 0; stage3 < numstages; stage3++) {
             for (int try1 = 0; try1 < trial_alterations; try1++) {
               Rcpp::checkUserInterrupt();
-              if (!quiet_bool) {
+              if (benchmark_bool) {
                 Rcout << "Currently on projection " << (current_tracker + 1) <<
                   " out of " << current_planned_projections << " for ahistorical stage-based mpm " <<
                   (current_mpm_int + 1) << "." << endl;
@@ -7208,8 +7241,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                 equivalence, starts, years, patches, tweights, format, entry_time,
                 sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                 fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                exp_tol, theta_tol);
+                benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                force_fb, exp_tol, theta_tol);
               
               projections_list_current_mpm_supp(current_tracker) = current_projection;
               
@@ -7505,7 +7538,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
             for (int stage3 = 0; stage3 < numstages; stage3++) {
               for (int try1 = 0; try1 < trial_alterations; try1++) {
                 Rcpp::checkUserInterrupt();
-                if (!quiet_bool) {
+                if (benchmark_bool) {
                   Rcout << "Currently on projection " << (current_tracker + 1) <<
                     " out of " << current_planned_projections << " for age-by-stage mpm " <<
                     (current_mpm_int + 1) << "." << endl;
@@ -7562,8 +7595,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                   equivalence, starts, years, patches, tweights, format, entry_time,
                   sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                   fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                  stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                  exp_tol, theta_tol);
+                  benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                  force_fb, exp_tol, theta_tol);
                 
                 projections_list_current_mpm_supp(current_tracker) = current_projection;
                 
@@ -7581,7 +7614,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
             for (int stage3 = 0; stage3 < total_entry_stages; stage3++) {
               for (int try1 = 0; try1 < trial_alterations; try1++) {
                 Rcpp::checkUserInterrupt();
-                if (!quiet_bool) {
+                if (benchmark_bool) {
                   Rcout << "Currently on projection " << (current_tracker + 1) <<
                     " out of " << current_planned_projections << " for age-by-stage mpm " <<
                     (current_mpm_int + 1) << "." << endl;
@@ -7638,8 +7671,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                   equivalence, starts, years, patches, tweights, format, entry_time,
                   sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                   fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                  stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                  exp_tol, theta_tol);
+                  benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                  force_fb, exp_tol, theta_tol);
                 
                 projections_list_current_mpm_supp(current_tracker) = current_projection;
                 
@@ -7879,7 +7912,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
           for (int try1 = 0; try1 < trial_alterations; try1++) {
             if ((!cont_bool && age2 < (numstages - 1)) || (cont_bool)) {
               Rcpp::checkUserInterrupt();
-              if (!quiet_bool) {
+              if (benchmark_bool) {
                 Rcout << "Currently on projection " << (current_tracker + 1) <<
                   " out of " << current_planned_projections << " for Leslie mpm " <<
                   (current_mpm_int + 1) << "." << endl;
@@ -7941,8 +7974,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                 equivalence, starts, years, patches, tweights, format, entry_time,
                 sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                 fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                exp_tol, theta_tol);
+                benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                force_fb, exp_tol, theta_tol);
               
               projections_list_current_mpm_supp(current_tracker) = current_projection;
               
@@ -7958,7 +7991,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
           for (int try1 = 0; try1 < trial_alterations; try1++) {
             if ((!cont_bool && age2 < (numstages - 1)) || (cont_bool)) {
               Rcpp::checkUserInterrupt();
-              if (!quiet_bool) {
+              if (benchmark_bool) {
                 Rcout << "Currently on projection " << (current_tracker + 1) <<
                   " out of " << current_planned_projections << " for Leslie mpm " <<
                   (current_mpm_int + 1) << "." << endl;
@@ -8015,8 +8048,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
                 equivalence, starts, years, patches, tweights, format, entry_time,
                 sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
                 fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-                stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-                exp_tol, theta_tol);
+                benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+                force_fb, exp_tol, theta_tol);
               
               projections_list_current_mpm_supp(current_tracker) = current_projection;
               
@@ -8039,7 +8072,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
         
         for (int try1 = 0; try1 < trial_alterations; try1++) {
           Rcpp::checkUserInterrupt();
-          if (!quiet_bool) {
+          if (benchmark_bool) {
             Rcout << "Currently on projection " << (overall_projection_tracker + 1) <<
               " out of " << planned_projections << " for mpm " << (current_mpm_int + 1) << "." << endl;
           }
@@ -8085,8 +8118,8 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
             equivalence, starts, years, patches, tweights, format, entry_time,
             sp_density, ind_terms, dev_terms, fb_sparse, firstage, finalage,
             fecage_min, fecage_max, cont, fecmod, density, density_vr, err_check,
-            stochastic, integeronly, substoch, nreps, times, prep_mats, force_fb,
-            exp_tol, theta_tol);
+            benchmark, stochastic, integeronly, substoch, nreps, times, prep_mats,
+            force_fb, exp_tol, theta_tol);
           
           projections_list_current_mpm_supp(try1) = current_projection;
           
@@ -15135,6 +15168,8 @@ inline void ESS_optimizer_fb (DataFrame& ESS_Lyapunov, DataFrame& ESS_trait_axis
 //' values of individuals or not.
 //' @param dens_yn_bool A Boolean value stating whether density dependence is
 //' used, given through \code{lefkoDens} objects.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return Arguments 2 through 7 are directly manipulated without any values
 //' returned.
@@ -15151,7 +15186,8 @@ inline void invpre_project (const arma::mat var_run_mat, List& N_out_pre,
   const int firstage_int, const int finalage_int, const int substoch,
   const double exp_tol, const double theta_tol, const bool err_check,
   const bool err_check_extreme, const bool sparse_bool, const bool A_only,
-  const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool) {
+  const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool,
+  const bool benchmark_bool) {
     
   // Rcout << "invpre_project A" << endl;
   int i = current_rep;
@@ -15165,6 +15201,11 @@ inline void invpre_project (const arma::mat var_run_mat, List& N_out_pre,
     // Rcout << "invpre_project r          ";
     if (j % 10 == 0){
       Rcpp::checkUserInterrupt();
+    }
+    
+    if (benchmark_bool) {
+      if ((j + 1) % 100 == 1 && j > 50) Rcout <<
+        "Finished projecting " << (j + 1) << " time steps." << endl;
     }
     
     List errcheck_mpm_reps_time_vmt (var_mat_length); // Could remove later
@@ -15432,6 +15473,8 @@ inline void invpre_project (const arma::mat var_run_mat, List& N_out_pre,
 //' values of individuals or not.
 //' @param dens_yn_bool A Boolean value stating whether density dependence is
 //' used, given through \code{lefkoDens} objects.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return Arguments 2 through 7 are directly manipulated without any values
 //' returned.
@@ -15449,7 +15492,8 @@ inline void invpre_optim (List& N_out_pre, List& comm_out_pre,
   const int opt_res, const int opt_res_orig, const double exp_tol,
   const double theta_tol, const double threshold, const bool err_check,
   const bool err_check_extreme, const bool sparse_bool, const bool A_only,
-  const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool) {
+  const bool stages_not_equal, const bool integeronly, const bool dens_yn_bool,
+  const bool benchmark_bool) {
   
   // Rcout << "invpre_optim A" << endl;
   int i = current_rep;
@@ -15459,6 +15503,8 @@ inline void invpre_optim (List& N_out_pre, List& comm_out_pre,
   arma::cube N_mpm (2, (times + 1), opt_res); // rows = vars, cols = times, slices = permutes 
   
   List errcheck_mpm_reps_time (times); // Could remove later
+  
+  if (benchmark_bool) Rcout << "Beginning trait optimization on current replicate." << endl;
   
   for (int j = 0; j < times; j++) { // 2nd loop - time j
     // Rcout << "invpre_optim A1          ";
@@ -16007,6 +16053,8 @@ inline void invpre_optim (List& N_out_pre, List& comm_out_pre,
 //' fitness in trait optimization. Defaults to 0.995.
 //' @param zap_min A Boolean value describing whether to round fitness values
 //' below the value given in \code{threshold}.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return The first four arguments are directly manipulated without any
 //' values returned.
@@ -16041,7 +16089,7 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   const bool sparse_bool, const bool historical, const bool pure_leslie,
   const bool A_only, const bool err_check, const bool err_check_extreme,
   const double threshold, const bool fitness_table, const bool ESS_optima,
-  double elast_mult, const bool zap_min) {
+  double elast_mult, const bool zap_min, const bool benchmark_bool) {
   
   // Structures for optim
   List N_out_pre_optim (nreps);
@@ -16377,13 +16425,18 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   
   for (int i = 0; i < nreps; i ++) { // 1st loop - reps i
     // Rcout << "invade3_pre_core t          ";
+    
+    if (benchmark_bool) {
+      Rcout << "Beginning replicate " << (i + 1) << endl;
+    }
+    
     invpre_project(var_run_mat, N_out_pre, comm_out_pre, new_stageexpansion_list,
       errcheck_mpm_reps, used_times, zero_stage_vec_list, start_list,
       equivalence_list, A_list, U_list, F_list, density_df, dens_index_df,
       entry_time_vec, var_per_run, times, var_mat_length, format_int, i,
       firstage_int, finalage_int, substoch, exp_tol, theta_tol, err_check,
       err_check_extreme, sparse_bool, A_only, stages_not_equal, integeronly,
-      dens_yn_bool);
+      dens_yn_bool, benchmark_bool);
     
     if (ESS_optima) {
       invpre_optim(N_out_pre_optim, comm_out_pre_optim, new_stageexpansion_list_optima,
@@ -16392,7 +16445,7 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
         entry_time_vec, var_per_run, times, var_mat_length, format_int, i,
         firstage_int, finalage_int, substoch, opt_res_true, opt_res, exp_tol,
         theta_tol, threshold, err_check, err_check_extreme, sparse_bool, A_only,
-        stages_not_equal, integeronly, dens_yn_bool);
+        stages_not_equal, integeronly, dens_yn_bool, benchmark_bool);
     }
   } // i loop - reps
   comm_out = comm_out_pre;
@@ -16583,6 +16636,8 @@ void invade3_pre_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' values of individuals or not.
 //' @param dens_yn_bool A Boolean value stating whether density dependence is
 //' used, given through \code{lefkoDens} objects.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return The first four arguments are directly manipulated without any
 //' values returned.
@@ -16623,7 +16678,7 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
   const int substoch, int& year_counter, const double exp_tol,
   const double theta_tol, const bool err_check, const bool err_check_extreme,
   const bool sparse_bool, const bool A_only, const bool stages_not_equal,
-  const bool integeronly, const bool dens_yn_bool) {
+  const bool integeronly, const bool dens_yn_bool, const bool benchmark_bool) {
   
   // Rcout << "invfb_project A" << endl;
   List running_popvecs; // = clone(start_list);
@@ -16636,6 +16691,11 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
   for (int j = 0; j < times; j++) { // 2nd loop - time j
     if (j % 10 == 0){
       Rcpp::checkUserInterrupt();
+    }
+    
+    if (benchmark_bool) {
+      if ((j + 1) % 100 == 1 && j > 50) Rcout <<
+        "Finished projecting " << (j + 1) << " time steps." << endl;
     }
     
     // Rcout << "invfb_project A1          ";
@@ -17348,6 +17408,8 @@ inline void invfb_project (const arma::mat var_run_mat, arma::vec& surv_dev_nta,
 //' values of individuals or not.
 //' @param dens_yn_bool A Boolean value stating whether density dependence is
 //' used, given through \code{lefkoDens} objects.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return The first four arguments are directly manipulated without any
 //' values returned.
@@ -17391,7 +17453,7 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
   int& year_counter, const double exp_tol, const double theta_tol,
   const double threshold, const bool err_check, const bool err_check_extreme,
   const bool sparse_bool, const bool A_only, const bool stages_not_equal,
-  const bool integeronly, const bool dens_yn_bool) {
+  const bool integeronly, const bool dens_yn_bool, const bool benchmark_bool) {
   
   // Rcout << "invfb_optim A" << endl;
   List running_popvecs; // = clone(start_list);
@@ -17415,6 +17477,8 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
   IntegerMatrix indc_cat_terms_previous (opt_res, var_per_run);
   IntegerMatrix dev_num_counter (opt_res, var_per_run);
   IntegerMatrix sp_density_counter (opt_res, var_per_run);
+  
+  if (benchmark_bool) Rcout << "Beginning trait optimization on current replicate." << endl;
   
   for (int j = 0; j < times; j++) { // 2nd loop - time j
     // Rcout << "invfb_optim A1          ";
@@ -18660,6 +18724,8 @@ inline void invfb_optim (arma::vec& surv_dev_nta,
 //' fitness in trait optimization. Defaults to 0.995.
 //' @param zap_min A Boolean value describing whether to round fitness values
 //' below the value given in \code{threshold}.
+//' @param benchmark_bool A Boolean value indicating whether to issue benchmark
+//' statements on progress through the projection.
 //' 
 //' @return The first four arguments are directly manipulated without any
 //' values returned.
@@ -18698,7 +18764,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   const bool pure_leslie, const bool A_only, const bool err_check,
   const bool err_check_extreme, const double threshold,
   const bool fitness_table, const bool ESS_optima, double elast_mult,
-  const bool zap_min) {
+  const bool zap_min, const bool benchmark_bool) {
   
   // Structures for optim
   arma::ivec variant_nta_optim;
@@ -19304,6 +19370,10 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
   // Rcout << "indcovc_nta: " << indcovc_nta.t() << endl;
   
   for (int current_rep = 0; current_rep < nreps; current_rep++) { // 1st loop - reps current_rep
+    if (benchmark_bool) {
+      Rcout << "Beginning replicate " << (current_rep + 1) << endl;
+    }
+    
     invfb_project(var_run_mat, surv_dev_nta, obs_dev_nta, size_dev_nta,
       sizeb_dev_nta, sizec_dev_nta, repst_dev_nta, fec_dev_nta, jsurv_dev_nta,
       jobs_dev_nta, jsize_dev_nta, jsizeb_dev_nta, jsizec_dev_nta,
@@ -19324,7 +19394,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
       var_mat_length, format_int, current_rep, firstage_int, finalage_int,
       dev_terms_times_int, substoch, year_counter, exp_tol, theta_tol,
       err_check, err_check_extreme, sparse_bool, A_only, stages_not_equal,
-      integeronly, dens_yn_bool);
+      integeronly, dens_yn_bool, benchmark_bool);
     
     // Rcout << "obs_dev_nta_optim: " << obs_dev_nta_optim.t() << endl;
     // Rcout << "obs_dev_nta_optim_995: " << obs_dev_nta_optim_995.t() << endl;
@@ -19357,7 +19427,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
         current_rep, firstage_int, finalage_int, dev_terms_times_int, substoch,
         opt_res_true, opt_res, year_counter, exp_tol, theta_tol, threshold,
         err_check, err_check_extreme, sparse_bool, A_only, stages_not_equal,
-        integeronly, dens_yn_bool);
+        integeronly, dens_yn_bool, benchmark_bool);
     }
   } // current_rep loop
   comm_out = comm_out_pre;
@@ -19571,6 +19641,8 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' of output objects for error checking. Can also be set to the text value
 //' \code{"extreme"}, in which case all \code{err_check} output plus a multiple
 //' level list with each MPM used in each time step will be output.
+//' @param benchmark A logical value indicating whether to issue messages during
+//' projection indicating progress. Defaults to \code{FALSE}.
 //' @param var_per_run The number of variants to run in each simulation.
 //' Defaults to \code{2}, resulting in pairwise invasibility analysis. See
 //' \code{Notes} for details.
@@ -19755,17 +19827,14 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   Nullable<RObject> firstage = R_NilValue, Nullable<RObject> finalage = R_NilValue,
   Nullable<RObject> fecage_min = R_NilValue, Nullable<RObject> fecage_max = R_NilValue,
   Nullable<RObject> cont = R_NilValue, Nullable<RObject> prebreeding = R_NilValue,
-  Nullable<RObject> fecmod = R_NilValue,
+  Nullable<RObject> fecmod = R_NilValue, Nullable<RObject> density = R_NilValue,
+  Nullable<RObject> density_vr = R_NilValue, Nullable<RObject> stochastic = R_NilValue,
+  Nullable<RObject> A_only = R_NilValue, Nullable<RObject> integeronly = R_NilValue,
+  Nullable<RObject> fitness_table = R_NilValue, Nullable<RObject> trait_optima = R_NilValue,
+  Nullable<RObject> zap_min = R_NilValue, Nullable<RObject> converged_only = R_NilValue,
+  Nullable<RObject> err_check = R_NilValue, Nullable<RObject> benchmark = R_NilValue, 
   
-  Nullable<RObject> density = R_NilValue, Nullable<RObject> density_vr = R_NilValue,
-  Nullable<RObject> stochastic = R_NilValue, Nullable<RObject> A_only = R_NilValue,
-  Nullable<RObject> integeronly = R_NilValue, Nullable<RObject> fitness_table = R_NilValue,
-  Nullable<RObject> trait_optima = R_NilValue, Nullable<RObject> zap_min = R_NilValue,
-  Nullable<RObject> converged_only = R_NilValue, Nullable<RObject> err_check = R_NilValue,
-  
-  int var_per_run = 2,
-  
-  int substoch = 0, double elast_mult = 0.995,
+  int var_per_run = 2, int substoch = 0, double elast_mult = 0.995,
   int nreps = 1, int times = 10000, int fitness_times = 100,
   double exp_tol = 700.0, double theta_tol = 100000000.0,
   double threshold = 0.00000001, int loop_max = 150) {
@@ -19813,6 +19882,14 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
   bool converged_only_bool {false};
   bool err_check_bool {false};
   bool err_check_extreme {false};
+  bool benchmark_bool = false;
+  
+  // benchmark processing
+  if (benchmark.isNotNull()) {
+    if (is<RObject>(benchmark)) {
+      benchmark_bool = LefkoInputs::yesno_to_logic(as<RObject>(benchmark), "benchmark");
+    }
+  }
   
   // Boolean variable processing
   LefkoInputs::RObj_TF_input_check("err_check", "extreme", err_check_bool,
@@ -20078,7 +20155,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       loop_max, integeronly_bool, stages_not_equal, stochastic_bool, dens_yn_bool,
       entry_time_vec_use, sparse_bool, historical, pure_leslie, A_only_bool,
       err_check_bool, err_check_extreme, threshold, fitness_table_bool,
-      trait_optima_bool, elast_mult, zap_min_bool);
+      trait_optima_bool, elast_mult, zap_min_bool, benchmark_bool);
   } else if (funcbased) {
     // Rcout << "invade3 f ";
     invade3_fb_core (Lyapunov, Lyapunov_optim, ESS_Lyapunov, var_run_mat, N_out,
@@ -20100,7 +20177,7 @@ List invade3 (Nullable<RObject> axis = R_NilValue, Nullable<RObject> mpm  = R_Ni
       theta_tol, loop_max, integeronly_bool, stochastic_bool, dens_yn_bool,
       stages_not_equal, sparse_bool, historical, pure_leslie, A_only_bool,
       err_check_bool, err_check_extreme, threshold, fitness_table_bool,
-      trait_optima_bool, elast_mult, zap_min_bool);
+      trait_optima_bool, elast_mult, zap_min_bool, benchmark_bool);
   } // funcbased processing
   
   // Rcout << "invade3 g ";

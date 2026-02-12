@@ -29,6 +29,7 @@ project3(
   density = NULL,
   density_vr = NULL,
   err_check = NULL,
+  benchmark = NULL,
   stochastic = FALSE,
   integeronly = FALSE,
   substoch = 0L,
@@ -211,6 +212,9 @@ with function-based projections.}
 of output objects for error checking. Can also be set to the text value
 \code{"extreme"}, in which case all \code{err_check} output plus a multiple
 level list with each MPM used in each time step will be output.}
+
+\item{benchmark}{A logical value indicating whether to issue messages during
+projection indicating progress. Defaults to \code{FALSE}.}
 
 \item{stochastic}{A logical value indicating whether the projection will be
 run as a temporally stochastic projection. Defaults to \code{FALSE}.}

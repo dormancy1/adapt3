@@ -822,54 +822,48 @@ plot(cyp_proj1)
 
 ![Figure I3. Density dependent projected population growth under density frame c2d_1](ch2-2.7-1.png)
   
-  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 10 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using many more variants, such as 50 or 100, in order to get a good resolution of trait variation for the pairwise invasibility plot, in case the actual adaptive dynamics are complex, and to estimate the trait optima properly.</p>
+  <p style="text-indent: 20px">Next, we will set a trait axis defining all variants to test. Here, we will use 8 variants total, and please note that the resulting analysis may take a while to run. Note that these will be defined solely by additive deviation to the y-intercept of the sprouting model (observation probability), which is a binomial mixed effects model. Normally, we would advise using many more variants, such as 50 or 100, in order to get a good resolution of trait variation for the pairwise invasibility plot, in case the actual adaptive dynamics are complex, and to estimate the trait optima properly.</p>
 
 ``` r
 current_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
-  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 10)) 
+  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 8)) 
 current_traits
-#>    variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype
-#> 1        1   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 2        2   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 3        3   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 4        4   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 5        5   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 6        6   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 7        7   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 8        8   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 9        9   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#> 10      10   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
-#>    convtype_t12 surv_dev    obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev
-#> 1            NA       NA -0.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 2            NA       NA -0.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 3            NA       NA  0.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 4            NA       NA  0.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 5            NA       NA  0.8333333       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 6            NA       NA  1.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 7            NA       NA  1.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 8            NA       NA  1.8333333       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 9            NA       NA  2.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#> 10           NA       NA  2.5000000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
-#>    jrepst_dev jmatst_dev indcova indcovb indcovc
-#> 1          NA         NA      NA      NA      NA
-#> 2          NA         NA      NA      NA      NA
-#> 3          NA         NA      NA      NA      NA
-#> 4          NA         NA      NA      NA      NA
-#> 5          NA         NA      NA      NA      NA
-#> 6          NA         NA      NA      NA      NA
-#> 7          NA         NA      NA      NA      NA
-#> 8          NA         NA      NA      NA      NA
-#> 9          NA         NA      NA      NA      NA
-#> 10         NA         NA      NA      NA      NA
+#>   variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype
+#> 1       1   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 2       2   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 3       3   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 4       4   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 5       5   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 6       6   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 7       7   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#> 8       8   <NA>   <NA>   <NA>   NA   NA      <NA>      <NA>      <NA>      NA      NA        NA     NA         NA       NA
+#>   convtype_t12 surv_dev     obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev
+#> 1           NA       NA -0.50000000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 2           NA       NA -0.07142857       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 3           NA       NA  0.35714286       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 4           NA       NA  0.78571429       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 5           NA       NA  1.21428571       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 6           NA       NA  1.64285714       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 7           NA       NA  2.07142857       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 8           NA       NA  2.50000000       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#>   jrepst_dev jmatst_dev indcova indcovb indcovc
+#> 1         NA         NA      NA      NA      NA
+#> 2         NA         NA      NA      NA      NA
+#> 3         NA         NA      NA      NA      NA
+#> 4         NA         NA      NA      NA      NA
+#> 5         NA         NA      NA      NA      NA
+#> 6         NA         NA      NA      NA      NA
+#> 7         NA         NA      NA      NA      NA
+#> 8         NA         NA      NA      NA      NA
 ```
   
-  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 10 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values). Note that we are also setting `trait_optima = TRUE`, which allows us to estimate the ESS value of the additive deviation to the sprouting model, if one exists.</p>
+  <p style="text-indent: 20px">Finally, we get to our invasibility analysis. As before, this is set up as a pairwise invasibility analysis (hence the `var_per_run = 2` setting). As this will take a while, grab a cappuccino in the meantime. To speed things up, change the number of variants in the trait axis from 8 to something lower, like 3 or 4 (though this will result in much poorer resolution to see any potential ESS values). Note that we are also setting `trait_optima = TRUE`, which allows us to estimate the ESS value of the additive deviation to the sprouting model, if one exists.</p>
 
 ``` r
 cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
   starts = cyp_start, years = 2008, stageframe = cypframe_fb,
-  supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
-  times = 1000, fitness_times = 100, var_per_run = 2, stochastic = FALSE,
+  supplement = cypsupp2f, entry_time = c(0, 300), integeronly = FALSE,
+  times = 500, fitness_times = 60, var_per_run = 2, stochastic = FALSE,
   density = c2d_1, trait_optima = TRUE)
 ```
   
@@ -878,7 +872,7 @@ cyp_inv3 <- invade3(axis = current_traits, vrm = cyp_vrm, format = 3,
 ``` r
 summary(cyp_inv3)
 #> 
-#> The input adaptInv object covers 10 variants, 1001 projected steps, 2 variants per run, and 1 projected replicate.
+#> The input adaptInv object covers 8 variants, 501 projected steps, 2 variants per run, and 1 projected replicate.
 #> It includes optimization data suggesting 1 purported ESS optimum.
 ```
   
@@ -897,107 +891,52 @@ plot(cyp_inv3, pip = FALSE, run = 11)
 
 ``` r
 cyp_inv3$N_out[[1]][2,,11]
-#>    [1]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [11]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [21]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [31]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [41]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [51]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [61]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [71]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [81]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>   [91]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [101]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [111]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [121]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [131]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [141]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [151]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [161]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [171]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [181]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [191]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [201]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [211]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [221]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [231]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [241]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [251]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [261]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [271]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [281]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [291]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [301]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [311]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [321]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [331]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [341]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [351]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [361]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [371]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [381]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [391]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [401]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [411]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [421]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [431]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [441]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [451]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [461]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [471]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [481]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [491]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [501]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [511]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [521]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [531]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [541]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [551]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [561]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [571]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [581]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [591]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [601]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [611]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [621]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [631]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [641]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [651]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [661]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [671]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [681]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [691]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [701]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [711]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [721]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [731]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [741]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [751]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [761]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [771]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [781]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [791]  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000  0.00000000
-#>  [801]  1.00000000  0.20000000  0.05689588  0.01625894  0.85675865  0.84117873  0.53852514  0.28750896  0.45963811  0.66678898
-#>  [811]  0.68243668  0.55158649  0.50181915  0.57147537  0.64877794  0.64806505  0.60995111  0.60484331  0.63969541  0.67070287
-#>  [821]  0.67441691  0.66852374  0.67637508  0.69677699  0.71407013  0.72200993  0.72802137  0.73947314  0.75483310  0.76862311
-#>  [831]  0.77940077  0.79008904  0.80293534  0.81704440  0.83055851  0.84323485  0.85617777  0.87004217  0.88440595  0.89865881
-#>  [841]  0.91280727  0.92725562  0.94218445  0.95741579  0.97275724  0.98824334  1.00401935  1.02013240  1.03651383  1.05310726
-#>  [851]  1.06993717  1.08705624  1.10447721  1.12217671  1.14014135  1.15838575  1.17693063  1.19578131  1.21493234  1.23438357
-#>  [861]  1.25414436  1.27422487  1.29462964  1.31536017  1.33642043  1.35781755  1.37955853  1.40164843  1.42409155  1.44689330
-#>  [871]  1.47006012  1.49359834  1.51751367  1.54181173  1.56649860  1.59158078  1.61706473  1.64295677  1.66926331  1.69599099
-#>  [881]  1.72314665  1.75073717  1.77876947  1.80725059  1.83618771  1.86558817  1.89545941  1.92580894  1.95664440  1.98797358
-#>  [891]  2.01980440  2.05214489  2.08500321  2.11838764  2.15230661  2.18676868  2.22178255  2.25735704  2.29350115  2.33022398
-#>  [901]  2.36753480  2.40544304  2.44395825  2.48309015  2.52284862  2.56324369  2.60428555  2.64598456  2.68835124  2.73139628
-#>  [911]  2.77513054  2.81956507  2.86471106  2.91057992  2.95718321  3.00453270  3.05264033  3.10151825  3.15117878  3.20163447
-#>  [921]  3.25289803  3.30498240  3.35790073  3.41166638  3.46629290  3.52179408  3.57818393  3.63547667  3.69368676  3.75282889
-#>  [931]  3.81291799  3.87396921  3.93599797  3.99901990  4.06305092  4.12810719  4.19420511  4.26136137  4.32959291  4.39891695
-#>  [941]  4.46935098  4.54091277  4.61362039  4.68749218  4.76254677  4.83880311  4.91628045  4.99499831  5.07497659  5.15623544
-#>  [951]  5.23879538  5.32267724  5.40790219  5.49449172  5.58246770  5.67185231  5.76266812  5.85493803  5.94868534  6.04393369
-#>  [961]  6.14070713  6.23903006  6.33892730  6.44042406  6.54354595  6.64831898  6.75476960  6.86292466  6.97281146  7.08445773
-#>  [971]  7.19789163  7.31314179  7.43023729  7.54920767  7.67008296  7.79289366  7.91767075  8.04444573  8.17325057  8.30411778
-#>  [981]  8.43708038  8.57217193  8.70942651  8.84887875  8.99056384  9.13451753  9.28077614  9.42937659  9.58035636  9.73375356
-#>  [991]  9.88960689 10.04795567 10.20883986 10.37230006 10.53837752 10.70711413 10.87855247 11.05273581 11.22970810 11.40951398
-#> [1001] 11.59219884
+#>   [1] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [12] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [23] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [34] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [45] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [56] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [67] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [78] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#>  [89] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [100] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [111] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [122] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [133] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [144] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [155] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [166] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [177] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [188] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [199] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [210] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [221] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [232] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [243] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [254] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [265] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [276] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [287] 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000 0.00000000
+#> [298] 0.00000000 0.00000000 0.00000000 1.00000000 0.20000000 0.05634760 0.01595356 0.81053043 0.79416282 0.50812397 0.27156758
+#> [309] 0.39441085 0.55568157 0.56539357 0.45708202 0.40235402 0.43584451 0.48049325 0.47433015 0.43980736 0.42287979 0.43148697
+#> [320] 0.44071514 0.43483364 0.42178723 0.41479026 0.41489664 0.41456386 0.40975308 0.40324609 0.39874407 0.39621740 0.39339992
+#> [331] 0.38929281 0.38482561 0.38102281 0.37777825 0.37442077 0.37071332 0.36695741 0.36343216 0.36007905 0.35670165 0.35324705
+#> [342] 0.34981060 0.34646694 0.34319118 0.33992641 0.33666186 0.33342699 0.33024119 0.32709494 0.32397180 0.32086986 0.31779792
+#> [353] 0.31476078 0.31175489 0.30877543 0.30582208 0.30289728 0.30000205 0.29713501 0.29429464 0.29148077 0.28869397 0.28593427
+#> [364] 0.28320106 0.28049375 0.27781215 0.27515625 0.27252587 0.26992066 0.26734028 0.26478453 0.26225323 0.25974617 0.25726307
+#> [375] 0.25480370 0.25236782 0.24995524 0.24756573 0.24519906 0.24285502 0.24053338 0.23823393 0.23595647 0.23370078 0.23146666
+#> [386] 0.22925389 0.22706228 0.22489161 0.22274170 0.22061234 0.21850334 0.21641450 0.21434563 0.21229653 0.21026703 0.20825692
+#> [397] 0.20626604 0.20429418 0.20234118 0.20040684 0.19849100 0.19659347 0.19471408 0.19285266 0.19100903 0.18918303 0.18737449
+#> [408] 0.18558323 0.18380910 0.18205192 0.18031155 0.17858781 0.17688056 0.17518962 0.17351485 0.17185608 0.17021318 0.16858598
+#> [419] 0.16697434 0.16537810 0.16379713 0.16223126 0.16068037 0.15914430 0.15762292 0.15611608 0.15462365 0.15314548 0.15168145
+#> [430] 0.15023141 0.14879523 0.14737278 0.14596393 0.14456855 0.14318651 0.14181768 0.14046194 0.13911915 0.13778921 0.13647197
+#> [441] 0.13516733 0.13387516 0.13259535 0.13132777 0.13007230 0.12882884 0.12759727 0.12637747 0.12516933 0.12397274 0.12278759
+#> [452] 0.12161377 0.12045117 0.11929968 0.11815921 0.11702963 0.11591086 0.11480278 0.11370529 0.11261829 0.11154169 0.11047537
+#> [463] 0.10941925 0.10837323 0.10733721 0.10631109 0.10529478 0.10428819 0.10329122 0.10230378 0.10132578 0.10035712 0.09939773
+#> [474] 0.09844751 0.09750638 0.09657424 0.09565101 0.09473661 0.09383095 0.09293395 0.09204552 0.09116559 0.09029407 0.08943088
+#> [485] 0.08857594 0.08772917 0.08689050 0.08605985 0.08523714 0.08442229 0.08361523 0.08281589 0.08202419 0.08124006 0.08046342
+#> [496] 0.07969421 0.07893235 0.07817778 0.07743041 0.07669020 0.07595706
 ```
   
   <p style="text-indent: 20px">We can see that the invader does grow in at least some of the simulations. Now let's see the pairwise invasibility plot (PIP).</p>
@@ -1016,17 +955,18 @@ plot(cyp_inv3, pip = FALSE, elast = TRUE, auto_axis = TRUE)
 
 ![Figure I6. Elasticity plot showing the ESS deviation to the y-intercept of sprouting as a value somewhere around the 7th or 8th variant in the trait frame](ch2-2.14-1.png)
 
-  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Here, we see a potential optimum near 0, corresponding roughly to variant 7 in our trait axis. Let's take a look at the predicted ESS value of the trait.</p>
+  <p style="text-indent: 20px">Elasticity analyses are performed using a variant of the procedure outlined in @benton_optimal_1999, and on the version of it that appears in @roff_modeling_2010. In this case, each original variant in the supplied trait axis is run as the resident, against an invader that has the key variable trait reduced by 0.5%. Let's take a look at the predicted ESS value of the trait.</p>
 
 ``` r
 cyp_inv3$optim$ESS_values
 #>   variant stage3 stage2 stage1 age3 age2 eststage3 eststage2 eststage1 estage3 estage2 givenrate offset multiplier convtype
 #> 1       1     NA     NA     NA   NA   NA        NA        NA        NA      NA      NA        NA     NA         NA       NA
 #>   convtype_t12 surv_dev   obs_dev size_dev sizeb_dev sizec_dev repst_dev fec_dev jsurv_dev jobs_dev jsize_dev jsizeb_dev jsizec_dev
-#> 1           NA       NA 0.1666667       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
+#> 1           NA       NA 0.7857143       NA        NA        NA        NA      NA        NA       NA        NA         NA         NA
 #>   jrepst_dev jmatst_dev indcova indcovb indcovc year2 mpm_altered vrm_altered       fitness converged
-#> 1         NA         NA      NA      NA      NA  <NA>           0           1 -8.917901e-06      TRUE
+#> 1         NA         NA      NA      NA      NA  <NA>           0           1 -2.357206e-06      TRUE
 ```
+  
   <p style="text-indent: 20px">Our converged ESS value is at a slightly positive additive deviation to our sprouting probability y-intercept, meaning that our observed value appears to be an ESS or very close to it. This is similar to what was found in @shefferson_life_2014, so we've done reasonably well.</p>
   
   <p style="text-indent: 20px">Let's now estimate the standard error for the ESS value. We will use the demographic shuffling approach used in @shefferson_life_2014.</p>
@@ -1036,7 +976,7 @@ library(lme4)
 library(glmmTMB)
 
 sample_traits <- trait_axis(cypframe_fb, stagebased = TRUE, agebased = FALSE,
-  historical = FALSE, obs_dev = seq(from = -1.5, to = 3.0, length.out = 10))
+  historical = FALSE, obs_dev = seq(from = -0.5, to = 2.5, length.out = 8))
 
 num_runs <- 10
 
@@ -1082,8 +1022,8 @@ for (i in c(1:num_runs)) {
   
   sample_inv3 <- try(invade3(axis = sample_traits, vrm = sample_vrm, format = 3,
     starts = cyp_start, years = 2008, stageframe = cypframe_fb,
-    supplement = cypsupp2f, entry_time = c(0, 800), integeronly = FALSE,
-    times = 1000, fitness_times = 190, var_per_run = 2, stochastic = FALSE,
+    supplement = cypsupp2f, entry_time = c(0, 300), integeronly = FALSE,
+    times = 500, fitness_times = 60, var_per_run = 2, stochastic = FALSE,
     density = c2d_1, trait_optima = TRUE))
   
   try(output_vec[i] <- sample_inv3$optim$ESS_values$obs_dev[1])
@@ -1098,7 +1038,7 @@ for (i in c(1:num_runs)) {
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
 #> vignette('troubleshooting')
-#> ESS: -0.169397333333333
+#> ESS: 0
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.227223 (tol = 0.002, component 1)
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
@@ -1110,14 +1050,11 @@ for (i in c(1:num_runs)) {
 #> vignette('troubleshooting')
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; singular convergence (7). See
 #> vignette('troubleshooting'), help('diagnose')
-#> Error in eval(expr, envir) : 
-#>   Data frames must have the same number of columns.
-#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
-#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> ESS: 0
 #> boundary (singular) fit: see help('isSingular')
 #> boundary (singular) fit: see help('isSingular')
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
-#> ESS: -0.230833333333333
+#> ESS: 0
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.208192 (tol = 0.002, component 1)
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
@@ -1127,20 +1064,20 @@ for (i in c(1:num_runs)) {
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
 #> vignette('troubleshooting')
-#> ESS: -0.161197916666667
+#> ESS: 0
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : unable to evaluate scaled gradient
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge: degenerate  Hessian with 1 negative eigenvalues
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> boundary (singular) fit: see help('isSingular')
 #> boundary (singular) fit: see help('isSingular')
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
-#> ESS: -0.145182291666667
+#> ESS: 0.785714285714286
 #> boundary (singular) fit: see help('isSingular')
 #> boundary (singular) fit: see help('isSingular')
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
 #> vignette('troubleshooting')
-#> ESS: -0.19
+#> ESS: 0
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.216018 (tol = 0.002, component 1)
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
@@ -1150,10 +1087,7 @@ for (i in c(1:num_runs)) {
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
 #> vignette('troubleshooting')
-#> Error in eval(expr, envir) : 
-#>   Data frames must have the same number of columns.
-#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
-#> Error in sample_inv3$optim : $ operator is invalid for atomic vectors
+#> ESS: 0.282857142857143
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.202177 (tol = 0.002, component 1)
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
@@ -1163,7 +1097,7 @@ for (i in c(1:num_runs)) {
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
 #> vignette('troubleshooting')
-#> ESS: -0.148177083333333
+#> ESS: 0.785714285714286
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model failed to converge with max|grad| = 0.228734 (tol = 0.002, component 1)
 #>   See ?lme4::convergence and ?lme4::troubleshooting.
 #> Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
@@ -1173,13 +1107,13 @@ for (i in c(1:num_runs)) {
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): failed to invert Hessian from numDeriv::jacobian(), falling back to
 #> internal vcov estimate
-#> ESS: -0.168064768
+#> ESS: 0
 #> boundary (singular) fit: see help('isSingular')
 #> boundary (singular) fit: see help('isSingular')
 #> Warning in f(init, x[[i]]): discarding LHS of second argument
 #> Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence problem; non-positive-definite Hessian matrix. See
 #> vignette('troubleshooting')
-#> ESS: -0.170762666666667
+#> ESS: 0
 ```
 
   <p style="text-indent: 20px">Let's see the mean and SD, as well as whether the ESS value is significantly different from 0.</p>
@@ -1193,15 +1127,15 @@ z_value <- abs(true_ESS) / se_sim
 p_value <- pnorm(z_value, mean = 0, sd = 1, lower.tail = FALSE)
 
 writeLines(paste0("True ESS: ", true_ESS))
-#> True ESS: 0.166666666666667
+#> True ESS: 0.785714285714286
 writeLines(paste0("Simulated ESS: ", mean_sim))
-#> Simulated ESS: -0.172951924125
+#> Simulated ESS: 0.185428571428571
 writeLines(paste0("Simulated SE: ", se_sim))
-#> Simulated SE: 0.0272693145084921
+#> Simulated SE: 0.328441520212574
 writeLines(paste0("Z score: ", z_value))
-#> Z score: 6.11187591880112
+#> Z score: 2.39225017959287
 writeLines(paste0("p-value: ", p_value))
-#> p-value: 4.9233366559445e-10
+#> p-value: 0.00837271181512437
 ```
 
   <p style="text-indent: 20px">Now let's work out a figure showing the predicted sprouting probability.</p>

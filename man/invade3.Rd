@@ -38,6 +38,7 @@ invade3(
   zap_min = NULL,
   converged_only = NULL,
   err_check = NULL,
+  benchmark = NULL,
   var_per_run = 2L,
   substoch = 0L,
   elast_mult = 0.995,
@@ -229,6 +230,9 @@ Defaults to \code{FALSE}.}
 of output objects for error checking. Can also be set to the text value
 \code{"extreme"}, in which case all \code{err_check} output plus a multiple
 level list with each MPM used in each time step will be output.}
+
+\item{benchmark}{A logical value indicating whether to issue messages during
+projection indicating progress. Defaults to \code{FALSE}.}
 
 \item{var_per_run}{The number of variants to run in each simulation.
 Defaults to \code{2}, resulting in pairwise invasibility analysis. See
