@@ -484,7 +484,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     } else AdaptUtils::pop_error2("vrms", "a list of vrm_input objects", "", 1);
     
     if (stageframes.isNotNull()) {
-      RObject stageframes_RO = RObject(stageframes_RO);
+      RObject stageframes_RO = RObject(stageframes);
       
       if (is<List>(stageframes_RO)) {
         stageframe_list_fb = as<List>(stageframes_RO);
