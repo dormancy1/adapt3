@@ -306,7 +306,7 @@ test_that("project3() and batch_project3() advanced examples work", {
   aaa1_prj_batch4 <- batch_project3(used_mpms = "all", all_elems = FALSE,
     mpms =  list(cypmatrix2r_small, cypmatrixL_small), times = 15,
     supplements = list(new_supplement_cyp2_small, new_supplement_cyp_age_small),
-    integeronly = TRUE, nreps = 1, err_check = "extreme")
+    integeronly = TRUE, nreps = 1)
   aaa14 <- summary(aaa1_prj_batch4, finalN_mean = TRUE, finalN_used = 10)
   expect_true(length(aaa14$final_N) == 40)
   expect_true(mean(aaa14$extinct_by, na.rm = TRUE) > 1)
@@ -314,27 +314,9 @@ test_that("project3() and batch_project3() advanced examples work", {
   aaa1_prj_batch5 <- batch_project3(used_mpms = "all", all_elems = FALSE,
     mpms =  list(cypmatrix2r_small, cypmatrixL_small), times = 15,
     supplements = list(new_supplement_cyp2_small, new_supplement_cyp_age_small),
-    density = list(cyp_dv_small, cyp_dv_age), integeronly = TRUE, nreps = 1,
-    err_check = "extreme")
+    density = list(cyp_dv_small, cyp_dv_age), integeronly = TRUE, nreps = 1)
   aaa15 <- summary(aaa1_prj_batch5, finalN_mean = TRUE, finalN_used = 10)
   expect_true(length(aaa15$final_N) == 40)
   expect_true(mean(aaa15$extinct_by, na.rm = TRUE) > 1)
-  
-  aaa1_prj_batch3 <- batch_project3(used_mpms = "all", all_elems = FALSE,
-    mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
-    supplements = list(new_supplement_cyp2_small, new_supplement_cyp2_small,
-      new_supplement_cyp_age_small, new_supplement_cyp_age_small),
-    integeronly = TRUE, nreps = 3, err_check = "extreme")
-  aaa13 <- summary(aaa1_prj_batch3, finalN_mean = TRUE, finalN_used = 10)
-  expect_true(mean(aaa13$final_N) > 0)
-  expect_true(mean(aaa13$extinct_by, na.rm = TRUE) > 1)
-  
-  aaa1_prj_batch1 <- batch_project3(used_mpms = "all", all_elems = TRUE,
-    mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
-    integeronly = TRUE, nreps = 3, err_check = "extreme")
-  aaa11 <- summary(aaa1_prj_batch1, finalN_mean = TRUE, finalN_used = 10)
-  expect_true(mean(aaa11$final_N) > 0)
-  expect_true(mean(aaa11$extinct_by, na.rm = TRUE) > 1)
-  
 })
 

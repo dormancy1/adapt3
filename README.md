@@ -20,7 +20,7 @@ This GitHub site maintains the current development version of `adapt3` and relie
 
 Please see [`adapt3`'s r-universe page](https://dormancy1.r-universe.dev/adapt3) to see the current status of the package.
 
-See the [Revolutionary Demography Projects](https://revolutionarydemography.com/projects.html) page for further documentation.
+See the [{r}evolutionary demography Projects](https://revolutionarydemography.com/projects.html) page for further documentation.
 
 Issues may be reported in `adapt3`'s [Issue Reporting page](https://github.com/dormancy1/adapt3/issues).
 
