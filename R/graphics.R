@@ -287,6 +287,7 @@ plot.adaptProj <- function(x, repl = 1, agg_only = FALSE, auto_ylim = TRUE,
 #' \code{\link{invade3}()}.
 #' 
 #' @examples
+#' \donttest{
 #' library(lefko3)
 #' data(cypdata)
 #' 
@@ -351,6 +352,7 @@ plot.adaptProj <- function(x, repl = 1, agg_only = FALSE, auto_ylim = TRUE,
 #'   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
 #'   var_per_run = 2)
 #' plot(cyp_inv)
+#' }
 #' 
 #' @export
 plot.adaptInv <- function(x, res_variant = 1, inv_variant = 2, repl = 1,

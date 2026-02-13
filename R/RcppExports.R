@@ -2418,6 +2418,7 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' order to make them more tractable.
 #' 
 #' @examples
+#' \donttest{
 #' library(lefko3)
 #' data(cypdata)
 #' 
@@ -2529,6 +2530,7 @@ project3 <- function(mpms = NULL, vrms = NULL, stageframes = NULL, supplements =
 #' aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
 #'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, nreps = 3,
 #'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
+#' }
 #' 
 #' @export batch_project3
 batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, multiplier = NULL, all_elems = NULL, mpms = NULL, vrms = NULL, stageframes = NULL, supplements = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, fecmod = NULL, density = NULL, density_vr = NULL, err_check = NULL, benchmark = NULL, stochastic = FALSE, integeronly = FALSE, substoch = 0L, nreps = 1L, times = 10000L, prep_mats = 20L, force_fb = FALSE, exp_tol = 700.0, theta_tol = 100000000.0) {
@@ -2799,6 +2801,7 @@ batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, mu
 #' than the original values.
 #' 
 #' @examples
+#' \donttest{
 #' library(lefko3)
 #' data(cypdata)
 #' 
@@ -2863,6 +2866,7 @@ batch_project3 <- function(used_mpms = NULL, givenrate = NULL, offset = NULL, mu
 #'   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
 #'   var_per_run = 2)
 #' plot(cyp_inv)
+#' }
 #' 
 #' @export invade3
 invade3 <- function(axis = NULL, mpm = NULL, vrm = NULL, stageframe = NULL, supplement = NULL, equivalence = NULL, starts = NULL, years = NULL, patches = NULL, tweights = NULL, format = NULL, entry_time = NULL, sp_density = NULL, ind_terms = NULL, dev_terms = NULL, fb_sparse = NULL, firstage = NULL, finalage = NULL, fecage_min = NULL, fecage_max = NULL, cont = NULL, prebreeding = NULL, fecmod = NULL, density = NULL, density_vr = NULL, stochastic = NULL, A_only = NULL, integeronly = NULL, fitness_table = NULL, trait_optima = NULL, zap_min = NULL, converged_only = NULL, err_check = NULL, benchmark = NULL, var_per_run = 2L, substoch = 0L, elast_mult = 0.995, nreps = 1L, times = 10000L, fitness_times = 100L, exp_tol = 700.0, theta_tol = 100000000.0, threshold = 0.00000001, loop_max = 150L) {

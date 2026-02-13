@@ -1,3 +1,9 @@
+# adapt3 2.0.8 (2026-02-12)
+
+## BUG FIXES
+
+* Cleared up potential memory leak in function-based application of project3().
+
 # adapt3 2.0.7 (2026-02-12)
 
 ## NEW FEATURES

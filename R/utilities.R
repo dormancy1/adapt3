@@ -365,6 +365,7 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
 #' maximum number of time steps noted.
 #' 
 #' @examples
+#' \donttest{
 #' library(lefko3)
 #' data(cypdata)
 #' 
@@ -478,6 +479,7 @@ summary.adaptProj <- function(object, threshold = 1, inf_alive = TRUE,
 #'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
 #'   
 #' summary(aaa1_prj_batch2)
+#' }
 #' 
 #' @export
 summary.adaptProjBatch <- function(object, finalN_mean = FALSE,

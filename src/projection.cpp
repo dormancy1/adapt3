@@ -866,15 +866,19 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     
     for (int i = 0; i < vrm_count; i++) {
       DataFrame chosen_stageframe;
-      
-      RObject supp_trial = RObject(supplement_list_fb(i));
       DataFrame chosen_supplement;
       bool trial_supp_null {false};
       
-      if (is<DataFrame>(supp_trial)) {
-        chosen_supplement = as<DataFrame>(supplement_list_fb(i));
-      } else {
-        trial_supp_null = true;
+      Nullable<RObject> supp_trial_N = as<Nullable<RObject>>(supplement_list_fb(i));
+      
+      if (supp_trial_N.isNotNull()) {
+        RObject supp_trial = RObject(supp_trial_N);
+        
+        if (is<DataFrame>(supp_trial)) {
+          chosen_supplement = as<DataFrame>(supp_trial);
+        } else {
+          trial_supp_null = true;
+        }
       }
       
       if (format_vec(i) < 5) {
@@ -2227,7 +2231,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
       
       for (int i = 0; i < equivalence_count; i++) {
         if (is<NumericVector>(equivalence_list_temp(i))) {
-          NumericVector trial_equivalence = as<NumericVector>(equivalence_list(i));
+          NumericVector trial_equivalence = as<NumericVector>(equivalence_list_temp(i));
           int trial_eq_length = static_cast<int>(trial_equivalence.length());
           
           if (trial_eq_length != matrowcounts(i)) {
@@ -6441,6 +6445,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 //' order to make them more tractable.
 //' 
 //' @examples
+//' \donttest{
 //' library(lefko3)
 //' data(cypdata)
 //' 
@@ -6552,6 +6557,7 @@ List project3 (Nullable<RObject> mpms  = R_NilValue,
 //' aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
 //'   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, nreps = 3,
 //'   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
+//' }
 //' 
 //' @export batch_project3
 // [[Rcpp::export(batch_project3)]]
@@ -6849,7 +6855,7 @@ Rcpp::List batch_project3 (Nullable<RObject> used_mpms = R_NilValue,
     if (using_vrms) {
       if (stageframes.isNotNull()) {
         RObject stageframes_true = RObject(stageframes);
-        List stageframes_list = as<List>(stageframes);
+        List stageframes_list = as<List>(stageframes_true);
         current_stageframe = as<DataFrame>(stageframes_list(current_mpm_int));
       }
       
@@ -19751,6 +19757,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //' than the original values.
 //' 
 //' @examples
+//' \donttest{
 //' library(lefko3)
 //' data(cypdata)
 //' 
@@ -19815,6 +19822,7 @@ void invade3_fb_core (DataFrame& Lyapunov, DataFrame& Lyapunov_optim,
 //'   starts = cyp_start, entry_time = c(0, 250), fitness_times = 30,
 //'   var_per_run = 2)
 //' plot(cyp_inv)
+//' }
 //' 
 //' @export invade3
 // [[Rcpp::export(invade3)]]

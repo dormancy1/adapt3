@@ -117,6 +117,7 @@ maximum number of time steps noted.
 }
 
 \examples{
+\donttest{
 library(lefko3)
 data(cypdata)
 
@@ -230,5 +231,6 @@ aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
   
 summary(aaa1_prj_batch2)
+}
 
 }

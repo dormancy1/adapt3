@@ -322,6 +322,7 @@ order to make them more tractable.
 }
 
 \examples{
+\donttest{
 library(lefko3)
 data(cypdata)
 
@@ -433,5 +434,6 @@ used_supplements <- list(new_supplement_cyp2_small,
 aaa1_prj_batch2 <- batch_project3(used_mpms = "all", all_elems = FALSE,
   mpms =  cyp_mpms1, entry_time = c(0, 5, 8), times = 15, nreps = 3,
   supplement = used_supplements, integeronly = TRUE, density = cyp_density)
+}
 
 }
