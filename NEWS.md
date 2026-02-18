@@ -1,3 +1,10 @@
+# adapt3 2.X.X (2026-XX-XX)
+
+## BUG FIXES
+
+* Fixed fatal error occurring with function-based Leslie MPMs when using
+  supplements.
+
 # adapt3 2.0.8 (2026-02-12)
 
 ## BUG FIXES

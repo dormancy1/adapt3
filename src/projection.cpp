@@ -867,7 +867,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
     for (int i = 0; i < vrm_count; i++) {
       DataFrame chosen_stageframe;
       DataFrame chosen_supplement;
-      bool trial_supp_null {false};
+      bool trial_supp_null {true};
       
       Nullable<RObject> supp_trial_N = as<Nullable<RObject>>(supplement_list_fb(i));
       
@@ -876,6 +876,7 @@ Rcpp::List cleanup3(Nullable<RObject> mpms = R_NilValue,
         
         if (is<DataFrame>(supp_trial)) {
           chosen_supplement = as<DataFrame>(supp_trial);
+          trial_supp_null = false;
         } else {
           trial_supp_null = true;
         }
