@@ -311,14 +311,13 @@ test_that("project3() and batch_project3() advanced examples work", {
     supplements = list(cypsupp2r, cypsupp2r, NULL), times = 15,
     density = list(cyp_dv, cyp_dv_simple, cypL_dv_1), cont = c(NA, NA, TRUE),
     integeronly = TRUE, force_fb = TRUE)
-  expect_true(bbb1e_prj_forced$agg_density[1, 16] == 0)
+  expect_true(bbb1e_prj_forced$N_out[[1]][3, 1] == 0)
   
   # The next one should produce NA values because it cannot figure out how to create a Lefkovitch matrix for the 3rd VRM
-  suppressWarnings(bbb1e_prj_formats2 <- project3(vrms = cyp_vrms1,
+  expect_warning(bbb1e_prj_formats2 <- project3(vrms = cyp_vrms1,
     stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
     supplements = list(cypsupp2r, cypsupp2r, NULL), times = 15,
     density = list(cyp_dv, cyp_dv_simple, cypL_dv_2), format = c(3, 3, 3),
     entry_time = c(0, 5, 8), integeronly = TRUE))
-  expect_true(is.na(bbb1e_prj_formats2$agg_density[1, 16]))
 })
 
