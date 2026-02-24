@@ -159,6 +159,8 @@ test_that("project3() and batch_project3() advanced examples work", {
   cyp_dv <- density_input(cypmatrix2r, stage3 = c("P1", "P2"),
     stage2 = c("rep", "P1"), style = c(1, 1), alpha = c(0.5, 1.2),
     beta = c(1.0, 0), type = c(2, 1))
+  cyp_dv_simple <- density_input(cypmatrix2r, stage3 = c("P1"),
+    stage2 = c("rep"), style = c(1), alpha = c(0.5), beta = c(1.0), type = c(2))
   
   cyp_dv_small <- density_input(cypmatrix2r_small, stage3 = c("P1", "Sm"),
     stage2 = c("rep", "P1"), style = c(1, 1), alpha = c(0.5, 1.2),
@@ -210,10 +212,12 @@ test_that("project3() and batch_project3() advanced examples work", {
   cyp_tw_list2 <- list(cyp_tweights, cyp_tweights, cyp_tweights, cyp_tweights)
   
   # Raw stochastic ahistorical with altered environmental transitions
+  set.seed(42)
   aaa1d_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
     integeronly = TRUE, stochastic = TRUE, tweights = cyp_tw_list2, nreps = 3)
   expect_true(dim(aaa1d_prj$agg_density)[1] == 3)
   expect_true(dim(aaa1d_prj$agg_density)[2] == 16)
+  expect_true(aaa1d_prj$agg_density[3, 16] > 1)
   
   # Raw ahistorical with matrix element density dependence
   aaa1e_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
@@ -274,5 +278,47 @@ test_that("project3() and batch_project3() advanced examples work", {
   aaa15 <- summary(aaa1_prj_batch5, finalN_mean = TRUE, finalN_used = 10)
   expect_true(length(aaa15$final_N) == 40)
   expect_true(mean(aaa15$extinct_by, na.rm = TRUE) > 1)
+  
+  # Function-based tests
+  bbb1_prj <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8), times = 15,
+    stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
+    supplements = list(cypsupp2r, cypsupp2r, NULL), integeronly = TRUE)
+  expect_true(bbb1_prj$agg_density[1, 16] > 1)
+  
+  bbb1_prj_formats <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8),
+    format = c(3, 3, 5), stageframes = list(cypframe_raw, cypframe_raw, NULL),
+    supplements = list(cypsupp2r, cypsupp2r, NULL), times = 15,
+    firstage = c(NA, NA, 1), finalage = c(NA, NA, 4), cont = c(NA, NA, TRUE),
+    fecage_min = c(NA, NA, 3), integeronly = TRUE)
+  expect_true(bbb1_prj_formats$agg_density[1, 16] > 1)
+  
+  bbb1e_prj <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8), times = 15,
+    stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
+    supplements = list(cypsupp2r, cypsupp2r, NULL), cont = c(NA, NA, TRUE),
+    density = list(cyp_dv, cyp_dv_simple, cypL_dv_1), integeronly = TRUE)
+  expect_true(bbb1e_prj$agg_density[1, 16] == 0)
+  
+  bbb1e_prj_formats <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8),
+    times = 15, stageframes = list(cypframe_raw, cypframe_raw, NULL),
+    supplements = list(cypsupp2r, cypsupp2r, NULL), format = c(3, 3, 5),
+    density = list(cyp_dv, cyp_dv_simple, cypL_dv_2), firstage = c(NA, NA, 1),
+    finalage = c(NA, NA, 4), fecage_min = c(NA, NA, 3), cont = c(NA, NA, TRUE),
+    integeronly = TRUE)
+  expect_true(bbb1e_prj_formats$agg_density[1, 16] == 0)
+  
+  bbb1e_prj_forced <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8),
+    stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
+    supplements = list(cypsupp2r, cypsupp2r, NULL), times = 15,
+    density = list(cyp_dv, cyp_dv_simple, cypL_dv_1), cont = c(NA, NA, TRUE),
+    integeronly = TRUE, force_fb = TRUE)
+  expect_true(bbb1e_prj_forced$agg_density[1, 16] == 0)
+  
+  # The next one should produce NA values because it cannot figure out how to create a Lefkovitch matrix for the 3rd VRM
+  suppressWarnings(bbb1e_prj_formats2 <- project3(vrms = cyp_vrms1,
+    stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
+    supplements = list(cypsupp2r, cypsupp2r, NULL), times = 15,
+    density = list(cyp_dv, cyp_dv_simple, cypL_dv_2), format = c(3, 3, 3),
+    entry_time = c(0, 5, 8), integeronly = TRUE))
+  expect_true(is.na(bbb1e_prj_formats2$agg_density[1, 16]))
 })
 

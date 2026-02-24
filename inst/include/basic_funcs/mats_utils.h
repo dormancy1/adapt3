@@ -1283,8 +1283,13 @@ namespace AdaptMats {
     arma::vec ovestf = as<arma::vec>(ovestf_num);
     
     Rcpp::NumericVector indata = as<NumericVector>(AllStages["indata"]);
+    
     Rcpp::NumericVector ovgivent = as<NumericVector>(AllStages["ovgiven_t"]);
     Rcpp::NumericVector ovgivenf = as<NumericVector>(AllStages["ovgiven_f"]);
+    Rcpp::NumericVector ovoffsett = as<NumericVector>(AllStages["ovoffset_t"]);
+    Rcpp::NumericVector ovoffsetf = as<NumericVector>(AllStages["ovoffset_f"]);
+    arma::vec ovostt = as<arma::vec>(ovoffsett);
+    arma::vec ovostf = as<arma::vec>(ovoffsetf);
     
     Rcpp::NumericVector ovsurvmult = as<NumericVector>(AllStages["ovsurvmult"]);
     Rcpp::NumericVector ovfecmult = as<NumericVector>(AllStages["ovfecmult"]);
@@ -1300,6 +1305,11 @@ namespace AdaptMats {
     
     // Rcout << "n (stage3.n_elem): " << n << endl;
     // Rcout << "mazurekd l ";
+    
+    arma::uvec offsettvec = find(ovostt != 0.);
+    arma::uvec offsetfvec = find(ovostf != 0.);
+    int offsetst = static_cast<int>(offsettvec.n_elem);
+    int offsetsf = static_cast<int>(offsetfvec.n_elem);
     
     arma::uvec replacetvec = find(ovestt != -1.0);
     arma::uvec replacefvec = find(ovestf != -1.0);
@@ -2098,6 +2108,32 @@ namespace AdaptMats {
     
     // Rcout << "mazurekd v ";
     
+    if (offsetst > 0) {
+      for(int i = 0; i < n; i++) {
+        if (ovoffsett(i) != 0.) {
+          k = aliveandequal(i);
+          if (!sparse) {
+            survtransmat(k) = survtransmat(k) + ovoffsett(i);
+          } else {
+            survtransmat_sp(k) = survtransmat_sp(k) + ovoffsett(i);
+          }
+        }
+      }
+    }
+    
+    if (offsetsf > 0) {
+      for(int i = 0; i < n; i++) {
+        if (ovoffsetf(i) != 0.) {
+          k = aliveandequal(i);
+          if (!sparse) {
+            fectransmat(k) = fectransmat(k) + ovoffsetf(i);
+          } else {
+            fectransmat_sp(k) = fectransmat_sp(k) + ovoffsetf(i);
+          }
+        }
+      }
+    }
+    
     if (tmults_only_st > 0) {
       for (int i = 0; i < tmults_only_st; i++) {
         repindex = tmults_only(i);
@@ -2326,6 +2362,7 @@ namespace AdaptMats {
     IntegerVector ov_age2;
     IntegerVector ov_estage2;
     NumericVector ov_givenrate;
+    NumericVector ov_offset;
     NumericVector ov_multiplier;
     IntegerVector ov_convtype;
     int supp_length {0};
@@ -2338,6 +2375,7 @@ namespace AdaptMats {
         ov_age2 = clone(as<IntegerVector>(supplement_["age2"]));
         ov_estage2 = clone(as<IntegerVector>(supplement_["estage2"]));
         ov_givenrate = as<NumericVector>(supplement_["givenrate"]);
+        ov_offset = as<NumericVector>(supplement_["offset"]);
         ov_multiplier = as<NumericVector>(supplement_["multiplier"]);
         ov_convtype = as<IntegerVector>(supplement_["convtype"]);
         
@@ -2856,6 +2894,19 @@ namespace AdaptMats {
             survtransmat_sp(target_row, target_col) = ov_givenrate(l);
           }
         }
+        
+        if (!NumericVector::is_na(ov_offset(l))) {
+          if (ov_offset(l) != 0.) {
+            if (!sparse) {
+              survtransmat(target_row, target_col) =
+                survtransmat(target_row, target_col) + ov_offset(l);
+            } else {
+              survtransmat_sp(target_row, target_col) =
+                survtransmat_sp(target_row, target_col) + ov_offset(l);
+            }
+          }
+        }
+        
         if (!IntegerVector::is_na(ov_estage2(l))) {
           proxy_col = ov_estage2(l);
           
@@ -2894,6 +2945,19 @@ namespace AdaptMats {
             fectransmat_sp(target_row, target_col) = ov_givenrate(l);
           }
         }
+        
+        if (!NumericVector::is_na(ov_offset(l))) {
+          if (ov_offset(l) != 0.) {
+            if (!sparse) {
+              fectransmat(target_row, target_col) =
+                fectransmat(target_row, target_col) + ov_offset(l);
+            } else {
+              fectransmat_sp(target_row, target_col) =
+                fectransmat_sp(target_row, target_col) + ov_offset(l);
+            }
+          }
+        }
+        
         if (!IntegerVector::is_na(ov_estage2(l))) {
           proxy_col = ov_estage2(l);
           

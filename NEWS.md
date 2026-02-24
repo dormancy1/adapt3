@@ -1,7 +1,14 @@
 # adapt3 2.X.X (2026-XX-XX)
 
+## USER-VISIBLE CHANGES
+
+* More unit tests for function-based projections added.
+
 ## BUG FIXES
 
+* Fixed error leading to loss of offset values in supplements passed to function
+  batch_project3() when projecting function-based MPMs.
+  
 * Fixed fatal error occurring with function-based Leslie MPMs when using
   supplements.
 

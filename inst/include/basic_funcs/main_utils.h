@@ -38,6 +38,7 @@ using namespace LefkoUtils;
 // 
 // 16. Nullable<RObject> supplements_replacer  Create New Supplements List With Old Supplements Input and New Data Frame
 // 17. void leslie_stageframe_updater  Update Leslie MPM Info for VRM Input with Stageframe
+// 18. void batch_supplement_alterator  Adjust Supplement Data Frame for Batch Projection
 
 
 namespace AdaptUtils {
@@ -4505,6 +4506,124 @@ namespace AdaptUtils {
       firstage_vec(index) = min(sf_min_age);
       finalage_vec(index) = tracked_max_age;
     }
+  }
+  
+  //' Adjust Supplement Data Frame for Batch Projection
+  //' 
+  //' Function \code{batch_supplement_alterator()} alters the input supplement to
+  //' deal with the needed batch projection operation. It locates portions of the
+  //' supplement that do not lead to offsets, givenrates, multipliers, or proxies,
+  //' and uses those entries for batch projection alteration.
+  //' 
+  //' @name batch_supplement_alterator
+  //' 
+  //' @param current_supplement A reference to a data frame holding the curent
+  //' supplement.
+  //' @param givenrate_vec The givenrate vector being used by function
+  //' \code{batch_project3()}.
+  //' @param offset_vec The offset vector being used by function
+  //' \code{batch_project3()}.
+  //' @param multiplier_vec The multiplier vector being used by function
+  //' \code{batch_project3()}.
+  //' @param givenrate_used A Boolean value indicating whether function
+  //' \code{batch_project3()} is being used with givenrate values.
+  //' @param offset_used A Boolean value indicating whether function
+  //' \code{batch_project3()} is being used with offset values.
+  //' @param multiplier_used A Boolean value indicating whether function
+  //' \code{batch_project3()} is being used with multiplier values.
+  //' @param current_trial_index An integer giving the proper index to use for the
+  //' givenrate, offset, or multiplier vector.
+  //' 
+  inline void batch_supplement_alterator (DataFrame& current_supplement,
+    NumericVector givenrate_vec, NumericVector offset_vec,
+    NumericVector multiplier_vec, bool givenrate_used, bool offset_used,
+    bool multiplier_used, int current_trial_index) {
+    
+    CharacterVector current_eststage2 = as<CharacterVector>(current_supplement["eststage2"]);
+    NumericVector current_givenrate = as<NumericVector>(current_supplement["givenrate"]);
+    NumericVector current_offset = as<NumericVector>(current_supplement["offset"]);
+    NumericVector current_multiplier = as<NumericVector>(current_supplement["multiplier"]);
+    IntegerVector current_convtype = as<IntegerVector>(current_supplement["convtype"]);
+    
+    int c_supp_length = static_cast<int>(current_eststage2.length());
+    
+    arma::ivec ce2_nas_log (c_supp_length);
+    int ce2_nas_length {0};
+    for (int i = 0; i < c_supp_length; i++) {
+      if (CharacterVector::is_na(current_eststage2(i))) {
+        ce2_nas_log(i) = 1;
+        ce2_nas_length++;
+      } else ce2_nas_log(i) = 0;
+    }
+    
+    arma::vec current_givenrate_arma = as<arma::vec>(current_givenrate);
+    arma::vec current_offset_arma = as<arma::vec>(current_offset);
+    arma::vec current_multiplier_arma = as<arma::vec>(current_multiplier);
+    arma::ivec current_convtype_arma = as<arma::ivec>(current_convtype);
+    
+    arma::uvec ce2_nas = find(ce2_nas_log);
+    arma::uvec cga_nas = find_nonfinite(current_givenrate_arma);
+    
+    arma::uvec coa_nas = find_nonfinite(current_offset_arma);
+    arma::uvec coa_0s = find(current_offset_arma == 0.);
+    
+    arma::uvec cma_nas = find_nonfinite(current_multiplier_arma);
+    arma::uvec cma_1s = find(current_multiplier_arma == 1.);
+    
+    arma::uvec cca_no3s = find(current_convtype_arma < 3);
+    
+    arma::uvec first_pass = intersect(cga_nas, coa_nas);
+    arma::uvec second_pass = intersect(first_pass, cma_1s);
+    arma::uvec third_pass = intersect(second_pass, cca_no3s);
+    arma::uvec fourth_pass = intersect(third_pass, ce2_nas);
+    
+    arma::uvec first_pass_a = intersect(cga_nas, coa_0s);
+    arma::uvec second_pass_a = intersect(first_pass_a, cma_1s);
+    arma::uvec third_pass_a = intersect(second_pass_a, cca_no3s);
+    arma::uvec fourth_pass_a = intersect(third_pass_a, ce2_nas);
+    
+    arma::uvec first_pass_b = intersect(cga_nas, coa_nas);
+    arma::uvec second_pass_b = intersect(first_pass_b, cma_nas);
+    arma::uvec third_pass_b = intersect(second_pass_b, cca_no3s);
+    arma::uvec fourth_pass_b = intersect(third_pass_b, ce2_nas);
+    
+    arma::uvec first_pass_c = intersect(cga_nas, coa_0s);
+    arma::uvec second_pass_c = intersect(first_pass_c, cma_nas);
+    arma::uvec third_pass_c = intersect(second_pass_c, cca_no3s);
+    arma::uvec fourth_pass_c = intersect(third_pass_c, ce2_nas);
+    
+    arma::uvec chosen_indices;
+    if (fourth_pass.n_elem > 0) {
+      chosen_indices = fourth_pass;
+    } else if (fourth_pass_a.n_elem > 0) {
+      chosen_indices = fourth_pass_a;
+    } else if (fourth_pass_b.n_elem > 0) {
+      chosen_indices = fourth_pass_b;
+    } else if (fourth_pass_c.n_elem > 0) {
+      chosen_indices = fourth_pass_c;
+    } else {
+      Rf_warningcall(R_NilValue, "No supplement entry found to alter for batch projection.");
+    }
+    
+    // Rcout << "chosen_indices: " << chosen_indices.t() << endl;
+    
+    if (givenrate_used) {
+      for (int i = 0; i < static_cast<int>(chosen_indices.n_elem); i++) {
+        current_givenrate(chosen_indices(i)) = givenrate_vec(current_trial_index);
+      }
+    } else if (offset_used) {
+      for (int i = 0; i < static_cast<int>(chosen_indices.n_elem); i++) {
+        current_offset(chosen_indices(i)) = offset_vec(current_trial_index);
+      }
+    } else if (multiplier_used) {
+      for (int i = 0; i < static_cast<int>(chosen_indices.n_elem); i++) {
+        current_multiplier(chosen_indices(i)) = multiplier_vec(current_trial_index);
+      }
+    }
+    
+    current_supplement["givenrate"] = current_givenrate;
+    current_supplement["offset"] = current_offset;
+    current_supplement["multiplier"] = current_multiplier;
   }
 }
 

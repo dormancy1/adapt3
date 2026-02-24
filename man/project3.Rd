@@ -317,6 +317,12 @@ value, or if the \code{density_vr} argument is used. The key argument
 determining this behavior is \code{prep_mats}, which provides the maximum
 limit for the number of matrices required per MPM in order to create
 matrices prior to projection.
+
+Please note that function-based Leslie MPMs cannot be forced through
+Lefkovitch-style MPM processing via the \code{format} argument. Attempting
+to do so will yield NA values within the projected matrices, which may then
+propagate further NA values in other matrices via density dependence
+functions. Always use \code{format = 5} for Leslie MPMs.
 }
 
 \examples{
