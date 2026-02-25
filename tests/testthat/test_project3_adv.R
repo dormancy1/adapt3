@@ -3,6 +3,8 @@ test_that("project3() and batch_project3() advanced examples work", {
   library(lefko3)
   data(cypdata)
   
+  set.seed(42)
+  
   sizevector <- c(0, 0, 0, 0, 0, 0, 1, 2.5, 4.5, 8, 17.5)
   stagevector <- c("SD", "P1", "P2", "P3", "SL", "D", "XSm", "Sm", "Md", "Lg",
     "XLg")
@@ -212,7 +214,6 @@ test_that("project3() and batch_project3() advanced examples work", {
   cyp_tw_list2 <- list(cyp_tweights, cyp_tweights, cyp_tweights, cyp_tweights)
   
   # Raw stochastic ahistorical with altered environmental transitions
-  set.seed(42)
   aaa1d_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
     integeronly = TRUE, stochastic = TRUE, tweights = cyp_tw_list2, nreps = 3)
   expect_true(dim(aaa1d_prj$agg_density)[1] == 3)
@@ -304,7 +305,8 @@ test_that("project3() and batch_project3() advanced examples work", {
     density = list(cyp_dv, cyp_dv_simple, cypL_dv_2), firstage = c(NA, NA, 1),
     finalage = c(NA, NA, 4), fecage_min = c(NA, NA, 3), cont = c(NA, NA, TRUE),
     integeronly = TRUE)
-  expect_true(bbb1e_prj_formats$agg_density[1, 16] == 0)
+  expect_true(bbb1e_prj_formats$agg_density[1, 1] == 11)
+  expect_true(bbb1e_prj_formats$N_out[[1]][3, 1] == 0)
   
   bbb1e_prj_forced <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8),
     stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
