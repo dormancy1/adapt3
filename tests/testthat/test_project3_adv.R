@@ -297,7 +297,8 @@ test_that("project3() and batch_project3() advanced examples work", {
     stageframes = list(cypframe_raw, cypframe_raw, cypmatrixLf$ahstages),
     supplements = list(cypsupp2r, cypsupp2r, NULL), cont = c(NA, NA, TRUE),
     density = list(cyp_dv, cyp_dv_simple, cypL_dv_1), integeronly = TRUE)
-  expect_true(bbb1e_prj$agg_density[1, 16] == 0)
+  expect_true(bbb1e_prj$agg_density[1, 1] == 11)
+  expect_true(bbb1e_prj$N_out[[1]][3, 1] == 0)
   
   bbb1e_prj_formats <- project3(vrms = cyp_vrms1, entry_time = c(0, 5, 8),
     times = 15, stageframes = list(cypframe_raw, cypframe_raw, NULL),
