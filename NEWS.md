@@ -11,6 +11,8 @@
   
 * Fixed fatal error occurring with function-based Leslie MPMs when using
   supplements.
+  
+* Unit test bugs fixed.
 
 # adapt3 2.0.8 (2026-02-12)
 
