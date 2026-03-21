@@ -3,6 +3,7 @@
 <!-- badges: start -->
 [![cran version](http://www.r-pkg.org/badges/version/adapt3)](https://cran.r-project.org/package=adapt3)
 [![r-universe](https://dormancy1.r-universe.dev/adapt3/badges/version)](https://dormancy1.r-universe.dev/adapt3/badges/version)
+[![total downloads](http://cranlogs.r-pkg.org/badges/grand-total/adapt3)](http://cranlogs.r-pkg.org/badges/grand-total/adapt3)
 <!-- badges: end -->
 
 R package `adapt3` uses matrix population models (MPMs) to develop and run matrix community model (MCM) projections, and pairwise and multiple invasibility analyses.

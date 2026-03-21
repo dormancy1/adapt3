@@ -209,11 +209,11 @@ test_that("project3() and batch_project3() advanced examples work", {
   expect_true(dim(aaa1b_prj$agg_density)[1] == 1)
   expect_true(dim(aaa1b_prj$agg_density)[2] == 16)
   
+  # Raw stochastic ahistorical with altered environmental transitions
   cyp_tweights <- c(0.01, 0.2, 0.1, 0.2, 0.49)
   cyp_tw_list1 <- list(cyp_tweights, cyp_tweights, cyp_tweights)
   cyp_tw_list2 <- list(cyp_tweights, cyp_tweights, cyp_tweights, cyp_tweights)
   
-  # Raw stochastic ahistorical with altered environmental transitions
   aaa1d_prj <- project3(mpms =  cyp_mpms1, entry_time = c(0, 5, 8, 10), times = 15,
     integeronly = TRUE, stochastic = TRUE, tweights = cyp_tw_list2, nreps = 3)
   expect_true(dim(aaa1d_prj$agg_density)[1] == 3)
