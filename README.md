@@ -3,6 +3,7 @@
 <!-- badges: start -->
 [![cran version](http://www.r-pkg.org/badges/version/adapt3)](https://cran.r-project.org/package=adapt3)
 [![r-universe](https://dormancy1.r-universe.dev/adapt3/badges/version)](https://dormancy1.r-universe.dev/adapt3/badges/version)
+[![DOI](https://zenodo.org/badge/969796423.svg)](https://doi.org/10.5281/zenodo.19194328)
 [![total downloads](http://cranlogs.r-pkg.org/badges/grand-total/adapt3)](http://cranlogs.r-pkg.org/badges/grand-total/adapt3)
 <!-- badges: end -->
 
