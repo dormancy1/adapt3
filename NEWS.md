@@ -6,7 +6,7 @@
 
 ## BUG FIXES
 
-* Fixed error leading to loss of offset values in supplements passed to function
+* Fixed bug leading to loss of offset values in supplements passed to function
   batch_project3() when projecting function-based MPMs.
   
 * Fixed fatal error occurring with function-based Leslie MPMs when using

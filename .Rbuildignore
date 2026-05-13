@@ -4,3 +4,5 @@
 ^Meta$
 ^.github$
 ^README.md$
+^\.positai$
+^\.claude$
