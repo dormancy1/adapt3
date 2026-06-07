@@ -1,6 +1,8 @@
-# adapt3 2.X.X (2026-XX-XX)
+# adapt3 2.X\0.9 (2026-06-07)
 
 ## USER-VISIBLE CHANGES
+
+* Citation updated.
 
 * More unit tests for function-based projections added.
 

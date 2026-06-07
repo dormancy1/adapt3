@@ -20,7 +20,9 @@
 #' @aliases adapt3-package
 "_PACKAGE"
 #' @author Richard P. Shefferson <cdorm@g.ecc.u-tokyo.ac.jp>
-#' @references Pending
+#' @references Shefferson, R.P. 2026. \emph{adapt3}: adaptive dynamics and
+#' community projection in the \emph{R} programming language.
+#' \emph{Methods in Ecology and Evolution} 17(6): 1719-1725.
 #' @import Rcpp graphics
 #' @importFrom graphics contour lines .filled.contour
 #' @importFrom grDevices palette xy.coords

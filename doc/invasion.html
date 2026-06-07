@@ -150,7 +150,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 div.csl-bib-body { }
 div.csl-entry {
 clear: both;
-margin-bottom: 0em;
 }
 .hanging div.csl-entry {
 margin-left:2em;
@@ -415,11 +414,11 @@ common and can occur for overa decade in a single individual <span class="citati
 </p>
 <p style="text-indent: 20px">
 Data for this study were collected from a population in northeastern
-Illinois, from 2004 to 2009 <span class="citation">(Shefferson, Mizuta,
-and Hutchings 2017)</span>. Each year at the start of the flowering
-season, all individuals at the site were located, with previously
-identified individuals identified based on their previous locations, and
-new individuals recorded via an exhaustive survey. Plant characteristics
+Illinois, from 2004 to 2009 <span class="citation">(Shefferson et al.
+2017)</span>. Each year at the start of the flowering season, all
+individuals at the site were located, with previously identified
+individuals identified based on their previous locations, and new
+individuals recorded via an exhaustive survey. Plant characteristics
 including the number of sprouts, which sprouts were flowering
 vs. non-flowering, and the number of flowers per sprout, were recorded
 for every individual in every year.
@@ -431,9 +430,9 @@ for every individual in every year.
 Package <code>adapt3</code> is built to take advantage of package
 <code>lefko3</code>, which offers a general language and architecture to
 build and analyze most kinds of matrix projection models, including even
-discretized integral projection models <span class="citation">(Shefferson, Kurokawa, and Ehrlén 2021)</span>. To
-start, we will load both <code>lefko3</code> and <code>adapt3</code>,
-and also load the dataset that we will use for our two examples.
+discretized integral projection models <span class="citation">(Shefferson et al. 2021)</span>. To start, we will load
+both <code>lefko3</code> and <code>adapt3</code>, and also load the
+dataset that we will use for our two examples.
 </p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list=</span><span class="fu">ls</span>(<span class="at">all=</span><span class="cn">TRUE</span>))</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
@@ -802,17 +801,17 @@ y-intercepts.
 Our example will once again focus on <em>Cypripedium parviflorum</em>.
 However, this time we will attempt to replicate the pairwise
 invasibility analysis results from the ahistorical, deterministic
-analysis of the same population published in <span class="citation">Shefferson, Warren II, and Pulliam (2014)</span>. That
-analysis was used to explore the adaptive context of vegetative
-dormancy, and hence imperfect sprouting, and found an evolutionarily
-stable strategy at an intermediate level of sprouting. The dataset that
-we will use is not exactly the same as in the paper, nor is the
-methodology exactly the same, but our results should be similar. Because
-we will use a function-based approach, which is very similar to building
-an integral projection model (IPM), we will use a larger resolution life
-history model than used in that paper, allowing for all observed sizes
-of both vegetative and flowering adults, where size is defined by the
-number of sprouts.
+analysis of the same population published in <span class="citation">Shefferson et al. (2014)</span>. That analysis was used
+to explore the adaptive context of vegetative dormancy, and hence
+imperfect sprouting, and found an evolutionarily stable strategy at an
+intermediate level of sprouting. The dataset that we will use is not
+exactly the same as in the paper, nor is the methodology exactly the
+same, but our results should be similar. Because we will use a
+function-based approach, which is very similar to building an integral
+projection model (IPM), we will use a larger resolution life history
+model than used in that paper, allowing for all observed sizes of both
+vegetative and flowering adults, where size is defined by the number of
+sprouts.
 </p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>stagevector <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;SD&quot;</span>, <span class="st">&quot;P1&quot;</span>, <span class="st">&quot;SL&quot;</span>, <span class="st">&quot;D&quot;</span>, <span class="st">&quot;V1&quot;</span>, <span class="st">&quot;V2&quot;</span>, <span class="st">&quot;V3&quot;</span>, <span class="st">&quot;V4&quot;</span>, <span class="st">&quot;V5&quot;</span>, <span class="st">&quot;V6&quot;</span>,</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>  <span class="st">&quot;V7&quot;</span>, <span class="st">&quot;F1&quot;</span>, <span class="st">&quot;F2&quot;</span>, <span class="st">&quot;F3&quot;</span>, <span class="st">&quot;F4&quot;</span>, <span class="st">&quot;F5&quot;</span>, <span class="st">&quot;F6&quot;</span>, <span class="st">&quot;F7&quot;</span>)</span>
@@ -1497,12 +1496,13 @@ value of the trait.
 Our converged ESS value is at a slightly positive additive deviation to
 our sprouting probability y-intercept, meaning that our observed value
 appears to be an ESS or very close to it. This is similar to what was
-found in <span class="citation">Shefferson, Warren II, and Pulliam
-(2014)</span>, so we’ve done reasonably well.
+found in <span class="citation">Shefferson et al. (2014)</span>, so
+we’ve done reasonably well.
 </p>
 <p style="text-indent: 20px">
 Let’s now estimate the standard error for the ESS value. We will use the
-demographic shuffling approach used in <span class="citation">Shefferson, Warren II, and Pulliam (2014)</span>.
+demographic shuffling approach used in <span class="citation">Shefferson
+et al. (2014)</span>.
 </p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
 <span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">library</span>(glmmTMB)</span>
@@ -1701,7 +1701,7 @@ Science.
 </div>
 <div id="literature-cited" class="section level2">
 <h2>Literature cited</h2>
-<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-benton_optimal_1999" class="csl-entry">
 Benton, T. G., and A. Grant. 1999. <span>“Optimal Reproductive Effort in
 Stochastic, Density-Dependent Environments.”</span> <em>Evolution</em>
@@ -1709,19 +1709,16 @@ Stochastic, Density-Dependent Environments.”</span> <em>Evolution</em>
 </div>
 <div id="ref-rasmussen_orchids_1995" class="csl-entry">
 Rasmussen, Hanne. 1995. <em>Terrestrial Orchids: From Seed to
-Mycotrophic Plant</em>. Cambridge, England, United Kingdom: Cambridge
-University Press.
+Mycotrophic Plant</em>. Cambridge University Press.
 </div>
 <div id="ref-roff_modeling_2010" class="csl-entry">
 Roff, Derek A. 2010. <em>Modeling Evolution: An Introduction to
-Numerical Methods</em>. Oxford, England, United Kingdom: Oxford
-University Press.
+Numerical Methods</em>. Oxford University Press.
 </div>
 <div id="ref-shefferson_drivers_2018" class="csl-entry">
-Shefferson, Richard P., Tiiu Kull, Michael J. Hutchings, Marc-André
-Selosse, Hans Jacquemyn, Kimberly M. Kellett, Eric S. Menges, et al.
-2018. <span>“Drivers of Vegetative Dormancy Across Herbaceous Perennial
-Plant Species.”</span> <em>Ecology Letters</em> 21 (5): 724–33. <a href="https://doi.org/10.1111/ele.12940">https://doi.org/10.1111/ele.12940</a>.
+Shefferson, Richard P., Tiiu Kull, Michael J. Hutchings, et al. 2018.
+<span>“Drivers of Vegetative Dormancy Across Herbaceous Perennial Plant
+Species.”</span> <em>Ecology Letters</em> 21 (5): 724–33. <a href="https://doi.org/10.1111/ele.12940">https://doi.org/10.1111/ele.12940</a>.
 </div>
 <div id="ref-shefferson_lefko3_2021" class="csl-entry">
 Shefferson, Richard P., Shun Kurokawa, and Johan Ehrlén. 2021.

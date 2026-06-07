@@ -25,7 +25,9 @@ The adapt3 package provides three categories of functions:
 adapt3 also includes example datasets complete with sample code.
 }
 \references{
-Pending
+Shefferson, R.P. 2026. \emph{adapt3}: adaptive dynamics and
+community projection in the \emph{R} programming language.
+\emph{Methods in Ecology and Evolution} 17(6): 1719-1725.
 }
 \seealso{
 Useful links:
@@ -37,6 +39,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Richard P. Shefferson \email{cdorm@g.ecc.u-tokyo.ac.jp} (\href{https://orcid.org/0000-0002-5234-3131}{ORCID})
+
+Authors:
+\itemize{
+  \item Richard P. Shefferson \email{cdorm@g.ecc.u-tokyo.ac.jp} (\href{https://orcid.org/0000-0002-5234-3131}{ORCID})
+}
 
 
 Richard P. Shefferson <cdorm@g.ecc.u-tokyo.ac.jp>
